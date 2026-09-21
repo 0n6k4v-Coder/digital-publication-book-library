@@ -16,8 +16,8 @@ The application is kept intentionally small and focused on the core brief:
 /
 ├── /stories/:slug
 │
-└── /library
-    └── /library/:slug
+└── /books
+    └── /book/:slug
 
 /admin
 ├── /login
@@ -43,8 +43,8 @@ The application is kept intentionally small and focused on the core brief:
 |---|---|---|---|
 | `PAGE-PUB-001` | `/` | Homepage | — |
 | `PAGE-PUB-003` | `/stories/:slug` | Story Detail | `/` |
-| `PAGE-PUB-004` | `/library` | Book Library | `/` |
-| `PAGE-PUB-005` | `/library/:slug` | Book Detail | `/library` |
+| `PAGE-PUB-004` | `/books` | Book Library | `/` |
+| `PAGE-PUB-005` | `/book/:slug` | Book Detail | `/books` |
 
 The homepage is the main public post surface. There is no separate stories listing route in this scope.
 
@@ -161,8 +161,8 @@ Admin authentication is required by `ADM-AUTH-001` but does not need a separate 
 |---|---|
 | Homepage | `/` |
 | Story detail | `/stories/:slug` |
-| Library | `/library` |
-| Book detail | `/library/:slug` |
+| Library | `/books` |
+| Book detail | `/book/:slug` |
 | Admin | `/admin` |
 | Admin login | `/admin/login` |
 | Posts | `/admin/posts` |
@@ -183,4 +183,4 @@ Admin authentication is required by `ADM-AUTH-001` but does not need a separate 
 | System | 1 |
 | **Total** | **12** |
 
-Dynamic routes such as `/stories/:slug` and `/library/:slug` use shared page templates rather than separate designs for every item.
+Dynamic routes such as `/stories/:slug` and `/book/:slug` use shared page templates rather than separate designs for every item.
