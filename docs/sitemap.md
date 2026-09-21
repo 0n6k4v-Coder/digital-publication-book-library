@@ -2,11 +2,11 @@
 
 ## Overview
 
-The application is divided into three areas:
+The application is kept intentionally small and focused on the core brief:
 
-- **Public Website** — discover stories, books, and curated collections.
+- **Public Website** — browse published posts and books, then open a post or book detail page.
 - **Admin Panel** — manage posts and books.
-- **System** — authentication and error pages.
+- **System** — authentication and error handling.
 
 ---
 
@@ -14,33 +14,23 @@ The application is divided into three areas:
 
 ```
 /
-├── Stories
-│   └── /stories/:slug
+├── /stories/:slug
 │
-├── Library
-│   ├── /library
-│   ├── /library/category/:slug
-│   └── /library/:slug
-│
-├── Collections
-│   ├── /collections
-│   └── /collections/:slug
-│
-├── About
-│
-└── 404
+└── /library
+    └── /library/:slug
 
 /admin
-├── Login
-├── Dashboard
+├── /login
+├── /posts
+│   ├── /new
+│   └── /:id/edit
 │
-├── Posts
-│   ├── New Post
-│   └── Edit Post
-│
-└── Books
-    ├── New Book
-    └── Edit Book
+└── /books
+    ├── /new
+    └── /:id/edit
+
+*
+└── 404
 ```
 
 ---
@@ -52,19 +42,11 @@ The application is divided into three areas:
 | Page ID | Route | Page | Parent |
 |---|---|---|---|
 | `PAGE-PUB-001` | `/` | Homepage | — |
-| `PAGE-PUB-002` | `/stories` | Stories / News | `/` |
-| `PAGE-PUB-003` | `/stories/:slug` | Story Detail | `/stories` |
+| `PAGE-PUB-003` | `/stories/:slug` | Story Detail | `/` |
 | `PAGE-PUB-004` | `/library` | Book Library | `/` |
 | `PAGE-PUB-005` | `/library/:slug` | Book Detail | `/library` |
-| `PAGE-PUB-006` | `/collections` | Collections | `/` |
-| `PAGE-PUB-007` | `/collections/:slug` | Collection Detail | `/collections` |
-| `PAGE-PUB-008` | `/about` | About | `/` |
 
-## Library Category
-
-| Page ID | Route | Page | Parent |
-|---|---|---|---|
-| `PAGE-PUB-009` | `/library/category/:slug` | Book Category | `/library` |
+The homepage is the main public post surface. There is no separate stories listing route in this scope.
 
 ---
 
@@ -75,12 +57,6 @@ The application is divided into three areas:
 | Page ID | Route | Page | Parent |
 |---|---|---|---|
 | `PAGE-ADM-AUTH-001` | `/admin/login` | Admin Login | `/admin` |
-
-## Dashboard
-
-| Page ID | Route | Page | Parent |
-|---|---|---|---|
-| `PAGE-ADM-001` | `/admin` | Dashboard | — |
 
 ## Posts
 
@@ -98,6 +74,8 @@ The application is divided into three areas:
 | `PAGE-ADM-006` | `/admin/books/new` | Book Editor — Create | `/admin/books` |
 | `PAGE-ADM-007` | `/admin/books/:id/edit` | Book Editor — Edit | `/admin/books` |
 
+There is no separate dashboard page in this scope. Admin entry can route directly to the content-management area.
+
 ---
 
 # Navigation
@@ -107,15 +85,15 @@ The application is divided into three areas:
 ```
 Logo
 ├── Stories
-├── Library
-├── Collections
-└── About
+│   └── Homepage latest-posts section
+└── Library
+    └── Book Library
 ```
 
 ## Admin Navigation
 
 ```
-Dashboard
+Admin
 ├── Posts
 └── Books
 ```
@@ -127,24 +105,13 @@ Dashboard
 ```
 Homepage
 │
-├── Featured Story
+├── Latest Posts
 │   └── Story Detail
-│
-├── Latest Stories
-│   └── Stories
-│       └── Story Detail
 │
 ├── Featured Books
 │   └── Book Detail
 │
-├── Reading Room
-│   └── Book Library
-│
-├── Curated Collection
-│   └── Collection Detail
-│       └── Story / Book
-│
-└── Explore Library
+└── Explore the Library
     └── Book Library
 ```
 
@@ -155,17 +122,9 @@ Homepage
 ```
 Book Library
 │
-├── Category
-│   └── Book Category
-│       └── Book Detail
-│
-├── Book Card
-│   └── Book Detail
-│       └── Download PDF
-│
-└── Collection
-    └── Collection Detail
-        └── Book Detail
+└── Book Card
+    └── Book Detail
+        └── Download PDF
 ```
 
 ---
@@ -173,7 +132,7 @@ Book Library
 # Admin Relationships
 
 ```
-Dashboard
+Admin
 │
 ├── Posts
 │   ├── New Post
@@ -192,6 +151,8 @@ Dashboard
 |---|---|---|---|
 | `PAGE-SYS-001` | `*` | 404 Not Found | Handle invalid routes. |
 
+Admin authentication is required by `ADM-AUTH-001` but does not need a separate sitemap page beyond the login route.
+
 ---
 
 # Route Convention
@@ -199,14 +160,9 @@ Dashboard
 | Resource | Route Pattern |
 |---|---|
 | Homepage | `/` |
-| Stories | `/stories` |
 | Story detail | `/stories/:slug` |
 | Library | `/library` |
-| Library category | `/library/category/:slug` |
 | Book detail | `/library/:slug` |
-| Collections | `/collections` |
-| Collection detail | `/collections/:slug` |
-| About | `/about` |
 | Admin | `/admin` |
 | Admin login | `/admin/login` |
 | Posts | `/admin/posts` |
@@ -222,9 +178,9 @@ Dashboard
 
 | Area | Routes |
 |---|---:|
-| Public Website | 9 |
-| Admin Panel | 8 |
+| Public Website | 4 |
+| Admin Panel | 7 |
 | System | 1 |
-| **Total** | **18** |
+| **Total** | **12** |
 
 Dynamic routes such as `/stories/:slug` and `/library/:slug` use shared page templates rather than separate designs for every item.
