@@ -18,23 +18,34 @@
       --line: #deddd8;
       --accent: #d9ff4f;
 
-      --max-width: 1280px;
+      /* =========================
+         Layout Widths
+      ========================= */
+
+      --max-width: 1200px;
+      --header-max-width: 1280px;
 
       --radius-lg: 32px;
       --radius-md: 20px;
 
       --section-gap: 96px;
 
-      --latest-card-width: 180px;
-      --latest-card-height: calc(
-        var(--latest-card-width) * 3 / 4
-      );
+      /* =========================
+         Latest sizing
+      ========================= */
 
-      --latest-card-gap: 22px;
-      --latest-feature-gap: 14px;
-      --latest-body-gap: 24px;
-      --latest-content-gap: 12px;
-      --latest-heading-gap: 10px;
+      --latest-card-width: 150px;
+
+      --latest-card-height:
+        calc(
+          var(--latest-card-width) * 3 / 4
+        );
+
+      --latest-card-gap: 20px;
+      --latest-feature-gap: 12px;
+      --latest-body-gap: 20px;
+      --latest-content-gap: 10px;
+      --latest-heading-gap: 8px;
 
       --latest-total-height:
         calc(
@@ -42,7 +53,10 @@
           (var(--latest-card-gap) * 3)
         );
 
-      /* Header motion */
+      /* =========================
+         Header motion
+      ========================= */
+
       --header-ease:
         cubic-bezier(0.65, 0, 0.35, 1);
 
@@ -118,7 +132,7 @@
 
       gap: 24px;
 
-      margin: 0 0 40px;
+      margin: 0 0 32px;
     }
 
     .section-title__eyebrow {
@@ -157,7 +171,7 @@
       left: 50%;
 
       width: min(
-        var(--max-width),
+        var(--header-max-width),
         calc(100% - 48px)
       );
 
@@ -379,7 +393,7 @@
         minmax(0, 1.08fr)
         minmax(0, 0.92fr);
 
-      gap: 40px;
+      gap: 32px;
 
       height:
         var(--latest-total-height);
@@ -410,7 +424,7 @@
 
       object-fit: cover;
 
-      border-radius: 24px;
+      border-radius: 20px;
 
       background: #ecebe7;
     }
@@ -448,7 +462,7 @@
     .latest-feature__meta {
       margin: 0;
 
-      font-size: 11px;
+      font-size: 10px;
       line-height: 1;
       font-weight: 600;
 
@@ -459,15 +473,15 @@
     }
 
     .latest-feature__title {
-      max-width: 600px;
+      max-width: 540px;
 
       margin: 0;
 
       font-size:
         clamp(
-          1.8rem,
-          2.35vw,
-          2.7rem
+          1.7rem,
+          2.15vw,
+          2.45rem
         );
 
       line-height: 0.92;
@@ -477,12 +491,12 @@
     }
 
     .latest-feature__excerpt {
-      max-width: 570px;
+      max-width: 540px;
 
       margin: 0;
 
-      font-size: 14px;
-      line-height: 1.55;
+      font-size: 13px;
+      line-height: 1.5;
 
       color: var(--muted);
     }
@@ -493,12 +507,12 @@
       flex: 0 0 auto;
 
       margin: 0;
-      padding: 10px 16px;
+      padding: 9px 15px;
 
       border: 1px solid var(--text);
       border-radius: 999px;
 
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 600;
 
       transition:
@@ -546,7 +560,7 @@
         var(--latest-card-width)
         minmax(0, 1fr);
 
-      gap: 18px;
+      gap: 16px;
 
       overflow: hidden;
     }
@@ -560,7 +574,7 @@
 
       object-fit: cover;
 
-      border-radius: 16px;
+      border-radius: 14px;
 
       background: #ecebe7;
 
@@ -586,9 +600,9 @@
     }
 
     .latest-card__meta {
-      margin: 0 0 8px;
+      margin: 0 0 7px;
 
-      font-size: 10px;
+      font-size: 9px;
       line-height: 1;
 
       letter-spacing: 0.08em;
@@ -600,7 +614,7 @@
     .latest-card__title {
       margin: 0;
 
-      font-size: 16px;
+      font-size: 14px;
       line-height: 1.05;
       font-weight: 500;
 
@@ -608,10 +622,10 @@
     }
 
     .latest-card__excerpt {
-      margin: 10px 0 0;
+      margin: 8px 0 0;
 
-      font-size: 12px;
-      line-height: 1.5;
+      font-size: 11px;
+      line-height: 1.45;
 
       color: var(--muted);
     }
@@ -954,7 +968,8 @@
       }
 
       .latest-grid {
-        --latest-card-width: 160px;
+        --latest-card-width: 140px;
+        --latest-card-gap: 18px;
       }
 
       .latest-card {
@@ -987,10 +1002,16 @@
         );
       }
 
+      /* =========================
+         Header
+         Outer gap = 12px
+         Inner padding = 20px
+      ========================= */
+
       .capsule-navbar {
         top: 12px;
 
-        width: calc(100% - 32px);
+        width: calc(100% - 24px);
 
         border-radius: 32px;
       }
@@ -1017,6 +1038,14 @@
 
       .capsule-navbar__panel {
         display: block;
+
+        padding:
+          0 20px;
+      }
+
+      .capsule-navbar__panel.is-open {
+        padding:
+          8px 20px 20px;
       }
 
       .capsule-navbar__panel-inner {
@@ -1406,7 +1435,6 @@
               alt="Landscape"
             />
 
-
             <div
               class="latest-feature__body"
             >
@@ -1432,7 +1460,6 @@
                   </h3>
 
                 </div>
-
 
                 <p
                   class="latest-feature__excerpt"
@@ -2260,6 +2287,7 @@
     window.addEventListener(
       "scroll",
       () => {
+
         const currentScrollY =
           window.scrollY;
 
