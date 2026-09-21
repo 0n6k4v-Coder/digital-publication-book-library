@@ -1,0 +1,1922 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Books / Archive / 01</title>
+
+  <style>
+    :root {
+      --bg: #ffffff;
+      --surface: #ffffff;
+      --text: #171717;
+      --muted: #737373;
+      --line: #deddd8;
+      --accent: #d9ff4f;
+
+      --max-width: 1200px;
+      --header-max-width: 1280px;
+
+      --radius-lg: 32px;
+      --radius-md: 20px;
+
+      --header-ease: cubic-bezier(0.65, 0, 0.35, 1);
+      --header-duration-expand: 520ms;
+      --header-duration-icon: 420ms;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      min-width: 320px;
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family:
+        Inter,
+        ui-sans-serif,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    img {
+      display: block;
+      max-width: 100%;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    .page-shell {
+      width: min(
+        var(--max-width),
+        calc(100% - 48px)
+      );
+      margin: 0 auto;
+    }
+
+    /* =========================
+       Header
+    ========================= */
+
+    .capsule-navbar {
+      position: fixed;
+      z-index: 1000;
+      top: 16px;
+      left: 50%;
+
+      width: min(
+        var(--header-max-width),
+        calc(100% - 48px)
+      );
+
+      border: 1px solid rgba(23, 23, 23, 0.06);
+      border-radius: 48px;
+      background: rgba(255, 255, 255, 0.94);
+
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+
+      transform: translateX(-50%);
+
+      transition:
+        transform 0.3s ease,
+        box-shadow 0.3s ease;
+    }
+
+    .capsule-navbar.is-hidden {
+      transform: translate(-50%, -120%);
+    }
+
+    .capsule-navbar__bar {
+      min-height: 80px;
+      padding: 10px 32px;
+
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 40px;
+    }
+
+    .capsule-navbar__brand {
+      flex: 0 0 auto;
+
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    .capsule-navbar__nav {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+    }
+
+    .capsule-navbar__link {
+      min-height: 40px;
+      margin: 0;
+      padding: 0 18px;
+
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+
+      border-radius: 999px;
+
+      font-size: 13px;
+      font-weight: 500;
+
+      transition:
+        background 0.2s ease,
+        color 0.2s ease;
+    }
+
+    .capsule-navbar__link:hover {
+      background: #f1f1ee;
+    }
+
+    .capsule-navbar__link[aria-current="page"] {
+      background: #171717;
+      color: white;
+    }
+
+    .capsule-navbar__toggle {
+      position: relative;
+
+      width: 40px;
+      height: 40px;
+
+      margin: 0;
+      padding: 0;
+
+      display: none;
+      align-items: center;
+      justify-content: center;
+
+      border: 0;
+      border-radius: 999px;
+      background: transparent;
+
+      cursor: pointer;
+    }
+
+    .capsule-navbar__icon {
+      position: relative;
+      width: 18px;
+      height: 18px;
+      display: block;
+
+      transform: rotate(0deg);
+
+      transition:
+        transform
+        var(--header-duration-icon)
+        var(--header-ease);
+    }
+
+    .capsule-navbar__icon::before,
+    .capsule-navbar__icon::after {
+      content: "";
+
+      position: absolute;
+      top: 50%;
+      left: 50%;
+
+      width: 18px;
+      height: 1.5px;
+
+      background: var(--text);
+
+      transform: translate(-50%, -50%);
+    }
+
+    .capsule-navbar__icon::after {
+      transform:
+        translate(-50%, -50%)
+        rotate(90deg);
+    }
+
+    .capsule-navbar__toggle.is-open
+      .capsule-navbar__icon {
+      transform: rotate(45deg);
+    }
+
+    .capsule-navbar__panel {
+      display: none;
+      height: 0;
+      overflow: hidden;
+
+      padding: 0 20px;
+
+      will-change: height;
+
+      transition:
+        height
+        var(--header-duration-expand)
+        var(--header-ease),
+        padding
+        var(--header-duration-expand)
+        var(--header-ease);
+    }
+
+    .capsule-navbar__panel.is-open {
+      padding: 8px 20px 20px;
+    }
+
+    .capsule-navbar__panel-inner {
+      width: 100%;
+
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+
+      gap: 22px;
+    }
+
+    .capsule-navbar__panel-link {
+      margin: 0;
+      padding: 6px 0;
+
+      font-size: 14px;
+      font-weight: 500;
+      text-align: left;
+    }
+
+    /* =========================
+       Main
+    ========================= */
+
+    .main-content {
+      padding-top: 128px;
+    }
+
+    .books-intro {
+      min-height: 410px;
+      padding: 60px 0 88px;
+
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+
+      border-bottom: 1px solid var(--line);
+    }
+
+    .books-intro__eyebrow {
+      margin: 0 0 18px;
+
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 1;
+
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+
+      color: var(--muted);
+    }
+
+    .books-intro__title {
+      max-width: 900px;
+
+      margin: 0;
+
+      font-size:
+        clamp(
+          4rem,
+          9vw,
+          8.8rem
+        );
+
+      line-height: 0.82;
+      font-weight: 500;
+
+      letter-spacing: -0.075em;
+    }
+
+    .books-intro__bottom {
+      margin-top: 38px;
+
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(260px, 420px);
+
+      gap: 32px;
+      align-items: end;
+    }
+
+    .books-intro__text {
+      max-width: 600px;
+
+      margin: 0;
+
+      font-size: 15px;
+      line-height: 1.6;
+
+      color: var(--muted);
+    }
+
+    .books-intro__count {
+      margin: 0;
+
+      justify-self: end;
+
+      font-size: 11px;
+      line-height: 1;
+      font-weight: 600;
+
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+
+      color: var(--muted);
+    }
+
+    /* =========================
+       Book Grid
+    ========================= */
+
+    .books-section {
+      padding: 72px 0 96px;
+    }
+
+    .books-grid {
+      display: grid;
+
+      grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+
+      gap:
+        56px 24px;
+    }
+
+    .book-card {
+      min-width: 0;
+    }
+
+    .book-card__link {
+      display: block;
+    }
+
+    .book-cover {
+      position: relative;
+
+      width: 100%;
+      aspect-ratio: 3 / 4;
+
+      padding: 20px;
+
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+
+      overflow: hidden;
+
+      border-radius: 18px;
+
+      background: #ecebe7;
+
+      transition:
+        transform 0.25s ease,
+        box-shadow 0.25s ease;
+    }
+
+    .book-card__link:hover
+      .book-cover {
+      transform: translateY(-5px);
+
+      box-shadow:
+        0 18px 38px
+        rgba(23, 23, 23, 0.10);
+    }
+
+    .book-cover__number {
+      margin: 0;
+
+      font-size: 10px;
+      line-height: 1;
+      font-weight: 600;
+
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .book-cover__title {
+      margin: auto 0;
+
+      font-size:
+        clamp(
+          1.9rem,
+          3vw,
+          3rem
+        );
+
+      line-height: 0.88;
+      font-weight: 500;
+
+      letter-spacing: -0.055em;
+    }
+
+    .book-cover__author {
+      max-width: 70%;
+
+      margin: 0;
+
+      font-size: 11px;
+      line-height: 1.3;
+
+      color:
+        rgba(23, 23, 23, 0.68);
+    }
+
+    .book-cover__mark {
+      position: absolute;
+
+      right: 18px;
+      bottom: 18px;
+
+      width: 42px;
+      height: 42px;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      border: 1px solid
+        rgba(23, 23, 23, 0.16);
+
+      border-radius: 50%;
+
+      font-size: 8px;
+      font-weight: 700;
+
+      letter-spacing: 0.06em;
+    }
+
+    .book-card:nth-child(1) .book-cover {
+      background: #e8e2d4;
+    }
+
+    .book-card:nth-child(2) .book-cover {
+      background: #dce4dc;
+    }
+
+    .book-card:nth-child(3) .book-cover {
+      background: #e7dfe7;
+    }
+
+    .book-card:nth-child(4) .book-cover {
+      background: #dddeda;
+    }
+
+    .book-card:nth-child(5) .book-cover {
+      background: #e8dfd4;
+    }
+
+    .book-card:nth-child(6) .book-cover {
+      background: #dfe4e8;
+    }
+
+    .book-card:nth-child(7) .book-cover {
+      background: #e5dfd5;
+    }
+
+    .book-card:nth-child(8) .book-cover {
+      background: #dde5dc;
+    }
+
+    .book-card:nth-child(9) .book-cover {
+      background: #e5dfe5;
+    }
+
+    .book-card:nth-child(10) .book-cover {
+      background: #e3e1da;
+    }
+
+    .book-card__metadata {
+      padding-top: 16px;
+
+      display: flex;
+      flex-direction: column;
+
+      gap: 6px;
+    }
+
+    .book-card__title {
+      margin: 0;
+
+      font-size: 18px;
+      line-height: 1;
+      font-weight: 500;
+
+      letter-spacing: -0.03em;
+    }
+
+    .book-card__meta {
+      margin: 0;
+
+      font-size: 12px;
+      line-height: 1.4;
+
+      color: var(--muted);
+    }
+
+    /* =========================
+       CTA
+    ========================= */
+
+    .books-cta {
+      padding-bottom: 0;
+    }
+
+    .books-cta__box {
+      padding: 68px 40px;
+
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+
+      gap: 22px;
+
+      border-radius: var(--radius-lg);
+
+      background: #171717;
+      color: white;
+
+      text-align: center;
+    }
+
+    .books-cta__eyebrow {
+      margin: 0;
+
+      font-size: 11px;
+      line-height: 1;
+      font-weight: 600;
+
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+
+      color:
+        rgba(255, 255, 255, 0.58);
+    }
+
+    .books-cta__title {
+      max-width: 760px;
+
+      margin: 0;
+
+      font-size:
+        clamp(
+          2.4rem,
+          5vw,
+          4.8rem
+        );
+
+      line-height: 0.9;
+      font-weight: 500;
+
+      letter-spacing: -0.06em;
+    }
+
+    .books-cta__text {
+      max-width: 500px;
+
+      margin: 0;
+
+      font-size: 14px;
+      line-height: 1.6;
+
+      color:
+        rgba(255, 255, 255, 0.62);
+    }
+
+    .books-cta__button {
+      margin-top: 4px;
+
+      min-height: 46px;
+      padding: 0 20px;
+
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+
+      border-radius: 999px;
+
+      background: var(--accent);
+      color: var(--text);
+
+      font-size: 12px;
+      font-weight: 700;
+
+      transition:
+        transform 0.2s ease;
+    }
+
+    .books-cta__button:hover {
+      transform: translateY(-2px);
+    }
+
+    /* =========================
+       Footer
+    ========================= */
+
+    .footer {
+      padding: 88px 0 40px;
+    }
+
+    .footer-divider {
+      width: min(
+        var(--max-width),
+        calc(100% - 48px)
+      );
+
+      height: 1px;
+
+      margin:
+        0 auto 48px;
+
+      background: var(--line);
+    }
+
+    .footer-inner {
+      width: min(
+        var(--max-width),
+        calc(100% - 48px)
+      );
+
+      margin: 0 auto;
+
+      display: flex;
+      flex-direction: column;
+
+      gap: 64px;
+    }
+
+    .footer-main {
+      display: grid;
+
+      grid-template-columns:
+        minmax(0, 1.5fr)
+        minmax(180px, 0.5fr);
+
+      gap: 64px;
+    }
+
+    .footer-brand {
+      max-width: 620px;
+    }
+
+    .footer-brand__name {
+      margin: 0;
+
+      font-size:
+        clamp(
+          3rem,
+          6vw,
+          6rem
+        );
+
+      line-height: 0.86;
+      font-weight: 500;
+
+      letter-spacing: -0.07em;
+    }
+
+    .footer-brand__text {
+      max-width: 460px;
+
+      margin: 24px 0 0;
+
+      font-size: 14px;
+      line-height: 1.6;
+
+      color: var(--muted);
+    }
+
+    .footer-nav {
+      display: flex;
+      flex-direction: column;
+
+      align-items: flex-start;
+
+      gap: 12px;
+    }
+
+    .footer-nav__eyebrow {
+      margin: 0 0 8px;
+
+      font-size: 10px;
+      line-height: 1;
+      font-weight: 600;
+
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+
+      color: var(--muted);
+    }
+
+    .footer-nav__link {
+      margin: 0;
+      padding: 0;
+
+      font-size: 14px;
+      line-height: 1.4;
+      font-weight: 500;
+
+      transition:
+        color 0.2s ease,
+        transform 0.2s ease;
+    }
+
+    .footer-nav__link:hover {
+      color: var(--muted);
+      transform: translateX(4px);
+    }
+
+    .footer-bottom {
+      padding-top: 20px;
+
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+
+      gap: 24px;
+
+      border-top: 1px solid var(--line);
+    }
+
+    .footer__copy,
+    .footer__label {
+      margin: 0;
+
+      font-size: 11px;
+      line-height: 1.4;
+
+      color: var(--muted);
+    }
+
+    /* =========================
+       Tablet
+    ========================= */
+
+    @media (max-width: 1000px) {
+      .books-grid {
+        grid-template-columns:
+          repeat(3, minmax(0, 1fr));
+      }
+
+      .books-intro__bottom {
+        grid-template-columns:
+          minmax(0, 1fr)
+          auto;
+      }
+    }
+
+    /* =========================
+       Mobile
+    ========================= */
+
+    @media (max-width: 767px) {
+      .page-shell {
+        width: min(
+          calc(100% - 32px),
+          var(--max-width)
+        );
+      }
+
+      .capsule-navbar {
+        top: 12px;
+        width: calc(100% - 24px);
+        border-radius: 32px;
+      }
+
+      .capsule-navbar__bar {
+        min-height: 64px;
+        padding: 10px 20px;
+        gap: 20px;
+      }
+
+      .capsule-navbar__brand {
+        font-size: 12px;
+      }
+
+      .capsule-navbar__nav {
+        display: none;
+      }
+
+      .capsule-navbar__toggle {
+        display: flex;
+      }
+
+      .capsule-navbar__panel {
+        display: block;
+        padding: 0 20px;
+      }
+
+      .capsule-navbar__panel.is-open {
+        padding: 8px 20px 20px;
+      }
+
+      .main-content {
+        padding-top: 100px;
+      }
+
+      .books-intro {
+        min-height: 360px;
+        padding: 48px 0 56px;
+      }
+
+      .books-intro__eyebrow {
+        margin-bottom: 16px;
+      }
+
+      .books-intro__title {
+        font-size:
+          clamp(
+            3.6rem,
+            18vw,
+            6.4rem
+          );
+      }
+
+      .books-intro__bottom {
+        margin-top: 28px;
+
+        display: flex;
+        flex-direction: column;
+
+        align-items: flex-start;
+
+        gap: 18px;
+      }
+
+      .books-intro__text {
+        max-width: none;
+
+        font-size: 14px;
+      }
+
+      .books-intro__count {
+        justify-self: auto;
+      }
+
+      .books-section {
+        padding: 48px 0 72px;
+      }
+
+      .books-grid {
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+
+        gap: 40px 14px;
+      }
+
+      .book-cover {
+        padding: 16px;
+        border-radius: 16px;
+      }
+
+      .book-cover__number {
+        font-size: 9px;
+      }
+
+      .book-cover__title {
+        font-size:
+          clamp(
+            1.55rem,
+            8.2vw,
+            2.35rem
+          );
+      }
+
+      .book-cover__author {
+        font-size: 10px;
+      }
+
+      .book-cover__mark {
+        right: 12px;
+        bottom: 12px;
+
+        width: 34px;
+        height: 34px;
+
+        font-size: 7px;
+      }
+
+      .book-card__metadata {
+        padding-top: 12px;
+        gap: 5px;
+      }
+
+      .book-card__title {
+        font-size: 16px;
+      }
+
+      .book-card__meta {
+        font-size: 11px;
+      }
+
+      .books-cta__box {
+        padding: 56px 24px;
+        border-radius: 24px;
+      }
+
+      .books-cta__title {
+        font-size:
+          clamp(
+            2.3rem,
+            11vw,
+            3.5rem
+          );
+      }
+
+      .books-cta__text {
+        font-size: 13px;
+      }
+
+      .footer {
+        padding: 64px 0 28px;
+      }
+
+      .footer-divider {
+        width:
+          calc(100% - 32px);
+
+        margin-bottom: 36px;
+      }
+
+      .footer-inner {
+        width:
+          calc(100% - 32px);
+
+        gap: 48px;
+      }
+
+      .footer-main {
+        display: flex;
+        flex-direction: column;
+        gap: 40px;
+      }
+
+      .footer-brand__name {
+        font-size:
+          clamp(
+            2.8rem,
+            15vw,
+            4.5rem
+          );
+      }
+
+      .footer-brand__text {
+        max-width: none;
+        margin-top: 20px;
+        font-size: 13px;
+      }
+
+      .footer-nav {
+        gap: 10px;
+      }
+
+      .footer-nav__eyebrow {
+        margin-bottom: 6px;
+      }
+
+      .footer-nav__link {
+        font-size: 14px;
+      }
+
+      .footer-bottom {
+        padding-top: 20px;
+
+        align-items: flex-start;
+        flex-direction: column;
+
+        gap: 8px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .capsule-navbar,
+      .capsule-navbar__icon,
+      .capsule-navbar__panel,
+      .book-card__link .book-cover,
+      .books-cta__button,
+      .footer-nav__link {
+        transition: none !important;
+      }
+
+      html {
+        scroll-behavior: auto;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- =========================
+       Header
+  ========================= -->
+
+  <header
+    class="capsule-navbar"
+    id="site-header"
+  >
+    <div class="capsule-navbar__bar">
+      <a
+        class="capsule-navbar__brand"
+        href="/"
+      >
+        ARCHIVE/01
+      </a>
+
+      <nav class="capsule-navbar__nav">
+        <a
+          class="capsule-navbar__link"
+          href="/#latest"
+        >
+          Stories
+        </a>
+
+        <a
+          class="capsule-navbar__link"
+          href="/books"
+          aria-current="page"
+        >
+          Books
+        </a>
+      </nav>
+
+      <button
+        class="capsule-navbar__toggle"
+        id="menu-toggle"
+        type="button"
+        aria-label="Open menu"
+        aria-expanded="false"
+        aria-controls="mobile-panel"
+      >
+        <span
+          class="capsule-navbar__icon"
+          aria-hidden="true"
+        ></span>
+      </button>
+    </div>
+
+    <div
+      class="capsule-navbar__panel"
+      id="mobile-panel"
+    >
+      <div class="capsule-navbar__panel-inner">
+        <a
+          class="capsule-navbar__panel-link"
+          href="/#latest"
+        >
+          Stories
+        </a>
+
+        <a
+          class="capsule-navbar__panel-link"
+          href="/books"
+        >
+          Books
+        </a>
+      </div>
+    </div>
+  </header>
+
+
+  <!-- =========================
+       Main
+  ========================= -->
+
+  <main class="main-content">
+
+    <section class="books-intro">
+      <div class="page-shell">
+
+        <p class="books-intro__eyebrow">
+          Books / Digital Archive
+        </p>
+
+        <h1 class="books-intro__title">
+          Books
+        </h1>
+
+        <div class="books-intro__bottom">
+          <p class="books-intro__text">
+            A small collection of published books
+            available to browse and download as PDF.
+          </p>
+
+          <p class="books-intro__count">
+            10 Publications
+          </p>
+        </div>
+
+      </div>
+    </section>
+
+
+    <section class="books-section">
+      <div class="page-shell">
+
+        <div class="books-grid">
+
+          <article class="book-card">
+            <a
+              class="book-card__link"
+              href="/book/city-notes"
+              aria-label="Open City Notes"
+            >
+              <div class="book-cover">
+                <p class="book-cover__number">
+                  BOOK 001
+                </p>
+
+                <div class="book-cover__title">
+                  CITY<br />
+                  NOTES
+                </div>
+
+                <p class="book-cover__author">
+                  A. Morgan
+                </p>
+
+                <span
+                  class="book-cover__mark"
+                  aria-hidden="true"
+                >
+                  A/01
+                </span>
+              </div>
+
+              <div class="book-card__metadata">
+                <h2 class="book-card__title">
+                  City Notes
+                </h2>
+
+                <p class="book-card__meta">
+                  A. Morgan
+                </p>
+              </div>
+            </a>
+          </article>
+
+
+          <article class="book-card">
+            <a
+              class="book-card__link"
+              href="/book/after-dark"
+              aria-label="Open After Dark"
+            >
+              <div class="book-cover">
+                <p class="book-cover__number">
+                  BOOK 002
+                </p>
+
+                <div class="book-cover__title">
+                  AFTER<br />
+                  DARK
+                </div>
+
+                <p class="book-cover__author">
+                  J. Carter
+                </p>
+
+                <span
+                  class="book-cover__mark"
+                  aria-hidden="true"
+                >
+                  A/02
+                </span>
+              </div>
+
+              <div class="book-card__metadata">
+                <h2 class="book-card__title">
+                  After Dark
+                </h2>
+
+                <p class="book-card__meta">
+                  J. Carter
+                </p>
+              </div>
+            </a>
+          </article>
+
+
+          <article class="book-card">
+            <a
+              class="book-card__link"
+              href="/book/small-worlds"
+              aria-label="Open Small Worlds"
+            >
+              <div class="book-cover">
+                <p class="book-cover__number">
+                  BOOK 003
+                </p>
+
+                <div class="book-cover__title">
+                  SMALL<br />
+                  WORLDS
+                </div>
+
+                <p class="book-cover__author">
+                  M. Lee
+                </p>
+
+                <span
+                  class="book-cover__mark"
+                  aria-hidden="true"
+                >
+                  A/03
+                </span>
+              </div>
+
+              <div class="book-card__metadata">
+                <h2 class="book-card__title">
+                  Small Worlds
+                </h2>
+
+                <p class="book-card__meta">
+                  M. Lee
+                </p>
+              </div>
+            </a>
+          </article>
+
+
+          <article class="book-card">
+            <a
+              class="book-card__link"
+              href="/book/field-guide"
+              aria-label="Open Field Guide"
+            >
+              <div class="book-cover">
+                <p class="book-cover__number">
+                  BOOK 004
+                </p>
+
+                <div class="book-cover__title">
+                  FIELD<br />
+                  GUIDE
+                </div>
+
+                <p class="book-cover__author">
+                  R. Kim
+                </p>
+
+                <span
+                  class="book-cover__mark"
+                  aria-hidden="true"
+                >
+                  A/04
+                </span>
+              </div>
+
+              <div class="book-card__metadata">
+                <h2 class="book-card__title">
+                  Field Guide
+                </h2>
+
+                <p class="book-card__meta">
+                  R. Kim
+                </p>
+              </div>
+            </a>
+          </article>
+
+
+          <article class="book-card">
+            <a
+              class="book-card__link"
+              href="/book/paper-trails"
+              aria-label="Open Paper Trails"
+            >
+              <div class="book-cover">
+                <p class="book-cover__number">
+                  BOOK 005
+                </p>
+
+                <div class="book-cover__title">
+                  PAPER<br />
+                  TRAILS
+                </div>
+
+                <p class="book-cover__author">
+                  N. Ito
+                </p>
+
+                <span
+                  class="book-cover__mark"
+                  aria-hidden="true"
+                >
+                  A/05
+                </span>
+              </div>
+
+              <div class="book-card__metadata">
+                <h2 class="book-card__title">
+                  Paper Trails
+                </h2>
+
+                <p class="book-card__meta">
+                  N. Ito
+                </p>
+              </div>
+            </a>
+          </article>
+
+
+          <article class="book-card">
+            <a
+              class="book-card__link"
+              href="/book/quiet-places"
+              aria-label="Open Quiet Places"
+            >
+              <div class="book-cover">
+                <p class="book-cover__number">
+                  BOOK 006
+                </p>
+
+                <div class="book-cover__title">
+                  QUIET<br />
+                  PLACES
+                </div>
+
+                <p class="book-cover__author">
+                  E. Stone
+                </p>
+
+                <span
+                  class="book-cover__mark"
+                  aria-hidden="true"
+                >
+                  A/06
+                </span>
+              </div>
+
+              <div class="book-card__metadata">
+                <h2 class="book-card__title">
+                  Quiet Places
+                </h2>
+
+                <p class="book-card__meta">
+                  E. Stone
+                </p>
+              </div>
+            </a>
+          </article>
+
+
+          <article class="book-card">
+            <a
+              class="book-card__link"
+              href="/book/daily-observations"
+              aria-label="Open Daily Observations"
+            >
+              <div class="book-cover">
+                <p class="book-cover__number">
+                  BOOK 007
+                </p>
+
+                <div class="book-cover__title">
+                  DAILY<br />
+                  OBSERVATIONS
+                </div>
+
+                <p class="book-cover__author">
+                  K. Sato
+                </p>
+
+                <span
+                  class="book-cover__mark"
+                  aria-hidden="true"
+                >
+                  A/07
+                </span>
+              </div>
+
+              <div class="book-card__metadata">
+                <h2 class="book-card__title">
+                  Daily Observations
+                </h2>
+
+                <p class="book-card__meta">
+                  K. Sato
+                </p>
+              </div>
+            </a>
+          </article>
+
+
+          <article class="book-card">
+            <a
+              class="book-card__link"
+              href="/book/common-ground"
+              aria-label="Open Common Ground"
+            >
+              <div class="book-cover">
+                <p class="book-cover__number">
+                  BOOK 008
+                </p>
+
+                <div class="book-cover__title">
+                  COMMON<br />
+                  GROUND
+                </div>
+
+                <p class="book-cover__author">
+                  A. Miller
+                </p>
+
+                <span
+                  class="book-cover__mark"
+                  aria-hidden="true"
+                >
+                  A/08
+                </span>
+              </div>
+
+              <div class="book-card__metadata">
+                <h2 class="book-card__title">
+                  Common Ground
+                </h2>
+
+                <p class="book-card__meta">
+                  A. Miller
+                </p>
+              </div>
+            </a>
+          </article>
+
+
+          <article class="book-card">
+            <a
+              class="book-card__link"
+              href="/book/between-pages"
+              aria-label="Open Between Pages"
+            >
+              <div class="book-cover">
+                <p class="book-cover__number">
+                  BOOK 009
+                </p>
+
+                <div class="book-cover__title">
+                  BETWEEN<br />
+                  PAGES
+                </div>
+
+                <p class="book-cover__author">
+                  Y. Tanaka
+                </p>
+
+                <span
+                  class="book-cover__mark"
+                  aria-hidden="true"
+                >
+                  A/09
+                </span>
+              </div>
+
+              <div class="book-card__metadata">
+                <h2 class="book-card__title">
+                  Between Pages
+                </h2>
+
+                <p class="book-card__meta">
+                  Y. Tanaka
+                </p>
+              </div>
+            </a>
+          </article>
+
+
+          <article class="book-card">
+            <a
+              class="book-card__link"
+              href="/book/open-archive"
+              aria-label="Open Open Archive"
+            >
+              <div class="book-cover">
+                <p class="book-cover__number">
+                  BOOK 010
+                </p>
+
+                <div class="book-cover__title">
+                  OPEN<br />
+                  ARCHIVE
+                </div>
+
+                <p class="book-cover__author">
+                  Public Edition
+                </p>
+
+                <span
+                  class="book-cover__mark"
+                  aria-hidden="true"
+                >
+                  A/10
+                </span>
+              </div>
+
+              <div class="book-card__metadata">
+                <h2 class="book-card__title">
+                  Open Archive
+                </h2>
+
+                <p class="book-card__meta">
+                  Public Edition
+                </p>
+              </div>
+            </a>
+          </article>
+
+        </div>
+
+      </div>
+    </section>
+
+
+    <section class="books-cta">
+      <div class="page-shell">
+
+        <div class="books-cta__box">
+
+          <p class="books-cta__eyebrow">
+            Digital Publications
+          </p>
+
+          <h2 class="books-cta__title">
+            A library built for browsing.
+          </h2>
+
+          <p class="books-cta__text">
+            Open a book to read its details and
+            download the published PDF.
+          </p>
+
+          <a
+            class="books-cta__button"
+            href="/"
+          >
+            Back to home
+          </a>
+
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+
+  <!-- =========================
+       Footer
+  ========================= -->
+
+  <footer class="footer">
+
+    <div class="footer-divider"></div>
+
+    <div class="footer-inner">
+
+      <div class="footer-main">
+
+        <div class="footer-brand">
+
+          <h2 class="footer-brand__name">
+            ARCHIVE/01
+          </h2>
+
+          <p class="footer-brand__text">
+            A digital publication and book library
+            for stories, observations, and things
+            worth keeping.
+          </p>
+
+        </div>
+
+
+        <nav class="footer-nav">
+
+          <p class="footer-nav__eyebrow">
+            Explore
+          </p>
+
+          <a
+            class="footer-nav__link"
+            href="/#latest"
+          >
+            Stories
+          </a>
+
+          <a
+            class="footer-nav__link"
+            href="/books"
+          >
+            Books
+          </a>
+
+        </nav>
+
+      </div>
+
+
+      <div class="footer-bottom">
+
+        <p class="footer__copy">
+          © 2026 Archive / 01
+        </p>
+
+        <p class="footer__label">
+          Digital Publication &amp; Book Library
+        </p>
+
+      </div>
+
+    </div>
+
+  </footer>
+
+
+  <!-- =========================
+       Header Script
+  ========================= -->
+
+  <script>
+    const header =
+      document.getElementById(
+        "site-header"
+      );
+
+    const menuToggle =
+      document.getElementById(
+        "menu-toggle"
+      );
+
+    const mobilePanel =
+      document.getElementById(
+        "mobile-panel"
+      );
+
+    let lastScrollY =
+      window.scrollY;
+
+
+    function setMenuState(isOpen) {
+      if (isOpen) {
+
+        mobilePanel.classList.add(
+          "is-open"
+        );
+
+        mobilePanel.style.height =
+          "0px";
+
+        const targetHeight =
+          mobilePanel.scrollHeight;
+
+        mobilePanel.offsetHeight;
+
+        requestAnimationFrame(() => {
+          mobilePanel.style.height =
+            `${targetHeight}px`;
+        });
+
+      } else {
+
+        const currentHeight =
+          mobilePanel.scrollHeight;
+
+        mobilePanel.style.height =
+          `${currentHeight}px`;
+
+        mobilePanel.offsetHeight;
+
+        mobilePanel.classList.remove(
+          "is-open"
+        );
+
+        requestAnimationFrame(() => {
+          mobilePanel.style.height =
+            "0px";
+        });
+      }
+
+      menuToggle.classList.toggle(
+        "is-open",
+        isOpen
+      );
+
+      menuToggle.setAttribute(
+        "aria-expanded",
+        String(isOpen)
+      );
+
+      menuToggle.setAttribute(
+        "aria-label",
+        isOpen
+          ? "Close menu"
+          : "Open menu"
+      );
+    }
+
+
+    function closeMobileMenu() {
+      if (
+        mobilePanel.classList.contains(
+          "is-open"
+        )
+      ) {
+
+        setMenuState(false);
+
+      } else {
+
+        menuToggle.classList.remove(
+          "is-open"
+        );
+
+        menuToggle.setAttribute(
+          "aria-expanded",
+          "false"
+        );
+
+        menuToggle.setAttribute(
+          "aria-label",
+          "Open menu"
+        );
+      }
+    }
+
+
+    menuToggle.addEventListener(
+      "click",
+      () => {
+
+        const isOpen =
+          mobilePanel.classList.contains(
+            "is-open"
+          );
+
+        setMenuState(!isOpen);
+      }
+    );
+
+
+    mobilePanel.addEventListener(
+      "transitionend",
+      (event) => {
+
+        if (
+          event.propertyName !== "height"
+        ) {
+          return;
+        }
+
+        if (
+          mobilePanel.classList.contains(
+            "is-open"
+          )
+        ) {
+
+          mobilePanel.style.height =
+            "auto";
+
+        } else {
+
+          mobilePanel.style.height =
+            "0px";
+        }
+      }
+    );
+
+
+    window.addEventListener(
+      "scroll",
+      () => {
+
+        const currentScrollY =
+          window.scrollY;
+
+        if (
+          mobilePanel.classList.contains(
+            "is-open"
+          )
+        ) {
+
+          header.classList.remove(
+            "is-hidden"
+          );
+
+          lastScrollY =
+            currentScrollY;
+
+          return;
+        }
+
+        if (currentScrollY <= 16) {
+
+          header.classList.remove(
+            "is-hidden"
+          );
+
+          lastScrollY =
+            currentScrollY;
+
+          return;
+        }
+
+        if (
+          currentScrollY >
+          lastScrollY
+        ) {
+
+          header.classList.add(
+            "is-hidden"
+          );
+
+        } else {
+
+          header.classList.remove(
+            "is-hidden"
+          );
+        }
+
+        lastScrollY =
+          currentScrollY;
+      },
+      {
+        passive: true
+      }
+    );
+
+
+    document
+      .querySelectorAll(
+        ".capsule-navbar__panel-link"
+      )
+      .forEach((link) => {
+
+        link.addEventListener(
+          "click",
+          () => {
+            closeMobileMenu();
+          }
+        );
+
+      });
+
+
+    window.addEventListener(
+      "resize",
+      () => {
+
+        if (
+          window.innerWidth > 767
+        ) {
+
+          mobilePanel.classList.remove(
+            "is-open"
+          );
+
+          mobilePanel.style.height =
+            "0px";
+
+          menuToggle.classList.remove(
+            "is-open"
+          );
+
+          menuToggle.setAttribute(
+            "aria-expanded",
+            "false"
+          );
+
+          menuToggle.setAttribute(
+            "aria-label",
+            "Open menu"
+          );
+        }
+
+      }
+    );
+  </script>
+
+</body>
+</html>
