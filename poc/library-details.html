@@ -1,0 +1,1805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
+
+  <title>City Notes — Archive / 01</title>
+
+  <style>
+    :root {
+      --bg: #ffffff;
+      --surface: #ffffff;
+      --text: #171717;
+      --muted: #737373;
+      --line: #deddd8;
+      --accent: #d9ff4f;
+
+      /* =========================
+         Layout Widths
+      ========================= */
+
+      --max-width: 1200px;
+      --header-max-width: 1280px;
+
+      /* =========================
+         Header Motion
+      ========================= */
+
+      --header-ease:
+        cubic-bezier(0.65, 0, 0.35, 1);
+
+      --header-duration-expand: 520ms;
+      --header-duration-icon: 420ms;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      min-width: 320px;
+      margin: 0;
+
+      background: var(--bg);
+      color: var(--text);
+
+      font-family:
+        Inter,
+        ui-sans-serif,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+
+      line-height: 1.5;
+
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    img {
+      display: block;
+      max-width: 100%;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    /* =========================
+       Shared
+    ========================= */
+
+    .page-shell {
+      width: min(
+        var(--max-width),
+        calc(100% - 48px)
+      );
+
+      margin: 0 auto;
+    }
+
+    /* =========================
+       Floating Capsule Header
+    ========================= */
+
+    .capsule-navbar {
+      position: fixed;
+      z-index: 1000;
+
+      top: 16px;
+      left: 50%;
+
+      width: min(
+        var(--header-max-width),
+        calc(100% - 48px)
+      );
+
+      border: 1px solid
+        rgba(23, 23, 23, 0.06);
+
+      border-radius: 48px;
+
+      background:
+        rgba(255, 255, 255, 0.94);
+
+      box-shadow:
+        0 1px 3px rgba(0, 0, 0, 0.08);
+
+      transform: translateX(-50%);
+
+      transition:
+        transform 0.3s ease,
+        box-shadow 0.3s ease;
+    }
+
+    .capsule-navbar.is-hidden {
+      transform:
+        translate(-50%, -120%);
+    }
+
+    .capsule-navbar__bar {
+      min-height: 80px;
+
+      padding: 10px 32px;
+
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      gap: 40px;
+    }
+
+    .capsule-navbar__brand {
+      flex: 0 0 auto;
+
+      font-size: 13px;
+      font-weight: 600;
+
+      letter-spacing: -0.02em;
+    }
+
+    .capsule-navbar__nav {
+      display: flex;
+      align-items: center;
+
+      gap: 8px;
+
+      margin: 0;
+      padding: 0;
+    }
+
+    .capsule-navbar__link {
+      min-height: 40px;
+
+      margin: 0;
+      padding: 0 18px;
+
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+
+      border-radius: 999px;
+
+      font-size: 13px;
+      font-weight: 500;
+
+      transition:
+        background 0.2s ease,
+        color 0.2s ease;
+    }
+
+    .capsule-navbar__link:hover {
+      background: #f1f1ee;
+    }
+
+    .capsule-navbar__toggle {
+      position: relative;
+
+      width: 40px;
+      height: 40px;
+
+      margin: 0;
+      padding: 0;
+
+      display: none;
+      align-items: center;
+      justify-content: center;
+
+      border: 0;
+      border-radius: 999px;
+
+      background: transparent;
+
+      cursor: pointer;
+    }
+
+    .capsule-navbar__icon {
+      position: relative;
+
+      width: 18px;
+      height: 18px;
+
+      display: block;
+
+      transform: rotate(0deg);
+
+      transition:
+        transform
+        var(--header-duration-icon)
+        var(--header-ease);
+    }
+
+    .capsule-navbar__icon::before,
+    .capsule-navbar__icon::after {
+      content: "";
+
+      position: absolute;
+
+      top: 50%;
+      left: 50%;
+
+      width: 18px;
+      height: 1.5px;
+
+      background: var(--text);
+
+      transform:
+        translate(-50%, -50%);
+    }
+
+    .capsule-navbar__icon::after {
+      transform:
+        translate(-50%, -50%)
+        rotate(90deg);
+    }
+
+    .capsule-navbar__toggle.is-open
+      .capsule-navbar__icon {
+      transform: rotate(45deg);
+    }
+
+    /* =========================
+       Mobile Expanding Panel
+    ========================= */
+
+    .capsule-navbar__panel {
+      display: none;
+
+      height: 0;
+
+      overflow: hidden;
+
+      padding: 0 20px;
+
+      will-change: height;
+
+      transition:
+        height
+        var(--header-duration-expand)
+        var(--header-ease),
+        padding
+        var(--header-duration-expand)
+        var(--header-ease);
+    }
+
+    .capsule-navbar__panel.is-open {
+      padding:
+        8px 20px 20px;
+    }
+
+    .capsule-navbar__panel-inner {
+      width: 100%;
+
+      display: flex;
+      flex-direction: column;
+
+      align-items: flex-start;
+
+      gap: 22px;
+    }
+
+    .capsule-navbar__panel-link {
+      margin: 0;
+      padding: 6px 0;
+
+      font-size: 14px;
+      font-weight: 500;
+
+      text-align: left;
+    }
+
+    /* =========================
+       Main
+    ========================= */
+
+    .main-content {
+      padding-top: 128px;
+    }
+
+    /* =========================
+       Book Detail
+    ========================= */
+
+    .book-detail {
+      position: relative;
+
+      overflow: hidden;
+
+      padding:
+        64px 0 120px;
+    }
+
+    .book-detail__background-number {
+      position: absolute;
+
+      z-index: -1;
+
+      top: 30px;
+      right: 0;
+
+      margin: 0;
+
+      font-size:
+        clamp(
+          12rem,
+          28vw,
+          30rem
+        );
+
+      line-height: 0.72;
+      font-weight: 500;
+
+      letter-spacing: -0.1em;
+
+      color:
+        rgba(23, 23, 23, 0.035);
+
+      user-select: none;
+      pointer-events: none;
+    }
+
+    /* =========================
+       Back Navigation
+    ========================= */
+
+    .book-detail__back {
+      margin: 0 0 56px;
+
+      display: inline-flex;
+      align-items: center;
+
+      gap: 8px;
+
+      font-size: 12px;
+      font-weight: 500;
+
+      color: var(--muted);
+
+      transition:
+        color 0.2s ease,
+        transform 0.2s ease;
+    }
+
+    .book-detail__back:hover {
+      color: var(--text);
+
+      transform:
+        translateX(-3px);
+    }
+
+    /* =========================
+       Main Composition
+    ========================= */
+
+    .book-detail__grid {
+      display: grid;
+
+      grid-template-columns:
+        minmax(360px, 500px)
+        minmax(0, 1fr);
+
+      align-items: center;
+
+      gap: 96px;
+    }
+
+    /* =========================
+       Book Cover
+    ========================= */
+
+    .book-detail__cover-wrap {
+      position: relative;
+
+      width: 100%;
+
+      display: flex;
+      justify-content: center;
+    }
+
+    .book-detail__cover {
+      position: relative;
+
+      z-index: 1;
+
+      width: min(
+        100%,
+        500px
+      );
+
+      aspect-ratio: 3 / 4;
+
+      padding: 32px;
+
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+
+      overflow: hidden;
+
+      border-radius: 28px;
+
+      background: #e8e2d4;
+
+      box-shadow:
+        0 32px 80px
+        rgba(23, 23, 23, 0.12);
+    }
+
+    .book-detail__cover::after {
+      content: "";
+
+      position: absolute;
+
+      inset: 0;
+
+      border: 1px solid
+        rgba(23, 23, 23, 0.04);
+
+      border-radius: inherit;
+
+      pointer-events: none;
+    }
+
+    .book-detail__cover-number {
+      margin: 0;
+
+      font-size: 11px;
+      line-height: 1;
+      font-weight: 600;
+
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .book-detail__cover-title {
+      margin: auto 0;
+
+      font-size:
+        clamp(
+          4rem,
+          6.5vw,
+          6.6rem
+        );
+
+      line-height: 0.82;
+      font-weight: 500;
+
+      letter-spacing: -0.075em;
+    }
+
+    .book-detail__cover-author {
+      margin: 0;
+
+      font-size: 12px;
+      line-height: 1.3;
+
+      color:
+        rgba(23, 23, 23, 0.62);
+    }
+
+    .book-detail__cover-mark {
+      position: absolute;
+
+      right: 22px;
+      bottom: 24px;
+
+      width: 44px;
+      height: 44px;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      border: 1px solid
+        rgba(23, 23, 23, 0.14);
+
+      border-radius: 50%;
+
+      font-size: 9px;
+      font-weight: 600;
+
+      letter-spacing: 0.05em;
+
+      transform: rotate(-10deg);
+    }
+
+    /* =========================
+       Book Information
+    ========================= */
+
+    .book-detail__content {
+      max-width: 620px;
+
+      display: flex;
+      flex-direction: column;
+
+      align-items: flex-start;
+
+      gap: 32px;
+    }
+
+    .book-detail__eyebrow {
+      margin: 0;
+
+      font-size: 11px;
+      line-height: 1;
+      font-weight: 600;
+
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+
+      color: var(--muted);
+    }
+
+    .book-detail__heading {
+      display: flex;
+      flex-direction: column;
+
+      gap: 12px;
+    }
+
+    .book-detail__title {
+      max-width: 620px;
+
+      margin: 0;
+
+      font-size:
+        clamp(
+          4rem,
+          7vw,
+          7.4rem
+        );
+
+      line-height: 0.82;
+      font-weight: 500;
+
+      letter-spacing: -0.08em;
+    }
+
+    .book-detail__author {
+      margin: 0;
+
+      font-size: 16px;
+      line-height: 1.4;
+
+      color: var(--muted);
+    }
+
+    .book-detail__description {
+      max-width: 500px;
+
+      margin: 0;
+
+      font-size: 15px;
+      line-height: 1.65;
+
+      color: var(--muted);
+    }
+
+    /* =========================
+       Metadata Strip
+    ========================= */
+
+    .book-detail__meta {
+      width: 100%;
+
+      display: grid;
+
+      grid-template-columns:
+        repeat(
+          2,
+          minmax(0, 1fr)
+        );
+
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .book-detail__meta-item {
+      min-height: 82px;
+
+      padding: 16px 0;
+
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+
+      gap: 7px;
+    }
+
+    .book-detail__meta-item + .book-detail__meta-item {
+      padding-left: 24px;
+
+      border-left: 1px solid var(--line);
+    }
+
+    .book-detail__meta-label {
+      margin: 0;
+
+      font-size: 10px;
+      line-height: 1;
+      font-weight: 600;
+
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+
+      color: var(--muted);
+    }
+
+    .book-detail__meta-value {
+      margin: 0;
+
+      font-size: 14px;
+      line-height: 1.3;
+      font-weight: 500;
+    }
+
+    /* =========================
+       Download CTA
+    ========================= */
+
+    .book-detail__actions {
+      display: flex;
+      align-items: center;
+
+      gap: 16px;
+    }
+
+    .book-detail__download {
+      min-height: 50px;
+
+      margin: 0;
+      padding: 0 22px;
+
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+
+      border-radius: 999px;
+
+      background: var(--accent);
+      color: var(--text);
+
+      font-size: 12px;
+      font-weight: 700;
+
+      transition:
+        transform 0.2s ease,
+        background 0.2s ease;
+    }
+
+    .book-detail__download:hover {
+      transform:
+        translateY(-2px);
+
+      background: #e6ff79;
+    }
+
+    /* =========================
+       Footer
+    ========================= */
+
+    .footer {
+      padding:
+        88px 0 40px;
+    }
+
+    .footer-divider {
+      width: min(
+        var(--max-width),
+        calc(100% - 48px)
+      );
+
+      height: 1px;
+
+      margin:
+        0 auto 48px;
+
+      background: var(--line);
+    }
+
+    .footer-inner {
+      width: min(
+        var(--max-width),
+        calc(100% - 48px)
+      );
+
+      margin: 0 auto;
+
+      display: flex;
+      flex-direction: column;
+
+      gap: 64px;
+    }
+
+    .footer-main {
+      display: grid;
+
+      grid-template-columns:
+        minmax(0, 1.5fr)
+        minmax(180px, 0.5fr);
+
+      gap: 64px;
+    }
+
+    .footer-brand {
+      max-width: 620px;
+    }
+
+    .footer-brand__name {
+      margin: 0;
+
+      font-size:
+        clamp(
+          3rem,
+          6vw,
+          6rem
+        );
+
+      line-height: 0.86;
+      font-weight: 500;
+
+      letter-spacing: -0.07em;
+    }
+
+    .footer-brand__text {
+      max-width: 460px;
+
+      margin: 24px 0 0;
+
+      font-size: 14px;
+      line-height: 1.6;
+
+      color: var(--muted);
+    }
+
+    .footer-nav {
+      display: flex;
+      flex-direction: column;
+
+      align-items: flex-start;
+
+      gap: 12px;
+    }
+
+    .footer-nav__eyebrow {
+      margin: 0 0 8px;
+
+      font-size: 10px;
+      line-height: 1;
+      font-weight: 600;
+
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+
+      color: var(--muted);
+    }
+
+    .footer-nav__link {
+      margin: 0;
+      padding: 0;
+
+      font-size: 14px;
+      line-height: 1.4;
+      font-weight: 500;
+
+      transition:
+        color 0.2s ease,
+        transform 0.2s ease;
+    }
+
+    .footer-nav__link:hover {
+      color: var(--muted);
+
+      transform:
+        translateX(4px);
+    }
+
+    .footer-bottom {
+      padding-top: 20px;
+
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+
+      gap: 24px;
+
+      border-top: 1px solid var(--line);
+    }
+
+    .footer__copy,
+    .footer__label {
+      margin: 0;
+
+      font-size: 11px;
+      line-height: 1.4;
+
+      color: var(--muted);
+    }
+
+    /* =========================
+       Tablet
+    ========================= */
+
+    @media (max-width: 1024px) {
+      .book-detail {
+        padding-top: 56px;
+      }
+
+      .book-detail__grid {
+        grid-template-columns:
+          minmax(300px, 420px)
+          minmax(0, 1fr);
+
+        gap: 56px;
+      }
+
+      .book-detail__title {
+        font-size:
+          clamp(
+            3.6rem,
+            7vw,
+            6rem
+          );
+      }
+
+      .book-detail__cover {
+        padding: 26px;
+      }
+
+      .book-detail__cover-title {
+        font-size:
+          clamp(
+            3.4rem,
+            6vw,
+            5.4rem
+          );
+      }
+    }
+
+    /* =========================
+       Mobile
+    ========================= */
+
+    @media (max-width: 767px) {
+      .page-shell {
+        width: min(
+          calc(100% - 32px),
+          var(--max-width)
+        );
+      }
+
+      /* =========================
+         Header
+         Outer gap = 12px
+         Inner padding = 20px
+      ========================= */
+
+      .capsule-navbar {
+        top: 12px;
+
+        width: calc(100% - 24px);
+
+        border-radius: 32px;
+      }
+
+      .capsule-navbar__bar {
+        min-height: 64px;
+
+        padding: 10px 20px;
+
+        gap: 20px;
+      }
+
+      .capsule-navbar__brand {
+        font-size: 12px;
+      }
+
+      .capsule-navbar__nav {
+        display: none;
+      }
+
+      .capsule-navbar__toggle {
+        display: flex;
+      }
+
+      .capsule-navbar__panel {
+        display: block;
+
+        padding:
+          0 20px;
+      }
+
+      .capsule-navbar__panel.is-open {
+        padding:
+          8px 20px 20px;
+      }
+
+      .capsule-navbar__panel-inner {
+        align-items: flex-start;
+
+        text-align: left;
+      }
+
+      /* =========================
+         Main
+      ========================= */
+
+      .main-content {
+        padding-top: 100px;
+      }
+
+      /* =========================
+         Book Detail
+      ========================= */
+
+      .book-detail {
+        padding:
+          48px 0 72px;
+      }
+
+      .book-detail__background-number {
+        top: 90px;
+        right: -20px;
+
+        font-size: 13rem;
+      }
+
+      .book-detail__back {
+        margin-bottom: 36px;
+
+        font-size: 11px;
+      }
+
+      .book-detail__grid {
+        display: flex;
+        flex-direction: column;
+
+        align-items: stretch;
+
+        gap: 48px;
+      }
+
+      /* =========================
+         Cover
+      ========================= */
+
+      .book-detail__cover-wrap {
+        width: 100%;
+      }
+
+      .book-detail__cover {
+        width: 100%;
+
+        padding: 20px;
+
+        border-radius: 20px;
+
+        box-shadow:
+          0 24px 56px
+          rgba(23, 23, 23, 0.10);
+      }
+
+      .book-detail__cover-number {
+        font-size: 10px;
+      }
+
+      .book-detail__cover-title {
+        font-size:
+          clamp(
+            3.5rem,
+            17vw,
+            5.2rem
+          );
+      }
+
+      .book-detail__cover-author {
+        font-size: 11px;
+      }
+
+      .book-detail__cover-mark {
+        right: 16px;
+        bottom: 18px;
+
+        width: 38px;
+        height: 38px;
+
+        font-size: 8px;
+      }
+
+      /* =========================
+         Information
+      ========================= */
+
+      .book-detail__content {
+        max-width: none;
+
+        gap: 24px;
+      }
+
+      .book-detail__eyebrow {
+        font-size: 10px;
+      }
+
+      .book-detail__heading {
+        gap: 8px;
+      }
+
+      .book-detail__title {
+        max-width: none;
+
+        font-size:
+          clamp(
+            3.4rem,
+            16vw,
+            5rem
+          );
+
+        line-height: 0.84;
+      }
+
+      .book-detail__author {
+        font-size: 14px;
+      }
+
+      .book-detail__description {
+        max-width: none;
+
+        font-size: 14px;
+        line-height: 1.6;
+      }
+
+      /* =========================
+         Metadata
+      ========================= */
+
+      .book-detail__meta-item {
+        min-height: 72px;
+
+        padding: 14px 0;
+      }
+
+      .book-detail__meta-item + .book-detail__meta-item {
+        padding-left: 18px;
+      }
+
+      .book-detail__meta-value {
+        font-size: 13px;
+      }
+
+      /* =========================
+         Download
+      ========================= */
+
+      .book-detail__actions {
+        width: 100%;
+      }
+
+      .book-detail__download {
+        width: 100%;
+
+        min-height: 48px;
+      }
+
+      /* =========================
+         Footer
+      ========================= */
+
+      .footer {
+        padding:
+          64px 0 28px;
+      }
+
+      .footer-divider {
+        width:
+          calc(100% - 32px);
+
+        margin-bottom: 36px;
+      }
+
+      .footer-inner {
+        width:
+          calc(100% - 32px);
+
+        gap: 48px;
+      }
+
+      .footer-main {
+        display: flex;
+        flex-direction: column;
+
+        gap: 40px;
+      }
+
+      .footer-brand__name {
+        font-size:
+          clamp(
+            2.8rem,
+            15vw,
+            4.5rem
+          );
+      }
+
+      .footer-brand__text {
+        max-width: none;
+
+        margin-top: 20px;
+
+        font-size: 13px;
+      }
+
+      .footer-nav {
+        gap: 10px;
+      }
+
+      .footer-nav__eyebrow {
+        margin-bottom: 6px;
+      }
+
+      .footer-nav__link {
+        font-size: 14px;
+      }
+
+      .footer-bottom {
+        padding-top: 20px;
+
+        align-items: flex-start;
+
+        flex-direction: column;
+
+        gap: 8px;
+      }
+    }
+
+    /* =========================
+       Reduced Motion
+    ========================= */
+
+    @media (prefers-reduced-motion: reduce) {
+      .capsule-navbar,
+      .capsule-navbar__icon,
+      .capsule-navbar__panel,
+      .book-detail__back,
+      .book-detail__download,
+      .footer-nav__link {
+        transition: none !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- =========================
+       Header
+  ========================= -->
+
+  <header
+    class="capsule-navbar"
+    id="site-header"
+  >
+
+    <div class="capsule-navbar__bar">
+
+      <a
+        class="capsule-navbar__brand"
+        href="/"
+      >
+        ARCHIVE/01
+      </a>
+
+      <nav class="capsule-navbar__nav">
+
+        <a
+          class="capsule-navbar__link"
+          href="/#latest"
+        >
+          Stories
+        </a>
+
+        <a
+          class="capsule-navbar__link"
+          href="/library"
+        >
+          Library
+        </a>
+
+      </nav>
+
+      <button
+        class="capsule-navbar__toggle"
+        id="menu-toggle"
+        type="button"
+        aria-label="Open menu"
+        aria-expanded="false"
+        aria-controls="mobile-panel"
+      >
+
+        <span
+          class="capsule-navbar__icon"
+          aria-hidden="true"
+        ></span>
+
+      </button>
+
+    </div>
+
+
+    <div
+      class="capsule-navbar__panel"
+      id="mobile-panel"
+    >
+
+      <div
+        class="capsule-navbar__panel-inner"
+      >
+
+        <a
+          class="capsule-navbar__panel-link"
+          href="/#latest"
+        >
+          Stories
+        </a>
+
+        <a
+          class="capsule-navbar__panel-link"
+          href="/library"
+        >
+          Library
+        </a>
+
+      </div>
+
+    </div>
+
+  </header>
+
+
+  <!-- =========================
+       Main
+  ========================= -->
+
+  <main class="main-content">
+
+    <section class="book-detail">
+
+      <p
+        class="book-detail__background-number"
+        aria-hidden="true"
+      >
+        01
+      </p>
+
+
+      <div class="page-shell">
+
+        <!-- =========================
+             Back Navigation
+        ========================= -->
+
+        <a
+          class="book-detail__back"
+          href="/library"
+        >
+          ← Library
+        </a>
+
+
+        <!-- =========================
+             Book Composition
+        ========================= -->
+
+        <div class="book-detail__grid">
+
+          <!-- =========================
+               Book Cover
+          ========================= -->
+
+          <div class="book-detail__cover-wrap">
+
+            <div
+              class="book-detail__cover"
+              aria-label="City Notes book cover"
+            >
+
+              <p
+                class="book-detail__cover-number"
+              >
+                BOOK 001
+              </p>
+
+
+              <div
+                class="book-detail__cover-title"
+              >
+                CITY<br />
+                NOTES
+              </div>
+
+
+              <p
+                class="book-detail__cover-author"
+              >
+                Various Authors
+              </p>
+
+
+              <span
+                class="book-detail__cover-mark"
+                aria-hidden="true"
+              >
+                A/01
+              </span>
+
+            </div>
+
+          </div>
+
+
+          <!-- =========================
+               Book Information
+          ========================= -->
+
+          <div class="book-detail__content">
+
+            <p
+              class="book-detail__eyebrow"
+            >
+              Library / Publication
+            </p>
+
+
+            <div
+              class="book-detail__heading"
+            >
+
+              <h1
+                class="book-detail__title"
+              >
+                City Notes
+              </h1>
+
+              <p
+                class="book-detail__author"
+              >
+                A. Morgan
+              </p>
+
+            </div>
+
+
+            <p
+              class="book-detail__description"
+            >
+              A visual collection of observations,
+              places, and small details found while
+              moving through the city.
+            </p>
+
+
+            <!-- =========================
+                 Metadata
+            ========================= -->
+
+            <div
+              class="book-detail__meta"
+            >
+
+              <div
+                class="book-detail__meta-item"
+              >
+
+                <p
+                  class="book-detail__meta-label"
+                >
+                  Publication
+                </p>
+
+                <p
+                  class="book-detail__meta-value"
+                >
+                  2026
+                </p>
+
+              </div>
+
+
+              <div
+                class="book-detail__meta-item"
+              >
+
+                <p
+                  class="book-detail__meta-label"
+                >
+                  Format
+                </p>
+
+                <p
+                  class="book-detail__meta-value"
+                >
+                  PDF
+                </p>
+
+              </div>
+
+            </div>
+
+
+            <!-- =========================
+                 Download
+            ========================= -->
+
+            <div
+              class="book-detail__actions"
+            >
+
+              <a
+                class="book-detail__download"
+                href="/files/city-notes.pdf"
+                download
+              >
+                Download PDF
+              </a>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <!-- =========================
+       Footer
+  ========================= -->
+
+  <footer class="footer">
+
+    <div class="footer-divider"></div>
+
+    <div class="footer-inner">
+
+      <div class="footer-main">
+
+        <div class="footer-brand">
+
+          <h2 class="footer-brand__name">
+            ARCHIVE/01
+          </h2>
+
+          <p class="footer-brand__text">
+            A digital publication and book library
+            for stories, observations, and things
+            worth keeping.
+          </p>
+
+        </div>
+
+
+        <nav class="footer-nav">
+
+          <p class="footer-nav__eyebrow">
+            Explore
+          </p>
+
+          <a
+            class="footer-nav__link"
+            href="/#latest"
+          >
+            Stories
+          </a>
+
+          <a
+            class="footer-nav__link"
+            href="/library"
+          >
+            Library
+          </a>
+
+        </nav>
+
+      </div>
+
+
+      <div class="footer-bottom">
+
+        <p class="footer__copy">
+          © 2026 Archive / 01
+        </p>
+
+        <p class="footer__label">
+          Digital Publication &amp; Book Library
+        </p>
+
+      </div>
+
+    </div>
+
+  </footer>
+
+
+  <!-- =========================
+       Header Script
+  ========================= -->
+
+  <script>
+    const header =
+      document.getElementById(
+        "site-header"
+      );
+
+    const menuToggle =
+      document.getElementById(
+        "menu-toggle"
+      );
+
+    const mobilePanel =
+      document.getElementById(
+        "mobile-panel"
+      );
+
+    let lastScrollY =
+      window.scrollY;
+
+
+    function setMenuState(isOpen) {
+      if (isOpen) {
+
+        mobilePanel.classList.add(
+          "is-open"
+        );
+
+        mobilePanel.style.height =
+          "0px";
+
+        const targetHeight =
+          mobilePanel.scrollHeight;
+
+        mobilePanel.offsetHeight;
+
+        requestAnimationFrame(() => {
+          mobilePanel.style.height =
+            `${targetHeight}px`;
+        });
+
+      } else {
+
+        const currentHeight =
+          mobilePanel.scrollHeight;
+
+        mobilePanel.style.height =
+          `${currentHeight}px`;
+
+        mobilePanel.offsetHeight;
+
+        mobilePanel.classList.remove(
+          "is-open"
+        );
+
+        requestAnimationFrame(() => {
+          mobilePanel.style.height =
+            "0px";
+        });
+      }
+
+      menuToggle.classList.toggle(
+        "is-open",
+        isOpen
+      );
+
+      menuToggle.setAttribute(
+        "aria-expanded",
+        String(isOpen)
+      );
+
+      menuToggle.setAttribute(
+        "aria-label",
+        isOpen
+          ? "Close menu"
+          : "Open menu"
+      );
+    }
+
+
+    function closeMobileMenu() {
+      if (
+        mobilePanel.classList.contains(
+          "is-open"
+        )
+      ) {
+
+        setMenuState(false);
+
+      } else {
+
+        menuToggle.classList.remove(
+          "is-open"
+        );
+
+        menuToggle.setAttribute(
+          "aria-expanded",
+          "false"
+        );
+
+        menuToggle.setAttribute(
+          "aria-label",
+          "Open menu"
+        );
+      }
+    }
+
+
+    menuToggle.addEventListener(
+      "click",
+      () => {
+
+        const isOpen =
+          mobilePanel.classList.contains(
+            "is-open"
+          );
+
+        setMenuState(!isOpen);
+      }
+    );
+
+
+    mobilePanel.addEventListener(
+      "transitionend",
+      (event) => {
+
+        if (
+          event.propertyName !== "height"
+        ) {
+          return;
+        }
+
+        if (
+          mobilePanel.classList.contains(
+            "is-open"
+          )
+        ) {
+
+          mobilePanel.style.height =
+            "auto";
+
+        } else {
+
+          mobilePanel.style.height =
+            "0px";
+        }
+      }
+    );
+
+
+    window.addEventListener(
+      "scroll",
+      () => {
+
+        const currentScrollY =
+          window.scrollY;
+
+        if (
+          mobilePanel.classList.contains(
+            "is-open"
+          )
+        ) {
+
+          header.classList.remove(
+            "is-hidden"
+          );
+
+          lastScrollY =
+            currentScrollY;
+
+          return;
+        }
+
+        if (currentScrollY <= 16) {
+
+          header.classList.remove(
+            "is-hidden"
+          );
+
+          lastScrollY =
+            currentScrollY;
+
+          return;
+        }
+
+        if (
+          currentScrollY >
+          lastScrollY
+        ) {
+
+          header.classList.add(
+            "is-hidden"
+          );
+
+        } else {
+
+          header.classList.remove(
+            "is-hidden"
+          );
+        }
+
+        lastScrollY =
+          currentScrollY;
+      },
+      {
+        passive: true
+      }
+    );
+
+
+    document
+      .querySelectorAll(
+        ".capsule-navbar__panel-link"
+      )
+      .forEach((link) => {
+
+        link.addEventListener(
+          "click",
+          () => {
+            closeMobileMenu();
+          }
+        );
+
+      });
+
+
+    window.addEventListener(
+      "resize",
+      () => {
+
+        if (
+          window.innerWidth > 767
+        ) {
+
+          mobilePanel.classList.remove(
+            "is-open"
+          );
+
+          mobilePanel.style.height =
+            "0px";
+
+          menuToggle.classList.remove(
+            "is-open"
+          );
+
+          menuToggle.setAttribute(
+            "aria-expanded",
+            "false"
+          );
+
+          menuToggle.setAttribute(
+            "aria-label",
+            "Open menu"
+          );
+        }
+
+      }
+    );
+  </script>
+
+</body>
+</html>
