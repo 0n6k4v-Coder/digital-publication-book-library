@@ -1,19 +1,213 @@
 # Figma Component Script Creator
 
-## Book Card
+## Table Of Content
 
-This script creates a regular Figma frame, not a Component.
+* [Variable](#variable)
 
-Structure:
+  * [Table](#variable-table)
+  * [Script](#variable-script)
+* [Component](#component)
+
+  * [Book Card](#book-card)
+
+---
+
+## Variable
+
+### Variable Table
+
+<a id="variable-table"></a>
+
+| Collection | Variable         | Type    | Light     | Dark      |
+| ---------- | ---------------- | ------- | --------- | --------- |
+| `Colors`   | `Text / Primary` | `COLOR` | `#000000` | `#FFFFFF` |
+
+### Variable Script
+
+<a id="variable-script"></a>
+
+* Reuses the `Colors` collection when it exists.
+* Reuses the `Text / Primary` variable when it exists.
+* Reuses the `Light` and `Dark` modes when they exist.
+* Updates the defined mode values.
+* Throws an error when the existing variable has the wrong type.
+
+```javascript
+(async () => {
+  const COLLECTION_NAME = "Colors";
+  const VARIABLE_NAME = "Text / Primary";
+  const VARIABLE_TYPE = "COLOR";
+
+  const LIGHT_MODE = "Light";
+  const DARK_MODE = "Dark";
+
+  const LIGHT_COLOR = {
+    r: 0,
+    g: 0,
+    b: 0,
+    a: 1,
+  };
+
+  const DARK_COLOR = {
+    r: 1,
+    g: 1,
+    b: 1,
+    a: 1,
+  };
+
+  const collections =
+    await figma.variables
+      .getLocalVariableCollectionsAsync();
+
+  let collection =
+    collections.find(
+      item =>
+        item.name === COLLECTION_NAME
+    );
+
+  if (!collection) {
+    collection =
+      figma.variables
+        .createVariableCollection(
+          COLLECTION_NAME
+        );
+  }
+
+  let lightMode =
+    collection.modes.find(
+      mode =>
+        mode.name === LIGHT_MODE
+    );
+
+  if (!lightMode) {
+    const firstMode =
+      collection.modes[0];
+
+    if (!firstMode) {
+      throw new Error(
+        `Collection "${COLLECTION_NAME}" has no modes.`
+      );
+    }
+
+    collection.renameMode(
+      firstMode.modeId,
+      LIGHT_MODE
+    );
+
+    lightMode =
+      collection.modes.find(
+        mode =>
+          mode.modeId === firstMode.modeId
+      );
+  }
+
+  let darkMode =
+    collection.modes.find(
+      mode =>
+        mode.name === DARK_MODE
+    );
+
+  if (!darkMode) {
+    const darkModeId =
+      collection.addMode(
+        DARK_MODE
+      );
+
+    darkMode =
+      collection.modes.find(
+        mode =>
+          mode.modeId === darkModeId
+      );
+  }
+
+  if (!lightMode || !darkMode) {
+    throw new Error(
+      "Could not resolve Light and Dark modes."
+    );
+  }
+
+  const variables =
+    await figma.variables
+      .getLocalVariablesAsync();
+
+  let variable =
+    variables.find(
+      item =>
+        item.variableCollectionId ===
+          collection.id &&
+        item.name ===
+          VARIABLE_NAME
+    );
+
+  if (!variable) {
+    variable =
+      figma.variables.createVariable(
+        VARIABLE_NAME,
+        collection,
+        VARIABLE_TYPE
+      );
+  }
+
+  if (
+    variable.resolvedType !==
+    VARIABLE_TYPE
+  ) {
+    throw new Error(
+      `Variable "${VARIABLE_NAME}" exists with type "${variable.resolvedType}", expected "${VARIABLE_TYPE}".`
+    );
+  }
+
+  variable.setValueForMode(
+    lightMode.modeId,
+    LIGHT_COLOR
+  );
+
+  variable.setValueForMode(
+    darkMode.modeId,
+    DARK_COLOR
+  );
+
+  console.log(
+    "VARIABLE CREATED / UPDATED",
+    {
+      collection: COLLECTION_NAME,
+      variable: VARIABLE_NAME,
+      type: variable.resolvedType,
+
+      modes: {
+        [LIGHT_MODE]: "#000000",
+        [DARK_MODE]: "#FFFFFF",
+      },
+
+      ids: {
+        collection: collection.id,
+        variable: variable.id,
+        lightMode: lightMode.modeId,
+        darkMode: darkMode.modeId,
+      },
+    }
+  );
+})();
+```
+
+---
+
+## Component
+
+<a id="component"></a>
+
+### Book Card
+
+<a id="book-card"></a>
 
 ```text
 Book Card
 ├── Thumbnail
 │   ├── Auto Layout: Vertical
-│   ├── Width: 160px FIXED
-│   ├── Height: 240px FIXED
+│   ├── Width: 160 FIXED
+│   ├── Height: 240 FIXED
 │   ├── Padding: 0
-│   ├── Child alignment: CENTER / CENTER
+│   ├── Alignment: CENTER / CENTER
 │   ├── Corner radius: 8px
 │   └── Clips content: ON
 │
@@ -31,43 +225,17 @@ Book Card
         └── Vertical alignment: CENTER
 ```
 
+| Element     | Layout               | Width     | Height    | Gap / Padding | Alignment       |
+| ----------- | -------------------- | --------- | --------- | ------------- | --------------- |
+| `Book Card` | Vertical Auto Layout | HUG       | HUG       | 16px gap      | Left / Top      |
+| `Thumbnail` | Vertical Auto Layout | 160 FIXED | 240 FIXED | 0 padding     | Center / Center |
+| `Book Info` | Vertical Auto Layout | FILL      | HUG       | 0 padding     | Left / Top      |
+| `Book Name` | Text                 | HUG       | HUG       | —             | Left / Center   |
+
 ### Figma Developer Console Script
 
 ```javascript
 (async () => {
-  // ============================================================
-  // BOOK CARD
-  // ============================================================
-  //
-  // Book Card
-  //   Vertical Auto Layout
-  //   Width: HUG
-  //   Height: HUG
-  //   Gap: 16px
-  //
-  //   ├── Thumbnail
-  //   │   Auto Layout
-  //   │   Width: 160 FIXED
-  //   │   Height: 240 FIXED
-  //   │   Padding: 0
-  //   │   Child: CENTER / CENTER
-  //   │   Radius: 8px
-  //   │   Clips content: ON
-  //   │
-  //   └── Book Info
-  //       Vertical Auto Layout
-  //       Width: FILL
-  //       Height: HUG
-  //       Align: LEFT / TOP
-  //
-  //       └── Book Name
-  //           21px
-  //           Black
-  //           Text: LEFT / CENTER
-  //
-  // NOT A COMPONENT
-  // ============================================================
-
   const BOOK_NAME = "Book Name";
 
   const THUMBNAIL_WIDTH = 160;
@@ -81,13 +249,9 @@ Book Card
   const COLOR_BLACK = "#000000";
   const COLOR_THUMBNAIL = "#EAEAEA";
 
-
-  // ============================================================
-  // HELPERS
-  // ============================================================
-
   function hexToRgb(hex) {
-    const value = hex.replace("#", "");
+    const value =
+      hex.replace("#", "");
 
     if (!/^[0-9A-Fa-f]{6}$/.test(value)) {
       throw new Error(
@@ -96,27 +260,33 @@ Book Card
     }
 
     return {
-      r: parseInt(value.slice(0, 2), 16) / 255,
-      g: parseInt(value.slice(2, 4), 16) / 255,
-      b: parseInt(value.slice(4, 6), 16) / 255,
+      r:
+        parseInt(value.slice(0, 2), 16) /
+        255,
+
+      g:
+        parseInt(value.slice(2, 4), 16) /
+        255,
+
+      b:
+        parseInt(value.slice(4, 6), 16) /
+        255,
     };
   }
 
-
-  function solid(hex, opacity = 1) {
+  function solid(
+    hex,
+    opacity = 1
+  ) {
     return [
       {
         type: "SOLID",
-        color: hexToRgb(hex),
+        color:
+          hexToRgb(hex),
         opacity,
       },
     ];
   }
-
-
-  // ============================================================
-  // FONT
-  // ============================================================
 
   const FONT = {
     family: "Inter",
@@ -125,47 +295,23 @@ Book Card
 
   await figma.loadFontAsync(FONT);
 
-
-  // ============================================================
-  // BOOK CARD
-  // ============================================================
-
   const bookCard =
     figma.createFrame();
 
   bookCard.name =
     "Book Card";
 
-
-  // ------------------------------------------------------------
-  // Vertical Auto Layout
-  // ------------------------------------------------------------
-
   bookCard.layoutMode =
     "VERTICAL";
 
-
-  // Width = HUG
   bookCard.layoutSizingHorizontal =
     "HUG";
 
-
-  // Height = HUG
   bookCard.layoutSizingVertical =
     "HUG";
 
-
-  // ------------------------------------------------------------
-  // Gap = 16px
-  // ------------------------------------------------------------
-
   bookCard.itemSpacing =
     CARD_GAP;
-
-
-  // ------------------------------------------------------------
-  // Top / Left alignment
-  // ------------------------------------------------------------
 
   bookCard.primaryAxisAlignItems =
     "MIN";
@@ -173,22 +319,13 @@ Book Card
   bookCard.counterAxisAlignItems =
     "MIN";
 
-
-  // No padding
   bookCard.paddingTop = 0;
   bookCard.paddingRight = 0;
   bookCard.paddingBottom = 0;
   bookCard.paddingLeft = 0;
 
-
-  // Transparent
   bookCard.fills = [];
   bookCard.strokes = [];
-
-
-  // ============================================================
-  // THUMBNAIL
-  // ============================================================
 
   const thumbnail =
     figma.createFrame();
@@ -196,18 +333,8 @@ Book Card
   thumbnail.name =
     "Thumbnail";
 
-
-  // ------------------------------------------------------------
-  // Thumbnail itself uses Auto Layout
-  // ------------------------------------------------------------
-
   thumbnail.layoutMode =
     "VERTICAL";
-
-
-  // ------------------------------------------------------------
-  // Fixed dimensions
-  // ------------------------------------------------------------
 
   thumbnail.resize(
     THUMBNAIL_WIDTH,
@@ -220,20 +347,10 @@ Book Card
   thumbnail.layoutSizingVertical =
     "FIXED";
 
-
-  // ------------------------------------------------------------
-  // Zero padding
-  // ------------------------------------------------------------
-
   thumbnail.paddingTop = 0;
   thumbnail.paddingRight = 0;
   thumbnail.paddingBottom = 0;
   thumbnail.paddingLeft = 0;
-
-
-  // ------------------------------------------------------------
-  // Center child
-  // ------------------------------------------------------------
 
   thumbnail.primaryAxisAlignItems =
     "CENTER";
@@ -241,47 +358,24 @@ Book Card
   thumbnail.counterAxisAlignItems =
     "CENTER";
 
-
-  // No internal gap
   thumbnail.itemSpacing = 0;
-
-
-  // ------------------------------------------------------------
-  // 8px corner radius
-  // ------------------------------------------------------------
 
   thumbnail.cornerRadius =
     THUMBNAIL_RADIUS;
 
-
-  // ------------------------------------------------------------
-  // Clip oversized pasted content
-  // ------------------------------------------------------------
-
   thumbnail.clipsContent =
     true;
 
-
-  // Placeholder background
   thumbnail.fills =
     solid(COLOR_THUMBNAIL);
 
   thumbnail.strokes = [];
 
-
-  // Prevent growth
   thumbnail.layoutGrow = 0;
 
-
-  // Add Thumbnail to Book Card
   bookCard.appendChild(
     thumbnail
   );
-
-
-  // ============================================================
-  // BOOK INFO
-  // ============================================================
 
   const bookInfo =
     figma.createFrame();
@@ -289,37 +383,18 @@ Book Card
   bookInfo.name =
     "Book Info";
 
-
-  // Vertical Auto Layout
   bookInfo.layoutMode =
     "VERTICAL";
 
-
-  // Add to Book Card before setting FILL.
   bookCard.appendChild(
     bookInfo
   );
 
-
-  // ------------------------------------------------------------
-  // Width = FILL
-  // ------------------------------------------------------------
-
   bookInfo.layoutSizingHorizontal =
     "FILL";
 
-
-  // ------------------------------------------------------------
-  // Height = HUG
-  // ------------------------------------------------------------
-
   bookInfo.layoutSizingVertical =
     "HUG";
-
-
-  // ------------------------------------------------------------
-  // LEFT / TOP alignment
-  // ------------------------------------------------------------
 
   bookInfo.primaryAxisAlignItems =
     "MIN";
@@ -327,25 +402,15 @@ Book Card
   bookInfo.counterAxisAlignItems =
     "MIN";
 
-
-  // No padding
   bookInfo.paddingTop = 0;
   bookInfo.paddingRight = 0;
   bookInfo.paddingBottom = 0;
   bookInfo.paddingLeft = 0;
 
-
-  // No internal gap
   bookInfo.itemSpacing = 0;
-
 
   bookInfo.fills = [];
   bookInfo.strokes = [];
-
-
-  // ============================================================
-  // BOOK NAME
-  // ============================================================
 
   const bookName =
     figma.createText();
@@ -353,8 +418,6 @@ Book Card
   bookName.name =
     "Book Name";
 
-
-  // Font
   bookName.fontName =
     FONT;
 
@@ -364,52 +427,27 @@ Book Card
   bookName.characters =
     BOOK_NAME;
 
-
-  // Black
   bookName.fills =
     solid(COLOR_BLACK);
-
-
-  // ------------------------------------------------------------
-  // Add to Auto Layout parent first.
-  // This must happen before setting HUG sizing properties.
-  // ------------------------------------------------------------
 
   bookInfo.appendChild(
     bookName
   );
 
-
-  // HUG sizing
   bookName.layoutSizingHorizontal =
     "HUG";
 
   bookName.layoutSizingVertical =
     "HUG";
 
-
-  // Text follows content
   bookName.textAutoResize =
     "WIDTH_AND_HEIGHT";
-
-
-  // ------------------------------------------------------------
-  // Text alignment
-  //
-  // LEFT horizontally
-  // CENTER vertically
-  // ------------------------------------------------------------
 
   bookName.textAlignHorizontal =
     "LEFT";
 
   bookName.textAlignVertical =
     "CENTER";
-
-
-  // ============================================================
-  // ADD TO PAGE
-  // ============================================================
 
   const page =
     figma.currentPage;
@@ -418,117 +456,17 @@ Book Card
     bookCard
   );
 
-
-  // ============================================================
-  // POSITION
-  // ============================================================
-
   bookCard.x = 0;
   bookCard.y = 0;
-
-
-  // ============================================================
-  // SELECT
-  // ============================================================
 
   page.selection = [
     bookCard
   ];
 
-
-  // ============================================================
-  // ZOOM
-  // ============================================================
-
-  figma.viewport.scrollAndZoomIntoView([
-    bookCard
-  ]);
-
-
-  // ============================================================
-  // DEBUG
-  // ============================================================
-
-  console.log(
-    "BOOK CARD CREATED",
-    {
-      bookCard: {
-        layoutMode:
-          bookCard.layoutMode,
-
-        width:
-          bookCard.layoutSizingHorizontal,
-
-        height:
-          bookCard.layoutSizingVertical,
-
-        gap:
-          bookCard.itemSpacing,
-      },
-
-      thumbnail: {
-        width:
-          thumbnail.width,
-
-        height:
-          thumbnail.height,
-
-        radius:
-          thumbnail.cornerRadius,
-
-        layoutMode:
-          thumbnail.layoutMode,
-
-        horizontal:
-          thumbnail.layoutSizingHorizontal,
-
-        vertical:
-          thumbnail.layoutSizingVertical,
-
-        clipsContent:
-          thumbnail.clipsContent,
-
-        alignment: {
-          primary:
-            thumbnail.primaryAxisAlignItems,
-
-          counter:
-            thumbnail.counterAxisAlignItems,
-        },
-      },
-
-      bookInfo: {
-        layoutMode:
-          bookInfo.layoutMode,
-
-        width:
-          bookInfo.layoutSizingHorizontal,
-
-        height:
-          bookInfo.layoutSizingVertical,
-
-        alignment: {
-          primary:
-            bookInfo.primaryAxisAlignItems,
-
-          counter:
-            bookInfo.counterAxisAlignItems,
-        },
-      },
-
-      bookName: {
-        fontSize:
-          bookName.fontSize,
-
-        horizontalAlignment:
-          bookName.textAlignHorizontal,
-
-        verticalAlignment:
-          bookName.textAlignVertical,
-      },
-    }
-  );
-
+  figma.viewport
+    .scrollAndZoomIntoView([
+      bookCard
+    ]);
 
   console.log(
     "Book Card created successfully."
