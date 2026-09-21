@@ -200,6 +200,8 @@
 
 <a id="book-card"></a>
 
+Structure
+
 ```text
 Book Card
 ├── Thumbnail
@@ -209,7 +211,8 @@ Book Card
 │   ├── Padding: 0
 │   ├── Alignment: CENTER / CENTER
 │   ├── Corner radius: 8px
-│   └── Clips content: ON
+│   ├── Clips content: ON
+│   └── Fill: None
 │
 └── Book Info
     ├── Auto Layout: Vertical
@@ -220,17 +223,18 @@ Book Card
     └── Book Name
         ├── Font: Inter Regular
         ├── Font size: 21px
-        ├── Color: #000000
+        ├── Color: Colors / Text / Primary
         ├── Horizontal alignment: LEFT
         └── Vertical alignment: CENTER
 ```
+Table
 
-| Element     | Layout               | Width     | Height    | Gap / Padding | Alignment       |
-| ----------- | -------------------- | --------- | --------- | ------------- | --------------- |
-| `Book Card` | Vertical Auto Layout | HUG       | HUG       | 16px gap      | Left / Top      |
-| `Thumbnail` | Vertical Auto Layout | 160 FIXED | 240 FIXED | 0 padding     | Center / Center |
-| `Book Info` | Vertical Auto Layout | FILL      | HUG       | 0 padding     | Left / Top      |
-| `Book Name` | Text                 | HUG       | HUG       | —             | Left / Center   |
+| Element     | Layout               | Width     | Height    | Gap / Padding | Alignment       | Fill                    |
+| ----------- | -------------------- | --------- | --------- | ------------- | --------------- | ----------------------- |
+| `Book Card` | Vertical Auto Layout | HUG       | HUG       | 16px gap      | Left / Top      | None                    |
+| `Thumbnail` | Vertical Auto Layout | 160 FIXED | 240 FIXED | 0 padding     | Center / Center | None                    |
+| `Book Info` | Vertical Auto Layout | FILL      | HUG       | 0 padding     | Left / Top      | None                    |
+| `Book Name` | Text                 | HUG       | HUG       | —             | Left / Center   | Colors / Text / Primary |
 
 ### Figma Developer Console Script
 
@@ -246,47 +250,13 @@ Book Card
 
   const BOOK_NAME_SIZE = 21;
 
-  const COLOR_BLACK = "#000000";
-  const COLOR_THUMBNAIL = "#EAEAEA";
+  const COLOR_COLLECTION = "Colors";
+  const TEXT_VARIABLE = "Text / Primary";
 
-  function hexToRgb(hex) {
-    const value =
-      hex.replace("#", "");
 
-    if (!/^[0-9A-Fa-f]{6}$/.test(value)) {
-      throw new Error(
-        `Invalid color: ${hex}`
-      );
-    }
-
-    return {
-      r:
-        parseInt(value.slice(0, 2), 16) /
-        255,
-
-      g:
-        parseInt(value.slice(2, 4), 16) /
-        255,
-
-      b:
-        parseInt(value.slice(4, 6), 16) /
-        255,
-    };
-  }
-
-  function solid(
-    hex,
-    opacity = 1
-  ) {
-    return [
-      {
-        type: "SOLID",
-        color:
-          hexToRgb(hex),
-        opacity,
-      },
-    ];
-  }
+  // ============================================================
+  // FONT
+  // ============================================================
 
   const FONT = {
     family: "Inter",
@@ -294,6 +264,66 @@ Book Card
   };
 
   await figma.loadFontAsync(FONT);
+
+
+  // ============================================================
+  // VARIABLE
+  // ============================================================
+
+  async function getTextVariable() {
+    const collections =
+      await figma.variables
+        .getLocalVariableCollectionsAsync();
+
+    const collection =
+      collections.find(
+        item =>
+          item.name === COLOR_COLLECTION
+      );
+
+    if (!collection) {
+      throw new Error(
+        `Variable collection "${COLOR_COLLECTION}" was not found.`
+      );
+    }
+
+    const variables =
+      await figma.variables
+        .getLocalVariablesAsync();
+
+    const variable =
+      variables.find(
+        item =>
+          item.variableCollectionId ===
+            collection.id &&
+          item.name === TEXT_VARIABLE
+      );
+
+    if (!variable) {
+      throw new Error(
+        `Variable "${COLOR_COLLECTION} / ${TEXT_VARIABLE}" was not found.`
+      );
+    }
+
+    if (
+      variable.resolvedType !==
+      "COLOR"
+    ) {
+      throw new Error(
+        `Variable "${COLOR_COLLECTION} / ${TEXT_VARIABLE}" must be COLOR, found "${variable.resolvedType}".`
+      );
+    }
+
+    return variable;
+  }
+
+  const textVariable =
+    await getTextVariable();
+
+
+  // ============================================================
+  // BOOK CARD
+  // ============================================================
 
   const bookCard =
     figma.createFrame();
@@ -326,6 +356,11 @@ Book Card
 
   bookCard.fills = [];
   bookCard.strokes = [];
+
+
+  // ============================================================
+  // THUMBNAIL
+  // ============================================================
 
   const thumbnail =
     figma.createFrame();
@@ -366,9 +401,7 @@ Book Card
   thumbnail.clipsContent =
     true;
 
-  thumbnail.fills =
-    solid(COLOR_THUMBNAIL);
-
+  thumbnail.fills = [];
   thumbnail.strokes = [];
 
   thumbnail.layoutGrow = 0;
@@ -376,6 +409,11 @@ Book Card
   bookCard.appendChild(
     thumbnail
   );
+
+
+  // ============================================================
+  // BOOK INFO
+  // ============================================================
 
   const bookInfo =
     figma.createFrame();
@@ -412,6 +450,11 @@ Book Card
   bookInfo.fills = [];
   bookInfo.strokes = [];
 
+
+  // ============================================================
+  // BOOK NAME
+  // ============================================================
+
   const bookName =
     figma.createText();
 
@@ -426,9 +469,6 @@ Book Card
 
   bookName.characters =
     BOOK_NAME;
-
-  bookName.fills =
-    solid(COLOR_BLACK);
 
   bookInfo.appendChild(
     bookName
@@ -449,6 +489,41 @@ Book Card
   bookName.textAlignVertical =
     "CENTER";
 
+
+  // ============================================================
+  // TEXT COLOR VARIABLE
+  // ============================================================
+
+  const fills =
+    bookName.fills;
+
+  const boundFills =
+    fills.map(
+      fill => {
+
+        if (
+          fill.type !== "SOLID"
+        ) {
+          return fill;
+        }
+
+        return figma.variables
+          .setBoundVariableForPaint(
+            fill,
+            "color",
+            textVariable
+          );
+      }
+    );
+
+  bookName.fills =
+    boundFills;
+
+
+  // ============================================================
+  // ADD TO PAGE
+  // ============================================================
+
   const page =
     figma.currentPage;
 
@@ -468,8 +543,26 @@ Book Card
       bookCard
     ]);
 
+
+  // ============================================================
+  // DONE
+  // ============================================================
+
   console.log(
-    "Book Card created successfully."
+    "Book Card created successfully.",
+    {
+      textVariable:
+        `${COLOR_COLLECTION} / ${TEXT_VARIABLE}`,
+
+      thumbnail:
+        `${THUMBNAIL_WIDTH} × ${THUMBNAIL_HEIGHT}`,
+
+      radius:
+        THUMBNAIL_RADIUS,
+
+      gap:
+        CARD_GAP,
+    }
   );
 })();
 ```
