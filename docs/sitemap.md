@@ -14,7 +14,8 @@ The application is kept intentionally small and focused on the core brief:
 
 ```
 /
-├── /stories/:slug
+├── /posts
+│   └── /posts/:slug
 │
 └── /books
     └── /book/:slug
@@ -42,11 +43,12 @@ The application is kept intentionally small and focused on the core brief:
 | Page ID | Route | Page | Parent |
 |---|---|---|---|
 | `PAGE-PUB-001` | `/` | Homepage | — |
-| `PAGE-PUB-003` | `/stories/:slug` | Story Detail | `/` |
+| `PAGE-PUB-002` | `/posts` | Posts | `/` |
+| `PAGE-PUB-003` | `/posts/:slug` | Post Detail | `/posts` |
 | `PAGE-PUB-004` | `/books` | Book Library | `/` |
 | `PAGE-PUB-005` | `/book/:slug` | Book Detail | `/books` |
 
-The homepage is the main public post surface. There is no separate stories listing route in this scope.
+The homepage is the main landing page and may surface the latest posts. The dedicated `/posts` route provides the public post collection.
 
 ---
 
@@ -84,9 +86,9 @@ There is no separate dashboard page in this scope. Admin entry can route directl
 
 ```
 Logo
-├── Stories
-│   └── Homepage latest-posts section
-└── Library
+├── Posts
+│   └── Posts
+└── Books
     └── Book Library
 ```
 
@@ -106,13 +108,24 @@ Admin
 Homepage
 │
 ├── Latest Posts
-│   └── Story Detail
+│   └── Post Detail
 │
 ├── Featured Books
 │   └── Book Detail
 │
 └── Explore the Library
     └── Book Library
+```
+
+---
+
+# Posts Relationships
+
+```
+Posts
+│
+└── Post Card
+    └── Post Detail
 ```
 
 ---
@@ -160,15 +173,16 @@ Admin authentication is required by `ADM-AUTH-001` but does not need a separate 
 | Resource | Route Pattern |
 |---|---|
 | Homepage | `/` |
-| Story detail | `/stories/:slug` |
+| Posts | `/posts` |
+| Post detail | `/posts/:slug` |
 | Library | `/books` |
 | Book detail | `/book/:slug` |
 | Admin | `/admin` |
 | Admin login | `/admin/login` |
-| Posts | `/admin/posts` |
+| Posts management | `/admin/posts` |
 | New post | `/admin/posts/new` |
 | Edit post | `/admin/posts/:id/edit` |
-| Books | `/admin/books` |
+| Books management | `/admin/books` |
 | New book | `/admin/books/new` |
 | Edit book | `/admin/books/:id/edit` |
 
@@ -178,9 +192,9 @@ Admin authentication is required by `ADM-AUTH-001` but does not need a separate 
 
 | Area | Routes |
 |---|---:|
-| Public Website | 4 |
+| Public Website | 5 |
 | Admin Panel | 7 |
 | System | 1 |
-| **Total** | **12** |
+| **Total** | **13** |
 
-Dynamic routes such as `/stories/:slug` and `/book/:slug` use shared page templates rather than separate designs for every item.
+Dynamic routes such as `/posts/:slug` and `/book/:slug` use shared page templates rather than separate designs for every item.
