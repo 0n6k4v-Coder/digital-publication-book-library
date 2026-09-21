@@ -7,7 +7,7 @@
 
 ---
 
-## Original Brief
+## Original Brief from [Fastwork](https://jobboard.fastwork.co/jobs/%E0%B8%9E%E0%B8%B1%E0%B8%92%E0%B8%99%E0%B8%B2%E0%B9%80%E0%B8%A7%E0%B9%87%E0%B8%9A%E0%B9%84%E0%B8%8B%E0%B8%95%E0%B9%8C/9ae4f57c-d5f0-474b-8d9d-7f663a95ea0f?source=web_jobboard_job-listing)
 
 > ฟังก์ชั่นง่ายๆครับ
 >
