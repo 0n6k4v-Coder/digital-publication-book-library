@@ -8,6 +8,7 @@
   * [Script](#variable-script)
 * [Component](#component)
 
+  * [Section Header](#section-header)
   * [Book Card](#book-card)
 
 ---
@@ -195,6 +196,288 @@
 ## Component
 
 <a id="component"></a>
+
+### Section Header
+
+<a id="section-header"></a>
+
+structure
+
+```text
+Section Header
+├── Header Row
+│   └── Section Title
+│
+└── Divider
+```
+table
+
+| Element          | Layout                 | Width | Height | Gap / Padding | Alignment              | Fill                    |
+| ---------------- | ---------------------- | ----- | ------ | ------------- | ---------------------- | ----------------------- |
+| `Section Header` | Vertical Auto Layout   | HUG   | HUG    | 8px gap       | Left / Top             | None                    |
+| `Header Row`     | Horizontal Auto Layout | FILL  | HUG    | 0 padding     | Space Between / Center | None                    |
+| `Section Title`  | Text                   | HUG   | HUG    | —             | Left / Center          | Colors / Text / Primary |
+| `Divider`        | Rectangle              | FILL  | 1px    | —             | —                      | `#DA3924`               |
+
+### Figma Developer Console Script
+
+```javascript
+(async () => {
+  const SECTION_TITLE = "Section Title";
+
+  const HEADER_GAP = 8;
+  const TITLE_SIZE = 22;
+
+  const DIVIDER_HEIGHT = 1;
+  const DIVIDER_COLOR = "#DA3924";
+
+  const COLOR_COLLECTION = "Colors";
+  const TEXT_VARIABLE = "Text / Primary";
+
+  const FONT = {
+    family: "Inter",
+    style: "Regular",
+  };
+
+  await figma.loadFontAsync(FONT);
+
+  async function getTextVariable() {
+    const collections =
+      await figma.variables
+        .getLocalVariableCollectionsAsync();
+
+    const collection =
+      collections.find(
+        item =>
+          item.name === COLOR_COLLECTION
+      );
+
+    if (!collection) {
+      throw new Error(
+        `Variable collection "${COLOR_COLLECTION}" was not found.`
+      );
+    }
+
+    const variables =
+      await figma.variables
+        .getLocalVariablesAsync();
+
+    const variable =
+      variables.find(
+        item =>
+          item.variableCollectionId === collection.id &&
+          item.name === TEXT_VARIABLE
+      );
+
+    if (!variable) {
+      throw new Error(
+        `Variable "${COLOR_COLLECTION} / ${TEXT_VARIABLE}" was not found.`
+      );
+    }
+
+    if (variable.resolvedType !== "COLOR") {
+      throw new Error(
+        `Variable "${COLOR_COLLECTION} / ${TEXT_VARIABLE}" must be COLOR.`
+      );
+    }
+
+    return variable;
+  }
+
+  const textVariable =
+    await getTextVariable();
+
+  function hexToRgb(hex) {
+    const value =
+      hex.replace("#", "");
+
+    if (!/^[0-9A-Fa-f]{6}$/.test(value)) {
+      throw new Error(
+        `Invalid color: ${hex}`
+      );
+    }
+
+    return {
+      r: parseInt(value.slice(0, 2), 16) / 255,
+      g: parseInt(value.slice(2, 4), 16) / 255,
+      b: parseInt(value.slice(4, 6), 16) / 255,
+    };
+  }
+
+  function solid(hex, opacity = 1) {
+    return [
+      {
+        type: "SOLID",
+        color: hexToRgb(hex),
+        opacity,
+      },
+    ];
+  }
+
+  const sectionHeader =
+    figma.createFrame();
+
+  sectionHeader.name =
+    "Section Header";
+
+  sectionHeader.layoutMode =
+    "VERTICAL";
+
+  sectionHeader.layoutSizingHorizontal =
+    "HUG";
+
+  sectionHeader.layoutSizingVertical =
+    "HUG";
+
+  sectionHeader.itemSpacing =
+    HEADER_GAP;
+
+  sectionHeader.primaryAxisAlignItems =
+    "MIN";
+
+  sectionHeader.counterAxisAlignItems =
+    "MIN";
+
+  sectionHeader.paddingTop = 0;
+  sectionHeader.paddingRight = 0;
+  sectionHeader.paddingBottom = 0;
+  sectionHeader.paddingLeft = 0;
+
+  sectionHeader.fills = [];
+  sectionHeader.strokes = [];
+
+  const headerRow =
+    figma.createFrame();
+
+  headerRow.name =
+    "Header Row";
+
+  headerRow.layoutMode =
+    "HORIZONTAL";
+
+  sectionHeader.appendChild(
+    headerRow
+  );
+
+  headerRow.layoutSizingHorizontal =
+    "FILL";
+
+  headerRow.layoutSizingVertical =
+    "HUG";
+
+  headerRow.paddingTop = 0;
+  headerRow.paddingRight = 0;
+  headerRow.paddingBottom = 0;
+  headerRow.paddingLeft = 0;
+
+  headerRow.primaryAxisAlignItems =
+    "SPACE_BETWEEN";
+
+  headerRow.counterAxisAlignItems =
+    "CENTER";
+
+  headerRow.itemSpacing = 0;
+
+  headerRow.fills = [];
+  headerRow.strokes = [];
+
+  const sectionTitle =
+    figma.createText();
+
+  sectionTitle.name =
+    "Section Title";
+
+  sectionTitle.fontName =
+    FONT;
+
+  sectionTitle.fontSize =
+    TITLE_SIZE;
+
+  sectionTitle.characters =
+    SECTION_TITLE;
+
+  sectionTitle.textAutoResize =
+    "WIDTH_AND_HEIGHT";
+
+  sectionTitle.textAlignHorizontal =
+    "LEFT";
+
+  sectionTitle.textAlignVertical =
+    "CENTER";
+
+  headerRow.appendChild(
+    sectionTitle
+  );
+
+  sectionTitle.layoutSizingHorizontal =
+    "HUG";
+
+  sectionTitle.layoutSizingVertical =
+    "HUG";
+
+  sectionTitle.fills =
+    [
+      figma.variables.setBoundVariableForPaint(
+        {
+          type: "SOLID",
+          color: hexToRgb("#000000"),
+          opacity: 1,
+        },
+        "color",
+        textVariable
+      ),
+    ];
+
+  const divider =
+    figma.createRectangle();
+
+  divider.name =
+    "Divider";
+
+  sectionHeader.appendChild(
+    divider
+  );
+
+  divider.layoutSizingHorizontal =
+    "FILL";
+
+  divider.layoutSizingVertical =
+    "FIXED";
+
+  divider.resize(
+    divider.width,
+    DIVIDER_HEIGHT
+  );
+
+  divider.fills =
+    solid(DIVIDER_COLOR);
+
+  divider.strokes = [];
+
+  const page =
+    figma.currentPage;
+
+  page.appendChild(
+    sectionHeader
+  );
+
+  sectionHeader.x = 0;
+  sectionHeader.y = 0;
+
+  page.selection = [
+    sectionHeader
+  ];
+
+  figma.viewport
+    .scrollAndZoomIntoView([
+      sectionHeader
+    ]);
+
+  console.log(
+    "Section Header created successfully."
+  );
+})();
+```
 
 ### Book Card
 
