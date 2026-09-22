@@ -2,20 +2,18 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Archive — Post Editor</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link
-    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap"
-    rel="stylesheet"
-  >
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <style>
     :root {
-      --surface: #ffffff;
+      --surface: #fff;
       --surface-soft: #f7f7f4;
+      --surface-active: #f1f1ec;
       --text: #171717;
       --body-text: #2b2b28;
       --muted: #85857f;
@@ -25,67 +23,62 @@
       --accent: #d9ff4f;
       --accent-border: #bedf3c;
       --accent-hover: #d0f447;
-
-      --topbar-height: 64px;
-      --page-padding: 24px;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-right: env(safe-area-inset-right, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --safe-left: env(safe-area-inset-left, 0px);
+      --topbar-content-height: 64px;
+      --topbar-height: calc(var(--topbar-content-height) + var(--safe-top));
+      --tools-height: 56px;
+      --page-padding: clamp(8px, 4vw, 24px);
       --content-width: 820px;
       --body-width: 720px;
-
       --control-height: 40px;
       --back-size: 44px;
-      --title-size: 48px;
-      --subtitle-size: 24px;
-      --body-size: 19px;
-
+      --title-size: clamp(30px, 6.5vw, 48px);
+      --subtitle-size: clamp(18px, 3.4vw, 24px);
+      --body-size: clamp(17px, 2.4vw, 19px);
+      --tool-size: 36px;
+      --tool-icon-size: 20px;
+      --tool-text-size: 14px;
+      --tool-gap: 8px;
       --radius-sm: 8px;
       --radius-md: 10px;
       --transition-fast: 160ms ease;
-
-      --shadow-menu:
-        0 16px 36px rgb(23 23 23 / 0.12),
-        0 3px 10px rgb(23 23 23 / 0.05);
+      --shadow-menu: 0 16px 36px rgb(23 23 23 / .12), 0 3px 10px rgb(23 23 23 / .05);
     }
 
     *,
     *::before,
-    *::after {
-      box-sizing: border-box;
-    }
+    *::after { box-sizing: border-box; }
 
-    html {
-      min-width: 320px;
-      min-height: 100%;
-      background: var(--surface);
-    }
-
+    html,
     body {
       min-width: 320px;
-      min-height: 100vh;
+      min-height: 100%;
       margin: 0;
       background: var(--surface);
+    }
+
+    html { overflow-x: clip; }
+
+    body {
+      min-height: 100vh;
+      min-height: 100svh;
+      min-height: 100dvh;
       color: var(--text);
       font-family: "DM Sans", sans-serif;
       -webkit-font-smoothing: antialiased;
       text-rendering: optimizeLegibility;
+      overflow-x: clip;
     }
 
     button,
-    input {
-      font: inherit;
-    }
+    input { font: inherit; }
 
-    button {
-      border: 0;
-    }
-
-    a {
-      color: inherit;
-      text-decoration: none;
-    }
-
-    svg {
-      display: block;
-    }
+    button { border: 0; }
+    a { color: inherit; text-decoration: none; }
+    svg { display: block; }
 
     button:focus-visible,
     a:focus-visible {
@@ -93,31 +86,34 @@
       outline-offset: 3px;
     }
 
+    .post-body,
+    .post-body:focus,
+    .post-body:focus-visible {
+      outline: none !important;
+      border: 0 !important;
+      box-shadow: none !important;
+    }
+
     .writing-workspace {
       min-height: 100vh;
+      min-height: 100svh;
+      min-height: 100dvh;
       background: var(--surface);
     }
 
     .writing-topbar {
       position: sticky;
       top: 0;
-      z-index: 50;
+      z-index: 100;
       width: 100%;
       min-height: var(--topbar-height);
-
-      padding-inline:
-        max(var(--page-padding), env(safe-area-inset-left))
-        max(var(--page-padding), env(safe-area-inset-right));
-      padding-top: env(safe-area-inset-top);
-
+      padding-top: var(--safe-top);
+      padding-inline: max(var(--page-padding), var(--safe-left)) max(var(--page-padding), var(--safe-right));
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 16px;
-
-      border-bottom: 1px solid var(--line);
-      background: rgb(255 255 255 / 0.96);
-
+      background: rgb(255 255 255 / .96);
       backdrop-filter: blur(14px);
       -webkit-backdrop-filter: blur(14px);
     }
@@ -139,22 +135,15 @@
       min-width: var(--back-size);
       height: var(--back-size);
       padding: 0;
-
       display: inline-flex;
       align-items: center;
       justify-content: center;
-
       border: 1px solid transparent;
       border-radius: var(--radius-sm);
-
       background: transparent;
       color: var(--text);
-
       cursor: pointer;
-
-      transition:
-        background var(--transition-fast),
-        border-color var(--transition-fast);
+      transition: background var(--transition-fast), border-color var(--transition-fast);
     }
 
     .back-button:hover {
@@ -162,37 +151,25 @@
       background: var(--surface-soft);
     }
 
-    .back-button__icon {
-      width: 19px;
-      height: 19px;
-    }
+    .back-button__icon { width: 19px; height: 19px; }
 
     .preview-button {
       min-height: var(--control-height);
       padding-inline: 15px;
-
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
-
       border: 1px solid var(--line);
       border-radius: var(--radius-sm);
-
       background: var(--surface);
       color: #5e5e58;
-
       font-size: 11px;
       line-height: 1;
       font-weight: 700;
-
       white-space: nowrap;
       cursor: pointer;
-
-      transition:
-        background var(--transition-fast),
-        border-color var(--transition-fast),
-        color var(--transition-fast);
+      transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
     }
 
     .preview-button:hover {
@@ -217,33 +194,24 @@
     .status-action__menu {
       min-height: var(--control-height);
       cursor: pointer;
-
-      transition:
-        background var(--transition-fast),
-        border-color var(--transition-fast),
-        color var(--transition-fast);
+      transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
     }
 
     .status-action__main {
       min-width: 92px;
       padding-inline: 15px;
-
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
-
       border: 1px solid var(--accent-border);
       border-right: 0;
       border-radius: var(--radius-sm) 0 0 var(--radius-sm);
-
       background: var(--accent);
       color: #181818;
-
       font-size: 11px;
       line-height: 1;
       font-weight: 700;
-
       white-space: nowrap;
     }
 
@@ -255,13 +223,12 @@
     .status-action__main--draft {
       border-color: var(--text);
       background: var(--text);
-      color: #ffffff;
+      color: #fff;
     }
 
     .status-action__main--draft:hover {
-      border-color: #000000;
-      background: #000000;
-      color: #ffffff;
+      border-color: #000;
+      background: #000;
     }
 
     .status-action__icon {
@@ -273,14 +240,11 @@
     .status-action__menu {
       width: 34px;
       padding: 0;
-
       display: inline-flex;
       align-items: center;
       justify-content: center;
-
       border: 1px solid var(--accent-border);
       border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-
       background: var(--accent);
       color: #181818;
     }
@@ -293,53 +257,42 @@
     .status-action__main--draft + .status-action__menu {
       border-color: var(--text);
       background: var(--text);
-      color: #ffffff;
+      color: #fff;
     }
 
     .status-action__main--draft + .status-action__menu:hover {
-      border-color: #000000;
-      background: #000000;
-      color: #ffffff;
+      border-color: #000;
+      background: #000;
     }
 
-    .status-action__menu-icon {
-      width: 14px;
-      height: 14px;
-    }
+    .status-action__menu-icon { width: 14px; height: 14px; }
 
-    .status-action__popup {
-      position: absolute;
-      top: calc(100% + 8px);
-      right: 0;
-
+    .status-action__popup,
+    .menu-popup {
+      position: fixed;
+      z-index: 400;
       width: max-content;
-      min-width: 184px;
-      max-width: min(240px, calc(100vw - 16px));
-
+      min-width: 180px;
+      max-width: calc(100vw - 16px);
+      max-height: calc(100dvh - 16px);
       padding: 6px;
-
       display: flex;
       flex-direction: column;
-      gap: 5px;
-
+      gap: 4px;
       border: 1px solid var(--line);
       border-radius: var(--radius-md);
-
       background: var(--surface);
       box-shadow: var(--shadow-menu);
-
       opacity: 0;
       visibility: hidden;
       transform: translateY(-4px);
       pointer-events: none;
-
-      transition:
-        opacity var(--transition-fast),
-        transform var(--transition-fast),
-        visibility var(--transition-fast);
+      overflow-y: auto;
+      transition: opacity var(--transition-fast), transform var(--transition-fast), visibility var(--transition-fast);
     }
 
-    .status-action.is-open .status-action__popup {
+    .status-action__popup.is-open,
+    .menu-popup.is-open {
       opacity: 1;
       visibility: visible;
       transform: translateY(0);
@@ -347,124 +300,238 @@
     }
 
     .status-action__popup-label {
-      padding: 5px 9px 4px;
+      padding: 5px 10px 4px;
       color: var(--muted);
-
       font-size: 8px;
       line-height: 1;
       font-weight: 800;
-      letter-spacing: 0.12em;
+      letter-spacing: .12em;
       text-transform: uppercase;
     }
 
-    .status-action__option {
+    /*
+     * Publish / Save As Draft options deliberately match the
+     * toolbar dropdown options: 40px high, 20px icon,
+     * 14px / 500 text, same neutral text color.
+     * Option buttons themselves are borderless.
+     */
+    .status-action__option,
+    .menu-option {
       width: 100%;
-      min-height: 42px;
+      min-height: 40px;
       padding: 0 10px;
-
       display: inline-flex;
       align-items: center;
-      gap: 14px;
-
-      border: 1px solid transparent;
+      gap: 12px;
+      border: 0 !important;
+      outline: none;
       border-radius: 7px;
-
       background: transparent;
-      color: var(--text);
-
+      color: #666660;
+      font-size: 14px;
+      line-height: 1.2;
+      font-weight: 500;
       text-align: left;
+      white-space: nowrap;
       cursor: pointer;
-
-      transition:
-        background var(--transition-fast),
-        border-color var(--transition-fast),
-        color var(--transition-fast);
+      transition: background var(--transition-fast), color var(--transition-fast);
     }
 
-    .status-action__option:hover {
-      border-color: var(--line);
+    .status-action__option:hover,
+    .status-action__option:focus-visible,
+    .menu-option:hover,
+    .menu-option:focus-visible {
+      border: 0 !important;
+      outline: none;
       background: var(--surface-soft);
+      color: var(--text);
+      box-shadow: none;
     }
 
-    .status-action__option.is-active {
-      border-color: var(--line-strong);
-      background: #f1f1ec;
+    .status-action__option.is-active,
+    .menu-option.is-active {
+      border: 0 !important;
+      background: var(--surface-active);
+      color: var(--text);
     }
 
-    .status-action__option.is-active:hover {
-      border-color: var(--line-strong);
+    .status-action__option.is-active:hover,
+    .status-action__option.is-active:focus-visible,
+    .menu-option.is-active:hover,
+    .menu-option.is-active:focus-visible {
+      border: 0 !important;
       background: #ecece7;
     }
 
-    .status-action__option-icon {
-      width: 15px;
-      height: 15px;
+    .status-action__option-icon,
+    .menu-option__icon {
+      width: 20px;
+      height: 20px;
       flex: 0 0 auto;
-      color: var(--muted);
-    }
-
-    .status-action__option.is-active .status-action__option-icon {
-      color: var(--text);
+      color: currentColor;
     }
 
     .status-action__option-copy {
       min-width: 0;
-
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
+      flex: 1 1 auto;
+      display: block;
     }
 
     .status-action__option-title {
-      font-size: 10px;
+      color: currentColor;
+      font-size: 14px;
       line-height: 1.2;
-      font-weight: 700;
-      white-space: nowrap;
-    }
-
-    .status-action__option-description {
-      color: var(--muted);
-
-      font-size: 8px;
-      line-height: 1.35;
       font-weight: 500;
       white-space: nowrap;
     }
 
+    .status-action__option-description { display: none; }
+
+    .menu-option__label,
+    .style-option__label {
+      min-width: 0;
+      flex: 1 1 auto;
+      color: currentColor;
+      font-size: 14px;
+      line-height: 1.2;
+      font-weight: 500;
+    }
+
+    .menu-option__check {
+      width: 16px;
+      height: 16px;
+      margin-left: auto;
+      flex: 0 0 auto;
+      opacity: 0;
+      color: currentColor;
+    }
+
+    .menu-option.is-active .menu-option__check {
+      opacity: 1;
+    }
+
+    .writing-tools {
+      position: sticky;
+      top: var(--topbar-height);
+      z-index: 90;
+      width: 100%;
+      min-height: var(--tools-height);
+      padding-inline: max(8px, var(--safe-left)) max(8px, var(--safe-right));
+      background: var(--surface);
+      overflow-x: auto;
+      overflow-y: visible;
+      overscroll-behavior-x: contain;
+      scrollbar-width: none;
+    }
+
+    .writing-tools::-webkit-scrollbar { display: none; }
+
+    .writing-tools__inner {
+      width: max-content;
+      min-width: 100%;
+      min-height: var(--tools-height);
+      padding-block: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--tool-gap);
+      white-space: nowrap;
+    }
+
+    .writing-tool {
+      position: relative;
+      width: var(--tool-size);
+      min-width: var(--tool-size);
+      height: var(--tool-size);
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      border: 0;
+      border-radius: 7px;
+      background: transparent;
+      color: #666660;
+      font-size: var(--tool-text-size);
+      line-height: 1;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background var(--transition-fast), color var(--transition-fast);
+    }
+
+    .writing-tool:hover,
+    .writing-tool.is-open {
+      background: var(--surface-soft);
+      color: var(--text);
+    }
+
+    .writing-tool__icon {
+      width: var(--tool-icon-size);
+      height: var(--tool-icon-size);
+      flex: 0 0 auto;
+      color: currentColor;
+    }
+
+    .writing-tool__label {
+      font-size: var(--tool-text-size);
+      line-height: 1;
+      font-weight: 500;
+    }
+
+    .writing-tool__chevron {
+      width: 14px;
+      height: 14px;
+      flex: 0 0 auto;
+    }
+
+    .writing-tool__color-bar {
+      position: absolute;
+      left: 50%;
+      bottom: 4px;
+      width: 12px;
+      height: 3px;
+      border-radius: 2px;
+      transform: translateX(-50%);
+      background: #171717;
+    }
+
+    .writing-tool__color-bar--highlight {
+      background: #d9ff4f;
+    }
+
+    .writing-tool--style,
+    .writing-tool--dropdown {
+      width: auto;
+      min-width: auto;
+      padding-inline: 8px;
+    }
+
     .writing-canvas {
-      min-height: calc(100vh - var(--topbar-height));
-
+      min-height: calc(100dvh - var(--topbar-height) - var(--tools-height));
       padding:
-        64px
-        max(var(--page-padding), env(safe-area-inset-right))
-        120px
-        max(var(--page-padding), env(safe-area-inset-left));
-
+        clamp(32px, 7vw, 64px)
+        max(var(--page-padding), var(--safe-right))
+        clamp(72px, 10vw, 120px)
+        max(var(--page-padding), var(--safe-left));
       background: var(--surface);
     }
 
     .post-editor {
       width: min(100%, var(--content-width));
       margin-inline: auto;
-
       display: flex;
       flex-direction: column;
     }
 
     .post-field__label {
       position: absolute;
-
       width: 1px;
       height: 1px;
-
       padding: 0;
       margin: -1px;
-
       overflow: hidden;
-
       clip: rect(0, 0, 0, 0);
       white-space: nowrap;
-
       border: 0;
     }
 
@@ -472,152 +539,110 @@
     .post-subtitle {
       width: 100%;
       padding: 0;
-
       border: 0;
       outline: 0;
-
       background: transparent;
       font-family: inherit;
-
       caret-color: var(--text);
     }
 
     .post-title {
       color: var(--text);
-
       font-size: var(--title-size);
       line-height: 1.08;
       font-weight: 700;
-      letter-spacing: -0.035em;
+      letter-spacing: -.035em;
     }
 
-    .post-title::placeholder {
-      color: var(--placeholder);
-      opacity: 1;
-    }
-
-    .post-title:focus::placeholder {
-      color: #b5b5ae;
-    }
-
-    .post-subtitle {
-      margin-top: 18px;
-
-      color: #60605a;
-
-      font-size: var(--subtitle-size);
-      line-height: 1.4;
-      font-weight: 400;
-      letter-spacing: -0.015em;
-    }
-
+    .post-title::placeholder,
     .post-subtitle::placeholder {
       color: var(--placeholder);
       opacity: 1;
     }
 
-    .post-subtitle:focus::placeholder {
-      color: #b5b5ae;
+    .post-subtitle {
+      margin-top: 18px;
+      color: #60605a;
+      font-size: var(--subtitle-size);
+      line-height: 1.4;
+      font-weight: 400;
+      letter-spacing: -.015em;
     }
 
     .post-body {
       width: min(100%, var(--body-width));
-      min-height: 480px;
-
+      height: auto;
+      min-height: 0;
+      max-height: none;
       margin-top: 48px;
       padding: 0;
-
-      outline: 0;
       border: 0;
-
+      outline: none;
+      box-shadow: none;
       color: var(--body-text);
-
       font-family: inherit;
       font-size: var(--body-size);
       line-height: 1.75;
       font-weight: 400;
-      letter-spacing: -0.005em;
-
+      letter-spacing: -.005em;
       caret-color: var(--text);
-
       white-space: pre-wrap;
       overflow-wrap: break-word;
-
       cursor: text;
     }
 
     .post-body:empty::before {
       content: attr(data-placeholder);
-
-      display: inline;
+      display: block;
+      width: 100%;
       color: var(--placeholder);
-
+      text-align: left !important;
       pointer-events: none;
+      white-space: normal;
     }
 
-    .post-body p {
-      margin: 0 0 1.25em;
+    .post-body p { margin: 0 0 1.25em; }
+    .post-body p:last-child { margin-bottom: 0; }
+
+    .post-body h1,
+    .post-body h2,
+    .post-body h3,
+    .post-body h4,
+    .post-body h5,
+    .post-body h6,
+    .post-body blockquote,
+    .post-body ul,
+    .post-body ol {
+      margin-block-start: 0;
+      margin-block-end: 1em;
     }
 
-    .post-body p:last-child {
-      margin-bottom: 0;
+    .post-body blockquote {
+      padding-left: 20px;
+      border-left: 3px solid var(--line-strong);
+      color: #55554f;
     }
 
-    @media (max-width: 760px) {
-      :root {
-        --title-size: 42px;
-        --subtitle-size: 22px;
-        --body-size: 18px;
-      }
-
-      .writing-canvas {
-        padding-top: 48px;
-        padding-bottom: 96px;
-      }
-
-      .post-body {
-        margin-top: 42px;
-      }
+    @media (max-width: 900px) {
+      .writing-tools__inner { justify-content: flex-start; }
     }
 
     @media (max-width: 640px) {
       :root {
-        --topbar-height: 58px;
+        --topbar-content-height: 58px;
+        --tools-height: 54px;
         --page-padding: 12px;
-        --back-size: 40px;
-
-        --title-size: 36px;
-        --subtitle-size: 20px;
-        --body-size: 18px;
       }
 
-      .writing-topbar {
-        gap: 10px;
-      }
-
-      .writing-topbar__right {
-        gap: 6px;
-      }
-
-      .back-button {
-        border-radius: 7px;
-      }
-
-      .back-button__icon {
-        width: 18px;
-        height: 18px;
-      }
+      .writing-topbar { gap: 10px; }
+      .writing-topbar__right { gap: 6px; }
+      .back-button { border-radius: 7px; }
 
       .preview-button {
         min-height: 40px;
         padding-inline: 12px;
         gap: 7px;
         font-size: 10px;
-      }
-
-      .preview-button__icon {
-        width: 14px;
-        height: 14px;
       }
 
       .status-action__main {
@@ -633,38 +658,11 @@
         min-height: 40px;
       }
 
-      .status-action__icon {
-        width: 14px;
-        height: 14px;
-      }
-
-      .status-action__menu-icon {
-        width: 13px;
-        height: 13px;
-      }
-
-      .status-action__popup {
-        min-width: 178px;
-        max-width: calc(100vw - 16px);
-      }
-
-      .status-action__option {
-        gap: 13px;
-      }
-
-      .writing-canvas {
-        padding-top: 40px;
-        padding-bottom: 72px;
-      }
-
-      .post-subtitle {
-        margin-top: 14px;
-      }
-
-      .post-body {
-        min-height: 380px;
-        margin-top: 36px;
-      }
+      .writing-tools { padding-inline: 8px; }
+      .writing-tools__inner { min-height: 54px; padding-block: 9px; }
+      .writing-canvas { padding-top: 40px; padding-bottom: 72px; }
+      .post-subtitle { margin-top: 14px; }
+      .post-body { margin-top: 36px; }
     }
 
     @media (max-width: 460px) {
@@ -675,49 +673,17 @@
         --body-size: 17px;
       }
 
-      .writing-topbar__right {
-        gap: 5px;
-      }
-
-      .preview-button {
-        padding-inline: 10px;
-      }
-
-      .status-action__main {
-        min-width: 84px;
-        padding-inline: 10px;
-      }
-
-      .status-action__menu {
-        width: 30px;
-      }
-
-      .status-action__popup {
-        min-width: 176px;
-      }
-
-      .status-action__option {
-        padding-inline: 9px;
-        gap: 12px;
-      }
-
-      .writing-canvas {
-        padding-top: 34px;
-      }
-
-      .post-body {
-        margin-top: 32px;
-      }
+      .writing-topbar__right { gap: 5px; }
+      .preview-button { padding-inline: 10px; }
+      .status-action__main { min-width: 84px; padding-inline: 10px; }
+      .status-action__menu { width: 30px; }
+      .writing-canvas { padding-top: 34px; }
+      .post-body { margin-top: 32px; }
     }
 
     @media (max-width: 380px) {
-      .preview-button__icon {
-        display: none;
-      }
-
-      .preview-button {
-        padding-inline: 11px;
-      }
+      .preview-button__icon { display: none; }
+      .preview-button { padding-inline: 11px; }
 
       .status-action__main {
         min-width: 80px;
@@ -725,34 +691,18 @@
         font-size: 9.5px;
       }
 
-      .status-action__main .status-action__icon {
-        display: none;
-      }
+      .status-action__main .status-action__icon { display: none; }
+      .status-action__menu { width: 30px; }
 
-      .status-action__popup {
-        min-width: 172px;
-      }
-
-      .post-title {
-        font-size: 30px;
-      }
-
-      .post-subtitle {
-        font-size: 18px;
-      }
-
-      .post-body {
-        font-size: 17px;
-        line-height: 1.7;
-      }
+      .post-title { font-size: 30px; }
+      .post-subtitle { font-size: 18px; }
+      .post-body { font-size: 17px; line-height: 1.7; }
     }
 
     @media (prefers-reduced-motion: reduce) {
       *,
       *::before,
-      *::after {
-        transition-duration: 0.01ms !important;
-      }
+      *::after { transition-duration: .01ms !important; }
     }
   </style>
 </head>
@@ -762,229 +712,306 @@
 
     <header class="writing-topbar" aria-label="Post editor actions">
       <div class="writing-topbar__left">
-        <a
-          class="back-button"
-          href="/admin/posts"
-          aria-label="Back to posts"
-        >
-          <svg
-            class="back-button__icon"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.8"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
-          >
+        <a class="back-button" href="/admin/posts" aria-label="Back to posts">
+          <svg class="back-button__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M15 18l-6-6 6-6"></path>
           </svg>
         </a>
       </div>
 
       <div class="writing-topbar__right">
-
-        <button
-          class="preview-button"
-          type="button"
-          aria-label="Preview post"
-          data-preview-button
-        >
-          <svg
-            class="preview-button__icon"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.7"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
-          >
-            <path
-              d="M2.5 12s3.5-6 9.5-6s9.5 6 9.5 6s-3.5 6-9.5 6s-9.5-6-9.5-6Z"
-            ></path>
-
-            <circle
-              cx="12"
-              cy="12"
-              r="2.5"
-            ></circle>
+        <button class="preview-button" type="button" aria-label="Preview post" data-preview-button>
+          <svg class="preview-button__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M2.5 12s3.5-6 9.5-6s9.5 6 9.5 6s-3.5 6-9.5 6s-9.5-6-9.5-6Z"></path>
+            <circle cx="12" cy="12" r="2.5"></circle>
           </svg>
-
           <span>Preview</span>
         </button>
 
-        <div
-          class="status-action"
-          data-status-action
-        >
-          <button
-            class="status-action__main"
-            type="button"
-            data-status-main
-            aria-label="Publish post"
-          >
-            <svg
-              class="status-action__icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.7"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-              data-status-main-icon
-            >
+        <div class="status-action" data-status-action>
+          <button class="status-action__main" type="button" data-status-main aria-label="Publish post">
+            <svg class="status-action__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-status-main-icon>
               <path d="M22 2L11 13"></path>
               <path d="M22 2L15 22L11 13L2 9L22 2Z"></path>
             </svg>
-
-            <span data-status-main-label>
-              Publish
-            </span>
+            <span data-status-main-label>Publish</span>
           </button>
 
-          <button
-            class="status-action__menu"
-            type="button"
-            aria-label="Change post action"
-            aria-haspopup="menu"
-            aria-expanded="false"
-            data-status-menu-button
-          >
-            <svg
-              class="status-action__menu-icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.8"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
+          <button class="status-action__menu" type="button" aria-label="Change post action" aria-haspopup="menu" aria-expanded="false" data-status-menu-button>
+            <svg class="status-action__menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M7 10l5 5l5-5"></path>
             </svg>
           </button>
 
-          <div
-            class="status-action__popup"
-            role="menu"
-            aria-label="Post action"
-            data-status-menu
-          >
-            <div class="status-action__popup-label">
-              Action
-            </div>
+          <div class="status-action__popup" role="menu" aria-label="Post action" data-status-menu>
+            <div class="status-action__popup-label">Action</div>
 
-            <button
-              class="status-action__option is-active"
-              type="button"
-              role="menuitemradio"
-              aria-checked="true"
-              data-action-option="publish"
-            >
-              <svg
-                class="status-action__option-icon"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.7"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-              >
+            <button class="status-action__option is-active" type="button" role="menuitemradio" aria-checked="true" data-action-option="publish">
+              <svg class="status-action__option-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M22 2L11 13"></path>
                 <path d="M22 2L15 22L11 13L2 9L22 2Z"></path>
               </svg>
-
               <span class="status-action__option-copy">
-                <span class="status-action__option-title">
-                  Publish
-                </span>
-
-                <span class="status-action__option-description">
-                  Publish the current post.
-                </span>
+                <span class="status-action__option-title">Publish</span>
               </span>
+              <svg class="menu-option__check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M5 12.5l4 4L19 7"></path>
+              </svg>
             </button>
 
-            <button
-              class="status-action__option"
-              type="button"
-              role="menuitemradio"
-              aria-checked="false"
-              data-action-option="draft"
-            >
-              <svg
-                class="status-action__option-icon"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.7"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-              >
+            <button class="status-action__option" type="button" role="menuitemradio" aria-checked="false" data-action-option="draft">
+              <svg class="status-action__option-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M5 4H16L19 7V20H5Z"></path>
                 <path d="M8 4V10H16V4"></path>
                 <path d="M8 20V14H16V20"></path>
               </svg>
-
               <span class="status-action__option-copy">
-                <span class="status-action__option-title">
-                  Save As Draft
-                </span>
-
-                <span class="status-action__option-description">
-                  Keep the post unpublished.
-                </span>
+                <span class="status-action__option-title">Save As Draft</span>
               </span>
+              <svg class="menu-option__check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M5 12.5l4 4L19 7"></path>
+              </svg>
             </button>
           </div>
         </div>
-
       </div>
     </header>
 
-    <main
-      class="writing-canvas"
-      aria-label="Create post"
-    >
+    <nav class="writing-tools" aria-label="Writing tools">
+      <div class="writing-tools__inner">
+
+        <button class="writing-tool" type="button" aria-label="Undo" data-tool-action="undo">
+          <svg class="writing-tool__icon" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
+            <path d="M288-192v-72h288q50 0 85-35t35-85q0-50-35-85t-85-35H330l93 93-51 51-180-180 180-180 51 51-93 93h246q80 0 136 56t56 136q0 80-56 136t-136 56H288Z"></path>
+          </svg>
+        </button>
+
+        <button class="writing-tool" type="button" aria-label="Redo" data-tool-action="redo">
+          <svg class="writing-tool__icon" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
+            <path d="M384-192q-80 0-136-56t-56-136q0-80 56-136t136-56h246l-93-93 51-51 180 180-180 180-51-51 93-93H384q-50 0-85 35t-35 85q0 50 35 85t85 35h288v72H384Z"></path>
+          </svg>
+        </button>
+
+        <span class="toolbar-divider" aria-hidden="true" style="width:1px;height:22px;background:#e5e5df;flex:0 0 auto;"></span>
+
+        <button class="writing-tool writing-tool--style" type="button" aria-label="Style" aria-haspopup="menu" aria-expanded="false" data-menu-button="style">
+          <span class="writing-tool__label">Style</span>
+          <svg class="writing-tool__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M7 10l5 5l5-5"></path>
+          </svg>
+        </button>
+
+        <button class="writing-tool" type="button" aria-label="Bold" data-tool-action="bold">
+          <svg class="writing-tool__icon" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
+            <path d="M266-192v-576h227.95q67.05 0 123.55 41.32Q674-685.35 674-612q0 51-22.5 79.5T609-490.96Q635-479 665-448t30 91q0 91-67.03 128t-125.81 37H266Zm127-118h104.68Q546-310 556-334.5t10-35.5q0-11-10.5-35.5T494-430H393v120Zm0-232h93q33 0 48.5-17.5T550-597q0-24-17.11-39t-44.28-15H393v109Z"></path>
+          </svg>
+        </button>
+
+        <button class="writing-tool" type="button" aria-label="Italic" data-tool-action="italic">
+          <svg class="writing-tool__icon" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
+            <path d="M216-192v-96h160l124-384H336v-96h408v96H596L472-288h152v96H216Z"></path>
+          </svg>
+        </button>
+
+        <button class="writing-tool" type="button" aria-label="Text color" aria-haspopup="menu" aria-expanded="false" data-menu-button="text-color">
+          <svg class="writing-tool__icon" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
+            <path d="M288-192v-480H96v-96h480v96H384v480h-96Zm360 0v-288H528v-96h336v96H744v288h-96Z"></path>
+          </svg>
+          <span class="writing-tool__color-bar" data-text-color-bar></span>
+        </button>
+
+        <button class="writing-tool" type="button" aria-label="Highlight" aria-haspopup="menu" aria-expanded="false" data-menu-button="highlight">
+          <svg class="writing-tool__icon" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
+            <path d="m548-410-90-91-193 193 91 91 192-193Zm-38-143 90 91 192-192-90-91-192 192Zm-77-24 192 192-218 218q-22 20-50.5 21.5T308-164l-20 20H96l116-116q-21-20-20-49.5t23-49.5l218-218Zm0 0 218-218q21-21 51-21t51 21l90 90q20 22 20 51t-20 51L625-385 433-577Z"></path>
+          </svg>
+          <span class="writing-tool__color-bar writing-tool__color-bar--highlight" data-highlight-color-bar></span>
+        </button>
+
+        <button class="writing-tool writing-tool--dropdown" type="button" aria-label="Text format" aria-haspopup="menu" aria-expanded="false" data-menu-button="text-format">
+          <svg class="writing-tool__icon" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
+            <path d="M192-240v-72h576v72H192Zm109-144 145-384h69l144 384h-67l-34-98H403l-35 98h-67Zm121-154h116l-56-158h-3l-57 158Z"></path>
+          </svg>
+          <svg class="writing-tool__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M7 10l5 5l5-5"></path>
+          </svg>
+        </button>
+
+        <button class="writing-tool" type="button" aria-label="Link" data-tool-action="link">
+          <svg class="writing-tool__icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="20" height="20" fill="currentColor" aria-hidden="true">
+            <path d="M323-143q-74 0-126-52.5T145-322q0-35 13.5-68t38.5-58l132-132 51 51-132 132q-15 15-23.5 34.5T216-322q0 45 31 75.5t76 30.5q21 0 40-8t34-23l133-132 51 51-133 132q-25 26-57.5 39.5T323-143Zm88-217-51-51 189-189 51 51-189 189Zm220-20-51-51 133-132q15-14 22.5-33.5T743-636q0-45-30.5-76T637-743q-21 0-40 7.5T563-713L431-580l-51-51 132-133q25-26 58-39t68-13q74 0 125.5 52T815-637q0 35-13 67.5T764-512L631-380Z"></path>
+          </svg>
+        </button>
+
+        <button class="writing-tool" type="button" aria-label="Image" aria-haspopup="menu" aria-expanded="false" data-menu-button="media">
+          <svg class="writing-tool__icon" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
+            <path d="M216-144q-29.7 0-50.85-21.5Q144-187 144-216v-528q0-29 21.15-50.5T216-816h528q29.7 0 50.85 21.5Q816-773 816-744v528q0 29-21.15 50.5T744-144H216Zm0-72h528v-528H216v528Zm48-72h432L552-480 444-336l-72-96-108 144Zm-48 72v-528 528Z"></path>
+          </svg>
+        </button>
+
+        <button class="writing-tool" type="button" aria-label="Quote" data-tool-action="quote">
+          <svg class="writing-tool__icon" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
+            <path d="M240-400h192v-232H264q-24 0-42 18t-18 42v172h36Zm-96 96v-268q0-64 45-109t109-45h230v424q0 29.7-21.15 50.85Q485.7-230 456-230H144v-74Zm528-96h192v-232H696q-24 0-42 18t-18 42v172h36Zm-96 96v-268q0-64 45-109t109-45h230v424q0 29.7-21.15 50.85Q965.7-230 936-230H672v-74Z"></path>
+          </svg>
+        </button>
+
+        <button class="writing-tool" type="button" aria-label="List" data-tool-action="bullet-list">
+          <svg class="writing-tool__icon" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
+            <path d="M288-600v-72h528v72H288Zm0 156v-72h528v72H288Zm0 156v-72h528v72H288ZM180-600q-14 0-25-11t-11-25.5q0-14.5 11-25t25.5-10.5q14.5 0 25 10.35T216-636q0 14-10.35 25T180-600Zm0 156q-14 0-25-11t-11-25.5q0-14.5 11-25t25.5-10.5q14.5 0 25 10.35T216-480q0 14-10.35 25T180-444Zm0 156q-14 0-25-11t-11-25.5q0-14.5 11-25t25.5-10.5q14.5 0 25 10.35T216-324q0 14-10.35 25T180-288Z"></path>
+          </svg>
+        </button>
+
+        <button class="writing-tool" type="button" aria-label="Numbered list" data-tool-action="number-list">
+          <svg class="writing-tool__icon" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
+            <path d="M120-680v-56l40-28v84h-40Zm0 168v-40l52-58q10-11 19-20t9-22q0-11-7.5-17.5T174-677q-11 0-18.5 7.5T148-650h-28q0-23 15.5-38.5T176-704q26 0 41 15t15 37q0 16-8.5 28.5T202-598l-29 30h60v26h-113ZM120-320v-28l56-44q8-6 8-14 0-7-5-10t-12-3q-8 0-13 4.5t-6 11.5h-28q1-20 14.5-31.5T167-446q23 0 36 11t13 29q0 13-7 21t-18 17l-33 23h59v25H120Zm216-360h496v-72H336v72Zm0 228h496v-72H336v72Zm0 228h496v-72H336v72Z"></path>
+          </svg>
+        </button>
+
+        <button class="writing-tool writing-tool--dropdown" type="button" aria-label="Text alignment: Left" aria-haspopup="menu" aria-expanded="false" data-menu-button="alignment">
+          <svg class="writing-tool__icon" data-align-current-icon viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
+            <path d="M144-744v-72h672v72H144Zm192 150v-72h480v72H336ZM144-444v-72h672v72H144Zm192 150v-72h480v72H336ZM144-144v-72h672v72H144Z"></path>
+          </svg>
+          <svg class="writing-tool__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M7 10l5 5l5-5"></path>
+          </svg>
+        </button>
+
+      </div>
+    </nav>
+
+    <div class="menu-popup" role="menu" aria-label="Text style" data-menu="style">
+      <button class="menu-option is-active" type="button" role="menuitemradio" aria-checked="true" data-style="normal">
+        <svg class="menu-option__icon" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true"><path d="M384-192v-192q-79.68 0-135.84-56.23-56.16-56.22-56.16-136Q192-656 248.16-712q56.16-56 135.84-56h336v72h-96v504h-72v-504h-96v504h-72Z"></path></svg>
+        <span class="menu-option__label">Normal</span>
+        <svg class="menu-option__check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4 4L19 7"></path></svg>
+      </button>
+      <button class="menu-option" type="button" role="menuitemradio" aria-checked="false" data-style="h1">
+        <svg class="menu-option__icon" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true"><path d="M192-288v-384h72v156h168v-156h72v384h-72v-156H264v156h-72Zm504 0v-312h-96v-72h168v384h-72Z"></path></svg>
+        <span class="menu-option__label style-option__label">Heading</span>
+        <svg class="menu-option__check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4 4L19 7"></path></svg>
+      </button>
+      <button class="menu-option" type="button" role="menuitemradio" aria-checked="false" data-style="h2">
+        <svg class="menu-option__icon" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true"><path d="M144-288v-384h72v156h168v-156h72v384h-72v-156H216v156h-72Zm384 0v-156q0-29.7 21.15-50.85Q570.3-516 600-516h144v-84H528v-72h216.26Q774-672 795-650.85q21 21.15 21 50.85v84q0 29.7-21.15 50.85Q773.7-444 744-444H600v84h216v72H528Z"></path></svg>
+        <span class="menu-option__label style-option__label">Heading</span>
+        <svg class="menu-option__check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4 4L19 7"></path></svg>
+      </button>
+      <button class="menu-option" type="button" role="menuitemradio" aria-checked="false" data-style="h3">
+        <svg class="menu-option__icon" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true"><path d="M144-288v-384h72v156h168v-156h72v384h-72v-156H216v156h-72Zm384 0v-72h216v-84H576v-72h168v-84H528v-72h216.26Q774-672 795-650.85q21 21.15 21 50.85v240q0 29.7-21.15 50.85Q773.7-288 744-288H528Z"></path></svg>
+        <span class="menu-option__label style-option__label">Heading</span>
+        <svg class="menu-option__check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4 4L19 7"></path></svg>
+      </button>
+      <button class="menu-option" type="button" role="menuitemradio" aria-checked="false" data-style="h4">
+        <svg class="menu-option__icon" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true"><path d="M144-288v-384h72v156h168v-156h72v384h-72v-156H216v156h-72Zm600 0v-120H528v-264h72v192h144v-192h72v192h48v72h-48v120h-72Z"></path></svg>
+        <span class="menu-option__label style-option__label">Heading</span>
+        <svg class="menu-option__check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4 4L19 7"></path></svg>
+      </button>
+      <button class="menu-option" type="button" role="menuitemradio" aria-checked="false" data-style="h5">
+        <svg class="menu-option__icon" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true"><path d="M144-288v-384h72v156h168v-156h72v384h-72v-156H216v156h-72Zm384 0v-72h216v-84H528v-228h288v72H600v84h144.25Q774-516 795-494.85T816-444v84q0 29.7-21.15 50.85Q773.7-288 744-288H528Z"></path></svg>
+        <span class="menu-option__label style-option__label">Heading</span>
+        <svg class="menu-option__check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4 4L19 7"></path></svg>
+      </button>
+      <button class="menu-option" type="button" role="menuitemradio" aria-checked="false" data-style="h6">
+        <svg class="menu-option__icon" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true"><path d="M144-288v-384h72v156h168v-156h72v384h-72v-156H216v156h-72Zm455.74 0Q570-288 549-309.15 528-330.3 528-360v-240q0-29.7 21.15-50.85Q570.3-672 600-672h216v72H600v84h144.25Q774-516 795-494.85T816-444v84q0 29.7-21.18 50.85Q773.65-288 743.91-288H599.74Zm.26-156v84h144v-84H600Z"></path></svg>
+        <span class="menu-option__label style-option__label">Heading</span>
+        <svg class="menu-option__check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4 4L19 7"></path></svg>
+      </button>
+    </div>
+
+    <div class="menu-popup" role="menu" aria-label="Text format" data-menu="text-format">
+      <button class="menu-option is-active" type="button" role="menuitemradio" aria-checked="true" data-script="normal">
+        <svg class="menu-option__icon" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true"><path d="M192-240v-72h576v72H192Zm109-144 145-384h69l144 384h-67l-34-98H403l-35 98h-67Zm121-154h116l-56-158h-3l-57 158Z"></path></svg>
+        <span class="menu-option__label">Normal</span>
+        <svg class="menu-option__check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4 4L19 7"></path></svg>
+      </button>
+      <button class="menu-option" type="button" role="menuitemradio" aria-checked="false" data-script="superscript">
+        <svg class="menu-option__icon" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true"><path d="M720-576v-95.67Q720-692 733.8-706t34.2-14h48v-48h-96v-48h96q20.4 0 34.2 13.75 13.8 13.76 13.8 34.09v47.83Q864-700 850.2-686T816-672h-48v48h96v48H720ZM270-192l159-250-148-230h90.79L478-501l110-171h91L530-442l160 250h-91L482-378 361-192h-91Z"></path></svg>
+        <span class="menu-option__label">Superscript</span>
+        <svg class="menu-option__check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4 4L19 7"></path></svg>
+      </button>
+      <button class="menu-option" type="button" role="menuitemradio" aria-checked="false" data-script="subscript">
+        <svg class="menu-option__icon" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true"><path d="M720-144v-95.67Q720-260 733.8-274t34.2-14h48v-48h-96v-48h96q20.4 0 34.2 13.75 13.8 13.76 13.8 34.09v47.83Q864-268 850.2-254T816-240h-48v48h96v48H720ZM270-288l159-250-148-230h90.79L478-597l110-171h91L530-538l160 250h-91L482-474 361-288h-91Z"></path></svg>
+        <span class="menu-option__label">Subscript</span>
+        <svg class="menu-option__check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4 4L19 7"></path></svg>
+      </button>
+    </div>
+
+    <div class="menu-popup" role="menu" aria-label="Text color" data-menu="text-color">
+      <button class="menu-option is-active" type="button" role="menuitemradio" aria-checked="true" data-text-color="#171717">
+        <span style="width:20px;height:20px;border-radius:5px;background:#171717;flex:0 0 auto;"></span>
+        <span class="menu-option__label">Black</span>
+        <svg class="menu-option__check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4 4L19 7"></path></svg>
+      </button>
+      <button class="menu-option" type="button" role="menuitemradio" aria-checked="false" data-text-color="#666666">
+        <span style="width:20px;height:20px;border-radius:5px;background:#666;flex:0 0 auto;"></span>
+        <span class="menu-option__label">Gray</span>
+        <svg class="menu-option__check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4 4L19 7"></path></svg>
+      </button>
+      <button class="menu-option" type="button" role="menuitemradio" aria-checked="false" data-text-color="#c62828">
+        <span style="width:20px;height:20px;border-radius:5px;background:#c62828;flex:0 0 auto;"></span>
+        <span class="menu-option__label">Red</span>
+        <svg class="menu-option__check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4 4L19 7"></path></svg>
+      </button>
+    </div>
+
+    <div class="menu-popup" role="menu" aria-label="Highlight" data-menu="highlight">
+      <button class="menu-option is-active" type="button" role="menuitemradio" aria-checked="true" data-highlight-color="#d9ff4f">
+        <span style="width:20px;height:20px;border-radius:5px;background:#d9ff4f;border:1px solid #bedf3c;flex:0 0 auto;"></span>
+        <span class="menu-option__label">Lime</span>
+        <svg class="menu-option__check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4 4L19 7"></path></svg>
+      </button>
+      <button class="menu-option" type="button" role="menuitemradio" aria-checked="false" data-highlight-color="#fff3a3">
+        <span style="width:20px;height:20px;border-radius:5px;background:#fff3a3;border:1px solid #e3d67d;flex:0 0 auto;"></span>
+        <span class="menu-option__label">Yellow</span>
+        <svg class="menu-option__check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4 4L19 7"></path></svg>
+      </button>
+      <button class="menu-option" type="button" role="menuitemradio" aria-checked="false" data-highlight-color="#c9f1ff">
+        <span style="width:20px;height:20px;border-radius:5px;background:#c9f1ff;border:1px solid #9bd4e8;flex:0 0 auto;"></span>
+        <span class="menu-option__label">Blue</span>
+        <svg class="menu-option__check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4 4L19 7"></path></svg>
+      </button>
+    </div>
+
+    <div class="menu-popup" role="menu" aria-label="Media" data-menu="media">
+      <button class="menu-option" type="button" data-media-option="image">
+        <svg class="menu-option__icon" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true"><path d="M216-144q-29.7 0-50.85-21.5Q144-187 144-216v-528q0-29 21.15-50.5T216-816h528q29.7 0 50.85 21.5Q816-773 816-744v528q0 29-21.15 50.5T744-144H216Zm0-72h528v-528H216v528Zm48-72h432L552-480 444-336l-72-96-108 144Zm-48 72v-528 528Z"></path></svg>
+        <span class="menu-option__label">Image</span>
+      </button>
+      <button class="menu-option" type="button" data-media-option="gallery">
+        <svg class="menu-option__icon" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true"><path d="M120-192q-29.7 0-50.85-21.15Q48-234.3 48-264v-432q0-29.7 21.15-50.85Q90.3-768 120-768h432q29.7 0 50.85 21.15Q624-725.7 624-696v432q0 29.7-21.15 50.85Q581.7-192 552-192H120Zm600-324q-10.2 0-17.1-6.9-6.9-6.9-6.9-17.1v-204q0-10.2 6.9-17.1 6.9-6.9 17.1-6.9h168q10.2 0 17.1 6.9 6.9 6.9 6.9 17.1v204q0 10.2-6.9 17.1-6.9 6.9-17.1 6.9H720Zm48-72h72v-108h-72v108ZM120-264h432v-432H120v432Zm48-72h336L395-480l-83 107-59-77-85 114Zm552 144q-10.2 0-17.1-6.9-6.9-6.9-6.9-17.1v-204q0-10.2 6.9-17.1 6.9-6.9 17.1-6.9h168q10.2 0 17.1 6.9 6.9 6.9 6.9 17.1v204q0 10.2-6.9 17.1-6.9 6.9-17.1 6.9H720Zm48-72h72v-108h-72v108Z"></path></svg>
+        <span class="menu-option__label">Gallery</span>
+      </button>
+    </div>
+
+    <div class="menu-popup" role="menu" aria-label="Text alignment" data-menu="alignment">
+      <button class="menu-option is-active" type="button" role="menuitemradio" aria-checked="true" data-alignment-option="left">
+        <svg class="menu-option__icon" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true"><path d="M144-744v-72h672v72H144Zm192 150v-72h480v72H336ZM144-444v-72h672v72H144Zm192 150v-72h480v72H336ZM144-144v-72h672v72H144Z"></path></svg>
+        <span class="menu-option__label">Left</span>
+        <svg class="menu-option__check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4 4L19 7"></path></svg>
+      </button>
+      <button class="menu-option" type="button" role="menuitemradio" aria-checked="false" data-alignment-option="center">
+        <svg class="menu-option__icon" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true"><path d="M144-144v-72h672v72H144Zm144-150v-72h384v72H288ZM144-444v-72h672v72H144Zm144-150v-72h384v72H288ZM144-744v-72h672v72H144Z"></path></svg>
+        <span class="menu-option__label">Center</span>
+        <svg class="menu-option__check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4 4L19 7"></path></svg>
+      </button>
+      <button class="menu-option" type="button" role="menuitemradio" aria-checked="false" data-alignment-option="right">
+        <svg class="menu-option__icon" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true"><path d="M144-744v-72h672v72H144Zm192 150v-72h480v72H336ZM144-444v-72h672v72H144Zm192 150v-72h480v72H336ZM144-144v-72h672v72H144Z"></path></svg>
+        <span class="menu-option__label">Right</span>
+        <svg class="menu-option__check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4 4L19 7"></path></svg>
+      </button>
+      <button class="menu-option" type="button" role="menuitemradio" aria-checked="false" data-alignment-option="justify">
+        <svg class="menu-option__icon" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true"><path d="M144-144v-72h672v72H144Zm0-150v-72h672v72H144Zm0-150v-72h672v72H144Zm0-150v-72h672v72H144Zm0-150v-72h672v72H144Z"></path></svg>
+        <span class="menu-option__label">Justify</span>
+        <svg class="menu-option__check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4 4L19 7"></path></svg>
+      </button>
+    </div>
+
+    <main class="writing-canvas" aria-label="Create post">
       <article class="post-editor">
 
-        <label
-          class="post-field__label"
-          for="post-title"
-        >
-          Title
-        </label>
+        <label class="post-field__label" for="post-title">Title</label>
+        <input class="post-title" id="post-title" name="title" type="text" placeholder="Title" autocomplete="off" data-post-title>
 
-        <input
-          class="post-title"
-          id="post-title"
-          name="title"
-          type="text"
-          placeholder="Title"
-          autocomplete="off"
-          data-post-title
-        >
-
-        <label
-          class="post-field__label"
-          for="post-subtitle"
-        >
-          Subtitle
-        </label>
-
-        <input
-          class="post-subtitle"
-          id="post-subtitle"
-          name="subtitle"
-          type="text"
-          placeholder="Subtitle"
-          autocomplete="off"
-          data-post-subtitle
-        >
+        <label class="post-field__label" for="post-subtitle">Subtitle</label>
+        <input class="post-subtitle" id="post-subtitle" name="subtitle" type="text" placeholder="Subtitle" autocomplete="off" data-post-subtitle>
 
         <div
           class="post-body"
@@ -993,55 +1020,189 @@
           contenteditable="true"
           aria-multiline="true"
           aria-label="Post body"
-          data-placeholder="Start writing your post..."
+          data-placeholder="Start writing your posts..."
           data-post-body
         ></div>
 
       </article>
     </main>
-
   </div>
 
   <script>
     document.addEventListener("DOMContentLoaded", () => {
-      const statusAction =
-        document.querySelector("[data-status-action]");
-
-      const statusMain =
-        document.querySelector("[data-status-main]");
-
-      const statusMainIcon =
-        document.querySelector("[data-status-main-icon]");
-
-      const statusMainLabel =
-        document.querySelector("[data-status-main-label]");
-
-      const statusMenuButton =
-        document.querySelector(
-          "[data-status-menu-button]"
-        );
-
-      const actionOptions =
-        document.querySelectorAll(
-          "[data-action-option]"
-        );
-
-      const titleInput =
-        document.querySelector(
-          "[data-post-title]"
-        );
-
-      const subtitleInput =
-        document.querySelector(
-          "[data-post-subtitle]"
-        );
-
-      const postBody =
-        document.querySelector(
-          "[data-post-body]"
-        );
+      const statusAction = document.querySelector("[data-status-action]");
+      const statusMain = document.querySelector("[data-status-main]");
+      const statusMainIcon = document.querySelector("[data-status-main-icon]");
+      const statusMainLabel = document.querySelector("[data-status-main-label]");
+      const statusMenuButton = document.querySelector("[data-status-menu-button]");
+      const statusMenu = document.querySelector("[data-status-menu]");
+      const actionOptions = document.querySelectorAll("[data-action-option]");
+      const menuButtons = document.querySelectorAll("[data-menu-button]");
+      const menus = document.querySelectorAll("[data-menu]");
+      const titleInput = document.querySelector("[data-post-title]");
+      const subtitleInput = document.querySelector("[data-post-subtitle]");
+      const postBody = document.querySelector("[data-post-body]");
+      const alignmentButton = document.querySelector('[data-menu-button="alignment"]');
+      const alignmentIcon = document.querySelector("[data-align-current-icon]");
+      const alignmentOptions = document.querySelectorAll("[data-alignment-option]");
+      const styleOptions = document.querySelectorAll("[data-style]");
+      const scriptOptions = document.querySelectorAll("[data-script]");
+      const textColorOptions = document.querySelectorAll("[data-text-color]");
+      const highlightOptions = document.querySelectorAll("[data-highlight-color]");
+      const mediaOptions = document.querySelectorAll("[data-media-option]");
 
       let selectedAction = "publish";
+      let selectedStyle = "normal";
+      let selectedScript = "normal";
+      let selectedTextColor = "#171717";
+      let selectedHighlightColor = "#d9ff4f";
+      let selectedAlignment = "left";
+      let openMenuName = null;
+
+      const alignmentPaths = {
+        left: "M144-744v-72h672v72H144Zm192 150v-72h480v72H336ZM144-444v-72h672v72H144Zm192 150v-72h480v72H336ZM144-144v-72h672v72H144Z",
+        center: "M144-144v-72h672v72H144Zm144-150v-72h384v72H288ZM144-444v-72h672v72H144Zm144-150v-72h384v72H288ZM144-744v-72h672v72H144Z",
+        right: "M144-744v-72h672v72H144Zm192 150v-72h480v72H336ZM144-444v-72h672v72H144Zm192 150v-72h480v72H336ZM144-144v-72h672v72H144Z",
+        justify: "M144-144v-72h672v72H144Zm0-150v-72h672v72H144Zm0-150v-72h672v72H144Zm0-150v-72h672v72H144Zm0-150v-72h672v72H144Z"
+      };
+
+      function clamp(value, min, max) {
+        return Math.min(Math.max(value, min), max);
+      }
+
+      function viewportWidth() {
+        return window.visualViewport ? window.visualViewport.width : window.innerWidth;
+      }
+
+      function viewportHeight() {
+        return window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      }
+
+      function positionMenu(button, menu) {
+        const rect = button.getBoundingClientRect();
+        const width = viewportWidth();
+        const height = viewportHeight();
+        const menuWidth = Math.min(Math.max(menu.offsetWidth || 180, 180), width - 16);
+        const menuHeight = Math.min(menu.offsetHeight || 180, height - 16);
+        const gap = 8;
+        const left = clamp(rect.left + rect.width / 2 - menuWidth / 2, 8, width - menuWidth - 8);
+        const below = height - rect.bottom - gap;
+        const above = rect.top - gap;
+        const openAbove = below < menuHeight && above >= menuHeight;
+        const top = openAbove ? rect.top - menuHeight - gap : rect.bottom + gap;
+
+        menu.style.left = `${left}px`;
+        menu.style.top = `${Math.max(8, Math.min(top, height - menuHeight - 8))}px`;
+      }
+
+      function getMenu(name) {
+        return document.querySelector(`[data-menu="${name}"]`);
+      }
+
+      function closeToolbarMenus() {
+        menus.forEach((menu) => menu.classList.remove("is-open"));
+
+        menuButtons.forEach((button) => {
+          button.classList.remove("is-open");
+          button.setAttribute("aria-expanded", "false");
+        });
+
+        openMenuName = null;
+      }
+
+      function closeStatusMenu() {
+        statusMenu.classList.remove("is-open");
+        statusMenuButton.setAttribute("aria-expanded", "false");
+      }
+
+      function closeAllMenus() {
+        closeToolbarMenus();
+        closeStatusMenu();
+      }
+
+      function openToolbarMenu(name) {
+        const button = document.querySelector(`[data-menu-button="${name}"]`);
+        const menu = getMenu(name);
+
+        if (!button || !menu) return;
+
+        closeAllMenus();
+
+        menu.classList.add("is-open");
+        button.classList.add("is-open");
+        button.setAttribute("aria-expanded", "true");
+        openMenuName = name;
+
+        positionMenu(button, menu);
+      }
+
+      function toggleToolbarMenu(name) {
+        if (openMenuName === name) {
+          closeToolbarMenus();
+          return;
+        }
+
+        openToolbarMenu(name);
+      }
+
+      function repositionOpenMenu() {
+        if (!openMenuName) return;
+
+        const button = document.querySelector(`[data-menu-button="${openMenuName}"]`);
+        const menu = getMenu(openMenuName);
+
+        if (button && menu) positionMenu(button, menu);
+      }
+
+      menuButtons.forEach((button) => {
+        button.addEventListener("click", (event) => {
+          event.stopPropagation();
+          toggleToolbarMenu(button.dataset.menuButton);
+        });
+      });
+
+      function openStatusMenu() {
+        closeToolbarMenus();
+        statusMenu.classList.add("is-open");
+        statusMenuButton.setAttribute("aria-expanded", "true");
+        positionMenu(statusMenuButton, statusMenu);
+      }
+
+      function toggleStatusMenu() {
+        if (statusMenu.classList.contains("is-open")) {
+          closeStatusMenu();
+        } else {
+          openStatusMenu();
+        }
+      }
+
+      statusMenuButton.addEventListener("click", (event) => {
+        event.stopPropagation();
+        toggleStatusMenu();
+      });
+
+      statusMenu.addEventListener("click", (event) => {
+        event.stopPropagation();
+      });
+
+      document.addEventListener("click", (event) => {
+        const inToolbarMenu = Array.from(menus).some((menu) => menu.contains(event.target));
+        const inToolbarButton = Array.from(menuButtons).some((button) => button.contains(event.target));
+
+        if (!inToolbarMenu && !inToolbarButton) closeToolbarMenus();
+        if (!statusAction.contains(event.target)) closeStatusMenu();
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") closeAllMenus();
+      });
+
+      window.addEventListener("resize", repositionOpenMenu);
+
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener("resize", repositionOpenMenu);
+        window.visualViewport.addEventListener("scroll", repositionOpenMenu);
+      }
 
       function setPublishIcon() {
         statusMainIcon.innerHTML =
@@ -1057,192 +1218,229 @@
       }
 
       function setSelectedAction(action) {
-        selectedAction =
-          action === "draft"
-            ? "draft"
-            : "publish";
+        selectedAction = action === "draft" ? "draft" : "publish";
 
-        const isDraftAction =
-          selectedAction === "draft";
+        const draft = selectedAction === "draft";
 
-        statusMain.classList.toggle(
-          "status-action__main--draft",
-          isDraftAction
-        );
+        statusMain.classList.toggle("status-action__main--draft", draft);
+        statusMainLabel.textContent = draft ? "Save As Draft" : "Publish";
+        statusMain.setAttribute("aria-label", draft ? "Save post as draft" : "Publish post");
 
-        statusMainLabel.textContent =
-          isDraftAction
-            ? "Save As Draft"
-            : "Publish";
-
-        statusMain.setAttribute(
-          "aria-label",
-          isDraftAction
-            ? "Save post as draft"
-            : "Publish post"
-        );
-
-        if (isDraftAction) {
+        if (draft) {
           setDraftIcon();
         } else {
           setPublishIcon();
         }
 
         actionOptions.forEach((option) => {
-          const isActive =
-            option.dataset.actionOption ===
-            selectedAction;
-
-          option.classList.toggle(
-            "is-active",
-            isActive
-          );
-
-          option.setAttribute(
-            "aria-checked",
-            String(isActive)
-          );
+          const active = option.dataset.actionOption === selectedAction;
+          option.classList.toggle("is-active", active);
+          option.setAttribute("aria-checked", String(active));
         });
       }
 
       function getPostContent() {
         return {
-          title:
-            titleInput.value.trim(),
-
-          subtitle:
-            subtitleInput.value.trim(),
-
-          body:
-            postBody.innerHTML.trim()
+          title: titleInput.value.trim(),
+          subtitle: subtitleInput.value.trim(),
+          body: postBody.innerHTML.trim()
         };
       }
 
       function executeSelectedAction() {
-        const post =
-          getPostContent();
+        const post = getPostContent();
 
-        /*
-         * Execute only.
-         * Do not change selectedAction here.
-         * The real API should update persisted state
-         * only after a successful operation.
-         */
-
-        if (
-          selectedAction === "publish"
-        ) {
-          console.info(
-            "Publish action requested",
-            post
-          );
-
+        if (selectedAction === "publish") {
+          console.info("Publish action requested", post);
           return;
         }
 
-        console.info(
-          "Save As Draft action requested",
-          post
-        );
+        console.info("Save As Draft action requested", post);
       }
 
-      function openActionMenu() {
-        statusAction.classList.add(
-          "is-open"
-        );
-
-        statusMenuButton.setAttribute(
-          "aria-expanded",
-          "true"
-        );
-      }
-
-      function closeActionMenu() {
-        statusAction.classList.remove(
-          "is-open"
-        );
-
-        statusMenuButton.setAttribute(
-          "aria-expanded",
-          "false"
-        );
-      }
-
-      function toggleActionMenu() {
-        if (
-          statusAction.classList.contains(
-            "is-open"
-          )
-        ) {
-          closeActionMenu();
-          return;
-        }
-
-        openActionMenu();
-      }
-
-      statusMain.addEventListener(
-        "click",
-        executeSelectedAction
-      );
+      statusMain.addEventListener("click", executeSelectedAction);
 
       actionOptions.forEach((option) => {
-        option.addEventListener(
-          "click",
-          () => {
-            setSelectedAction(
-              option.dataset.actionOption
-            );
-
-            closeActionMenu();
-          }
-        );
+        option.addEventListener("click", () => {
+          setSelectedAction(option.dataset.actionOption);
+          closeStatusMenu();
+        });
       });
 
-      statusMenuButton.addEventListener(
-        "click",
-        (event) => {
-          event.stopPropagation();
-          toggleActionMenu();
-        }
-      );
+      function setSelectedStyle(style) {
+        selectedStyle = Array.from(styleOptions).some((option) => option.dataset.style === style)
+          ? style
+          : "normal";
 
-      document.addEventListener(
-        "click",
-        (event) => {
-          if (
-            !statusAction.contains(
-              event.target
-            )
-          ) {
-            closeActionMenu();
-          }
-        }
-      );
+        styleOptions.forEach((option) => {
+          const active = option.dataset.style === selectedStyle;
+          option.classList.toggle("is-active", active);
+          option.setAttribute("aria-checked", String(active));
+        });
+      }
 
-      document.addEventListener(
-        "keydown",
-        (event) => {
-          if (
-            event.key === "Escape"
-          ) {
-            closeActionMenu();
-          }
-        }
-      );
+      styleOptions.forEach((option) => {
+        option.addEventListener("click", () => {
+          setSelectedStyle(option.dataset.style);
+          postBody.focus();
+          document.execCommand("formatBlock", false, option.dataset.style === "normal" ? "p" : option.dataset.style);
+          closeToolbarMenus();
+        });
+      });
 
-      postBody.addEventListener(
-        "input",
-        () => {
-          if (
-            postBody.innerHTML === "<br>"
-          ) {
-            postBody.innerHTML = "";
+      function setSelectedScript(script) {
+        selectedScript = ["normal", "superscript", "subscript"].includes(script) ? script : "normal";
+
+        scriptOptions.forEach((option) => {
+          const active = option.dataset.script === selectedScript;
+          option.classList.toggle("is-active", active);
+          option.setAttribute("aria-checked", String(active));
+        });
+      }
+
+      scriptOptions.forEach((option) => {
+        option.addEventListener("click", () => {
+          const script = option.dataset.script;
+          setSelectedScript(script);
+          postBody.focus();
+
+          if (script === "superscript") {
+            document.execCommand("superscript");
+          } else if (script === "subscript") {
+            document.execCommand("subscript");
+          } else {
+            document.execCommand("removeFormat");
           }
-        }
-      );
+
+          closeToolbarMenus();
+        });
+      });
+
+      function setSelectedTextColor(color) {
+        selectedTextColor = color;
+
+        textColorOptions.forEach((option) => {
+          const active = option.dataset.textColor === selectedTextColor;
+          option.classList.toggle("is-active", active);
+          option.setAttribute("aria-checked", String(active));
+        });
+
+        const bar = document.querySelector("[data-text-color-bar]");
+        if (bar) bar.style.background = selectedTextColor;
+      }
+
+      textColorOptions.forEach((option) => {
+        option.addEventListener("click", () => {
+          setSelectedTextColor(option.dataset.textColor);
+          postBody.focus();
+          document.execCommand("foreColor", false, option.dataset.textColor);
+          closeToolbarMenus();
+        });
+      });
+
+      function setSelectedHighlightColor(color) {
+        selectedHighlightColor = color;
+
+        highlightOptions.forEach((option) => {
+          const active = option.dataset.highlightColor === selectedHighlightColor;
+          option.classList.toggle("is-active", active);
+          option.setAttribute("aria-checked", String(active));
+        });
+
+        const bar = document.querySelector("[data-highlight-color-bar]");
+        if (bar) bar.style.background = selectedHighlightColor;
+      }
+
+      highlightOptions.forEach((option) => {
+        option.addEventListener("click", () => {
+          setSelectedHighlightColor(option.dataset.highlightColor);
+          postBody.focus();
+          document.execCommand("hiliteColor", false, option.dataset.highlightColor);
+          closeToolbarMenus();
+        });
+      });
+
+      function setAlignmentIcon(alignment) {
+        const allowed = ["left", "center", "right", "justify"];
+        selectedAlignment = allowed.includes(alignment) ? alignment : "left";
+
+        alignmentIcon.className.baseVal = `writing-tool__icon icon-align-${selectedAlignment}`;
+        alignmentIcon.setAttribute("data-icon-name", `align-${selectedAlignment}`);
+        alignmentIcon.innerHTML = `<path d="${alignmentPaths[selectedAlignment]}"></path>`;
+
+        const label = selectedAlignment.charAt(0).toUpperCase() + selectedAlignment.slice(1);
+        alignmentButton.setAttribute("aria-label", `Text alignment: ${label}`);
+
+        alignmentOptions.forEach((option) => {
+          const active = option.dataset.alignmentOption === selectedAlignment;
+          option.classList.toggle("is-active", active);
+          option.setAttribute("aria-checked", String(active));
+        });
+      }
+
+      alignmentOptions.forEach((option) => {
+        option.addEventListener("click", () => {
+          setAlignmentIcon(option.dataset.alignmentOption);
+          postBody.focus();
+
+          const commands = {
+            left: "justifyLeft",
+            center: "justifyCenter",
+            right: "justifyRight",
+            justify: "justifyFull"
+          };
+
+          document.execCommand(commands[selectedAlignment]);
+          closeToolbarMenus();
+        });
+      });
+
+      document.querySelectorAll("[data-tool-action]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const action = button.dataset.toolAction;
+          postBody.focus();
+
+          if (action === "undo") document.execCommand("undo");
+          if (action === "redo") document.execCommand("redo");
+          if (action === "bold") document.execCommand("bold");
+          if (action === "italic") document.execCommand("italic");
+
+          if (action === "quote") {
+            document.execCommand("formatBlock", false, "blockquote");
+          }
+
+          if (action === "bullet-list") {
+            document.execCommand("insertUnorderedList");
+          }
+
+          if (action === "number-list") {
+            document.execCommand("insertOrderedList");
+          }
+
+          if (action === "link") {
+            const url = window.prompt("Enter URL");
+            if (url) document.execCommand("createLink", false, url);
+          }
+        });
+      });
+
+      mediaOptions.forEach((option) => {
+        option.addEventListener("click", () => {
+          console.info(`${option.dataset.mediaOption} insert requested`);
+          closeToolbarMenus();
+        });
+      });
+
+      postBody.addEventListener("input", () => {
+        if (postBody.innerHTML === "<br>") postBody.innerHTML = "";
+      });
 
       setSelectedAction("publish");
+      setSelectedStyle("normal");
+      setSelectedScript("normal");
+      setSelectedTextColor("#171717");
+      setSelectedHighlightColor("#d9ff4f");
+      setAlignmentIcon("left");
     });
   </script>
 </body>
