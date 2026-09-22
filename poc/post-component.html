@@ -1,0 +1,711 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta
+    name="description"
+    content="The Small Digital Archive — a publication about designing a simple digital publication and book library."
+  >
+  <title>The Small Digital Archive — Archive</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap"
+    rel="stylesheet"
+  >
+
+  <style>
+    :root {
+      --surface: #fff;
+      --surface-soft: #f7f7f4;
+      --text: #171717;
+      --body-text: #2b2b28;
+      --muted: #85857f;
+      --line: #e5e5df;
+      --line-strong: #d2d2cb;
+      --red: #c62828;
+      --highlight-lime: #d9ff4f;
+      --highlight-yellow: #fff3a3;
+      --highlight-blue: #c9f1ff;
+      --content-width: 860px;
+      --reading-width: 720px;
+      --wide-width: 1000px;
+      --page-padding: clamp(18px, 4vw, 40px);
+      --title-size: clamp(42px, 7vw, 76px);
+      --subtitle-size: clamp(20px, 3vw, 28px);
+      --body-size: clamp(17px, 2vw, 19px);
+      --radius-md: 12px;
+      --radius-lg: 18px;
+      --shadow-soft: 0 18px 50px rgb(23 23 23 / .08), 0 3px 12px rgb(23 23 23 / .04);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html {
+      min-width: 320px;
+      background: var(--surface);
+      scroll-behavior: smooth;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      background: var(--surface);
+      color: var(--text);
+      font-family: "DM Sans", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    a { color: inherit; }
+    img { display: block; max-width: 100%; }
+
+    :focus-visible {
+      outline: 2px solid var(--text);
+      outline-offset: 4px;
+    }
+
+    .post-page { width: 100%; }
+
+    .post-header {
+      width: min(100%, var(--content-width));
+      margin-inline: auto;
+      padding: clamp(54px, 9vw, 100px) var(--page-padding) clamp(42px, 7vw, 72px);
+    }
+
+    .post-meta {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 26px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    .post-meta__dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--line-strong);
+    }
+
+    .post-title {
+      max-width: 900px;
+      margin: 0;
+      color: var(--text);
+      font-family: "Playfair Display", Georgia, serif;
+      font-size: var(--title-size);
+      line-height: 1.04;
+      font-weight: 700;
+      letter-spacing: -.04em;
+    }
+
+    .post-subtitle {
+      max-width: 780px;
+      margin: 26px 0 0;
+      color: #60605a;
+      font-size: var(--subtitle-size);
+      line-height: 1.45;
+      font-weight: 400;
+      letter-spacing: -.02em;
+    }
+
+    .featured-media {
+      width: min(100%, var(--wide-width));
+      margin-inline: auto;
+      padding-inline: var(--page-padding);
+    }
+
+    .featured-media figure { margin: 0; }
+
+    .featured-media__frame {
+      position: relative;
+      overflow: hidden;
+      border-radius: var(--radius-lg);
+      background: linear-gradient(135deg, #e8e8df, #d7d7cb 48%, #bdbdaf);
+      box-shadow: var(--shadow-soft);
+      aspect-ratio: 16 / 8;
+    }
+
+    .featured-media__frame::before {
+      content: "";
+      position: absolute;
+      inset: 10% 12%;
+      border-radius: 12px;
+      transform: rotate(-5deg);
+      background: linear-gradient(135deg, #f7f7f2, #d9d9cd);
+      box-shadow: 0 28px 50px rgb(23 23 23 / .16), inset 0 0 0 1px rgb(23 23 23 / .08);
+    }
+
+    .featured-media__frame::after {
+      content: "THE SMALL DIGITAL ARCHIVE";
+      position: absolute;
+      left: 18%;
+      top: 35%;
+      color: #30302c;
+      font-family: "Playfair Display", Georgia, serif;
+      font-size: clamp(15px, 3vw, 32px);
+      font-weight: 700;
+      letter-spacing: -.02em;
+      transform: rotate(-5deg);
+    }
+
+    .featured-media__caption {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .post-content {
+      width: min(100%, var(--reading-width));
+      margin-inline: auto;
+      padding: clamp(46px, 7vw, 76px) var(--page-padding) 100px;
+      color: var(--body-text);
+      font-size: var(--body-size);
+      line-height: 1.8;
+      letter-spacing: -.005em;
+    }
+
+    .post-content p { margin: 0 0 1.35em; }
+
+    .post-content h1,
+    .post-content h2,
+    .post-content h3,
+    .post-content h4,
+    .post-content h5,
+    .post-content h6 {
+      margin: 2.2em 0 .75em;
+      color: var(--text);
+      font-family: "Playfair Display", Georgia, serif;
+      line-height: 1.15;
+      font-weight: 700;
+      letter-spacing: -.025em;
+    }
+
+    .post-content h1 { font-size: clamp(34px, 5vw, 52px); }
+    .post-content h2 { font-size: clamp(30px, 4.4vw, 44px); }
+    .post-content h3 { font-size: clamp(26px, 3.7vw, 36px); }
+    .post-content h4 { font-size: clamp(24px, 3.2vw, 31px); }
+    .post-content h5 { font-size: clamp(21px, 2.8vw, 27px); }
+    .post-content h6 { font-size: clamp(19px, 2.4vw, 23px); }
+
+    .post-content strong { color: var(--text); font-weight: 700; }
+    .post-content em { color: #343430; }
+
+    .post-content a {
+      color: var(--text);
+      text-decoration: underline 2px var(--highlight-lime);
+      text-underline-offset: 4px;
+      font-weight: 600;
+      transition: opacity 160ms ease;
+    }
+
+    .post-content a:hover { opacity: .65; }
+
+    .text-gray { color: #666; }
+    .text-red { color: var(--red); }
+
+    .highlight {
+      display: inline;
+      padding: .08em .18em;
+      border-radius: 3px;
+      box-decoration-break: clone;
+      -webkit-box-decoration-break: clone;
+    }
+
+    .highlight--lime { background: var(--highlight-lime); }
+    .highlight--yellow { background: var(--highlight-yellow); }
+    .highlight--blue { background: var(--highlight-blue); }
+
+    sup, sub { font-size: .72em; line-height: 0; }
+
+    .post-content blockquote {
+      margin: 3.2em 0;
+      padding: 26px 28px 26px 30px;
+      border-left: 4px solid var(--text);
+      background: var(--surface-soft);
+      color: #4b4b45;
+      border-radius: 0 var(--radius-md) var(--radius-md) 0;
+      font-family: "Playfair Display", Georgia, serif;
+      font-size: clamp(22px, 3vw, 30px);
+      line-height: 1.45;
+      letter-spacing: -.02em;
+    }
+
+    .post-content ul,
+    .post-content ol {
+      margin: 0 0 1.5em;
+      padding-left: 1.5em;
+    }
+
+    .post-content li {
+      margin-bottom: .45em;
+      padding-left: .25em;
+    }
+
+    .post-content li::marker { color: var(--muted); }
+
+    .align-left { text-align: left; }
+
+    .align-center {
+      margin-block: 2.6em;
+      text-align: center;
+      font-family: "Playfair Display", Georgia, serif;
+      font-size: clamp(22px, 3vw, 30px);
+      line-height: 1.35;
+    }
+
+    .align-right {
+      margin: 2.6em 0 1.8em;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      text-align: right;
+    }
+
+    .align-justify {
+      text-align: justify;
+      text-wrap: pretty;
+    }
+
+    .showcase-label {
+      margin: 0 0 16px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .inline-media {
+      margin: 3.5em calc(var(--page-padding) * -.3) 3em;
+    }
+
+    .inline-media__frame {
+      position: relative;
+      overflow: hidden;
+      border-radius: var(--radius-md);
+      background: #e7e7df;
+      aspect-ratio: 4 / 3;
+    }
+
+    .inline-media__frame::before {
+      content: "";
+      position: absolute;
+      left: 13%;
+      top: 10%;
+      width: 74%;
+      height: 80%;
+      border-radius: 7px;
+      background: linear-gradient(
+        to bottom,
+        #fbfbf7 0,
+        #fbfbf7 12%,
+        #d4d4cb 12.5%,
+        #d4d4cb 13%,
+        #fbfbf7 13.5%,
+        #fbfbf7 100%
+      );
+      box-shadow: 0 18px 30px rgb(23 23 23 / .16), inset 0 0 0 1px rgb(23 23 23 / .08);
+      transform: rotate(2deg);
+    }
+
+    .inline-media__frame::after {
+      content: "ARCHIVE / PAGE 24";
+      position: absolute;
+      left: 21%;
+      top: 42%;
+      color: #55554f;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      transform: rotate(2deg);
+    }
+
+    .inline-media figcaption {
+      margin-top: 11px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .gallery {
+      margin: 4em calc(var(--page-padding) * -.3);
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .gallery__item {
+      position: relative;
+      overflow: hidden;
+      margin: 0;
+      border-radius: 8px;
+      background: #e7e7df;
+      aspect-ratio: 1 / 1;
+    }
+
+    .gallery__art {
+      position: absolute;
+      inset: 0;
+    }
+
+    .gallery__art--cover {
+      display: grid;
+      place-items: center;
+      padding: 22px;
+      background: linear-gradient(135deg, #252523, #44443f);
+      color: #fff;
+      text-align: center;
+      font-family: "Playfair Display", Georgia, serif;
+      font-size: clamp(18px, 2vw, 25px);
+      line-height: 1.15;
+      letter-spacing: -.025em;
+    }
+
+    .gallery__art--page {
+      padding: 18%;
+      background: linear-gradient(135deg, #f5f5ef, #d9d9cf);
+    }
+
+    .gallery__art--page::before,
+    .gallery__art--page::after {
+      content: "";
+      position: absolute;
+      left: 20%;
+      right: 20%;
+      height: 8px;
+      border-radius: 99px;
+      background: #91918a;
+      opacity: .5;
+    }
+
+    .gallery__art--page::before {
+      top: 32%;
+      box-shadow: 0 20px 0 #91918a, 0 40px 0 #91918a, 0 60px 0 #91918a;
+    }
+
+    .gallery__art--page::after {
+      bottom: 23%;
+      width: 40%;
+      right: auto;
+      background: #5b5b55;
+      opacity: .7;
+    }
+
+    .gallery__art--workspace {
+      background: linear-gradient(140deg, #cfcec3, #e9e8e0 45%, #bab9af);
+    }
+
+    .gallery__art--workspace::before {
+      content: "";
+      position: absolute;
+      width: 58%;
+      height: 45%;
+      left: 21%;
+      top: 24%;
+      border-radius: 8px;
+      background: #333330;
+      transform: rotate(-7deg);
+      box-shadow: 0 16px 22px rgb(23 23 23 / .16);
+    }
+
+    .gallery__art--workspace::after {
+      content: "EDITOR";
+      position: absolute;
+      left: 37%;
+      top: 42%;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .14em;
+    }
+
+    .gallery__caption {
+      padding: 10px 2px 0;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .content-divider {
+      width: 100%;
+      height: 1px;
+      margin: 4.5em 0;
+      background: var(--line);
+    }
+
+    @media (max-width: 640px) {
+      .gallery { grid-template-columns: 1fr; }
+      .inline-media, .gallery { margin-inline: 0; }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="post-page">
+
+    <header class="post-header">
+      <div class="post-meta">
+        <time datetime="2026-09-22">September 22, 2026</time>
+        <span class="post-meta__dot" aria-hidden="true"></span>
+        <span>Publication</span>
+      </div>
+
+      <h1 class="post-title">
+        The Small Digital Archive
+      </h1>
+
+      <p class="post-subtitle">
+        Designing a simple publication site that is easy to read,
+        publish, and maintain.
+      </p>
+    </header>
+
+    <section class="featured-media" aria-label="Featured image">
+      <figure>
+        <div
+          class="featured-media__frame"
+          role="img"
+          aria-label="Open publication book representing the digital archive"
+        ></div>
+
+        <figcaption class="featured-media__caption">
+          A simple archive can feel editorial without becoming complicated.
+        </figcaption>
+      </figure>
+    </section>
+
+    <article class="post-content">
+
+      <p class="showcase-label">
+        Style · Normal + Heading 1
+      </p>
+
+      <h1>Why a Digital Archive Matters</h1>
+
+      <p class="align-left">
+        A small archive does not need dozens of features. It needs clear
+        writing, useful organization, and an interface that gets out of
+        the reader's way.
+      </p>
+
+      <p>
+        <strong>The goal is clarity, not complexity.</strong>
+      </p>
+
+      <p>
+        <em>A good publication should feel calm and intentional.</em>
+      </p>
+
+      <p>
+        <span class="text-gray">
+          Secondary information can use a softer gray so that it remains
+          visually subordinate to the main article.
+        </span>
+      </p>
+
+      <p>
+        <span class="text-red">
+          Important: Published content should remain readable and accessible.
+        </span>
+      </p>
+
+      <p>
+        <span class="highlight highlight--lime">
+          Lime is used for the primary editorial emphasis.
+        </span>
+      </p>
+
+      <p>
+        <span class="highlight highlight--yellow">
+          Yellow demonstrates a secondary highlighted statement.
+        </span>
+      </p>
+
+      <p>
+        <span class="highlight highlight--blue">
+          Blue demonstrates an informational highlighted note.
+        </span>
+      </p>
+
+      <h2>What Readers Should Find</h2>
+
+      <p>
+        Readers should immediately understand what they are reading,
+        when it was published, and where to continue from here. The
+        content should provide a clear hierarchy from the first line
+        to the final paragraph.
+      </p>
+
+      <h3>1. Clear Information</h3>
+
+      <p>
+        The publication title identifies the article. The publication
+        date establishes context and helps the archive remain
+        understandable over time.
+      </p>
+
+      <blockquote>
+        “Good publishing software should help the writer think about
+        the content, not about the interface.”
+      </blockquote>
+
+      <p>
+        A reader should encounter a few simple principles:
+      </p>
+
+      <ul>
+        <li>Clear title</li>
+        <li>Readable typography</li>
+        <li>Useful images</li>
+        <li>Simple navigation</li>
+      </ul>
+
+      <p>
+        The expected reading journey is equally simple:
+      </p>
+
+      <ol>
+        <li>Discover the post</li>
+        <li>Read the article</li>
+        <li>Explore the library</li>
+        <li>Download a book</li>
+      </ol>
+
+      <p>
+        The article can also direct readers toward the second core
+        part of the product:
+        <a href="/books" aria-label="Explore the digital book library">
+          Explore the digital book library.
+        </a>
+      </p>
+
+      <h4>Editorial Detail</h4>
+
+      <p>
+        A mathematical example can use x<sup>2</sup> without interrupting
+        the reading flow.
+      </p>
+
+      <h5>Supporting Detail</h5>
+
+      <p>
+        Chemical notation can remain semantically correct as
+        H<sub>2</sub>O while preserving normal body typography.
+      </p>
+
+      <h6>Fine Print</h6>
+
+      <p>
+        Smaller heading levels are useful when the content needs
+        additional hierarchy without introducing another major section.
+      </p>
+
+      <figure class="inline-media">
+        <div
+          class="inline-media__frame"
+          role="img"
+          aria-label="Scanned archive page"
+        ></div>
+
+        <figcaption>
+          Inline image — an example of a scanned page inserted directly
+          into the article body.
+        </figcaption>
+      </figure>
+
+      <section aria-labelledby="gallery-heading">
+        <h2 id="gallery-heading">Inside the Archive</h2>
+
+        <div class="gallery">
+
+          <figure class="gallery__item">
+            <div
+              class="gallery__art gallery__art--cover"
+              role="img"
+              aria-label="Book cover"
+            >
+              THE<br>
+              SMALL<br>
+              DIGITAL<br>
+              ARCHIVE
+            </div>
+
+            <figcaption class="gallery__caption">
+              Book cover
+            </figcaption>
+          </figure>
+
+          <figure class="gallery__item">
+            <div
+              class="gallery__art gallery__art--page"
+              role="img"
+              aria-label="Interior book page"
+            ></div>
+
+            <figcaption class="gallery__caption">
+              Interior page
+            </figcaption>
+          </figure>
+
+          <figure class="gallery__item">
+            <div
+              class="gallery__art gallery__art--workspace"
+              role="img"
+              aria-label="Publication editor workspace"
+            ></div>
+
+            <figcaption class="gallery__caption">
+              Editorial workspace
+            </figcaption>
+          </figure>
+
+        </div>
+      </section>
+
+      <div class="content-divider" aria-hidden="true"></div>
+
+      <p class="align-left">
+        This paragraph demonstrates left alignment. It represents normal
+        article prose and is the default reading position.
+      </p>
+
+      <p class="align-center">
+        A quiet interface should make the words feel important.
+      </p>
+
+      <p class="align-right">
+        Archive Edition — September 2026
+      </p>
+
+      <p class="align-justify">
+        A publication archive benefits from a restrained visual system
+        because the primary purpose of the page is to make written
+        information easy to consume. The layout should give headings
+        enough space to establish hierarchy, keep body text at a
+        comfortable reading width, and use images only where they
+        genuinely contribute to the article. Justified text is included
+        here specifically to demonstrate the alignment capability
+        provided by the editor.
+      </p>
+
+      <p>
+        The resulting post remains a simple public article, but the
+        content model is expressive enough to support the richer writing
+        experience already established in the admin editor.
+      </p>
+
+    </article>
+  </main>
+</body>
+</html>
