@@ -1,0 +1,1350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Notes from a Quieter City / Archive / 01</title>
+
+  <style>
+    :root {
+      --bg: #ffffff;
+      --text: #171717;
+      --muted: #737373;
+      --line: #deddd8;
+      --soft: #f4f4f1;
+      --max-width: 1200px;
+      --header-max-width: 1280px;
+      --radius-lg: 32px;
+      --radius-md: 20px;
+      --section-gap: 72px;
+      --header-ease: cubic-bezier(0.65, 0, 0.35, 1);
+      --header-duration-expand: 520ms;
+      --header-duration-icon: 420ms;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      min-width: 320px;
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    img { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    button { font: inherit; }
+
+    .page-shell {
+      width: min(var(--max-width), calc(100% - 48px));
+      margin: 0 auto;
+    }
+
+    .capsule-navbar {
+      position: fixed;
+      z-index: 1000;
+      top: 16px;
+      left: 50%;
+      width: min(var(--header-max-width), calc(100% - 48px));
+      border: 1px solid rgba(23, 23, 23, 0.06);
+      border-radius: 48px;
+      background: rgba(255, 255, 255, 0.94);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+      transform: translateX(-50%);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .capsule-navbar.is-hidden {
+      transform: translate(-50%, -120%);
+    }
+
+    .capsule-navbar__bar {
+      min-height: 80px;
+      padding: 10px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 40px;
+    }
+
+    .capsule-navbar__brand {
+      flex: 0 0 auto;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    .capsule-navbar__nav {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+    }
+
+    .capsule-navbar__link {
+      min-height: 40px;
+      margin: 0;
+      padding: 0 18px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 500;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+
+    .capsule-navbar__link:hover { background: #f1f1ee; }
+
+    .capsule-navbar__toggle {
+      position: relative;
+      width: 40px;
+      height: 40px;
+      margin: 0;
+      padding: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      border: 0;
+      border-radius: 999px;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .capsule-navbar__icon {
+      position: relative;
+      width: 18px;
+      height: 18px;
+      display: block;
+      transform: rotate(0deg);
+      transition: transform var(--header-duration-icon) var(--header-ease);
+    }
+
+    .capsule-navbar__icon::before,
+    .capsule-navbar__icon::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 18px;
+      height: 1.5px;
+      background: var(--text);
+      transform: translate(-50%, -50%);
+    }
+
+    .capsule-navbar__icon::after {
+      transform: translate(-50%, -50%) rotate(90deg);
+    }
+
+    .capsule-navbar__toggle.is-open .capsule-navbar__icon {
+      transform: rotate(45deg);
+    }
+
+    .capsule-navbar__panel {
+      display: none;
+      height: 0;
+      overflow: hidden;
+      padding: 0 20px;
+      will-change: height;
+      transition:
+        height var(--header-duration-expand) var(--header-ease),
+        padding var(--header-duration-expand) var(--header-ease);
+    }
+
+    .capsule-navbar__panel.is-open {
+      padding: 8px 20px 20px;
+    }
+
+    .capsule-navbar__panel-inner {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 22px;
+    }
+
+    .capsule-navbar__panel-link {
+      margin: 0;
+      padding: 6px 0;
+      font-size: 14px;
+      font-weight: 500;
+      text-align: left;
+    }
+
+    .main-content {
+      padding-top: 128px;
+      display: flex;
+      flex-direction: column;
+      gap: var(--section-gap);
+    }
+
+    .post-header {
+      margin: 0;
+      padding: 0;
+    }
+
+    .post-header__back {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 32px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      transition: color 0.2s ease;
+    }
+
+    .post-header__back:hover { color: var(--text); }
+
+    .post-header__meta {
+      margin: 0 0 12px;
+      font-size: 10px;
+      line-height: 1;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .post-header__title {
+      max-width: 980px;
+      margin: 0;
+      font-size: clamp(3.2rem, 7vw, 7rem);
+      line-height: 0.88;
+      font-weight: 500;
+      letter-spacing: -0.07em;
+    }
+
+    .post-header__summary {
+      max-width: 640px;
+      margin: 24px 0 0;
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--muted);
+    }
+
+    .post-header__info {
+      margin-top: 32px;
+      padding-top: 20px;
+      padding-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .post-header__info-group {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .post-header__info-item {
+      margin: 0;
+      font-size: 11px;
+      line-height: 1.4;
+      color: var(--muted);
+    }
+
+    .post-header__info-item strong {
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .post-content-section,
+    .related-posts {
+      margin: 0;
+      padding: 0;
+    }
+
+    .post-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 760px) minmax(180px, 280px);
+      justify-content: space-between;
+      gap: 80px;
+      align-items: start;
+    }
+
+    .post-content { min-width: 0; }
+
+    .post-content__hero {
+      width: 100%;
+      margin: 0 0 48px;
+      overflow: hidden;
+      border-radius: var(--radius-lg);
+      background: var(--soft);
+    }
+
+    .post-content__hero img {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+    }
+
+    .post-content__body {
+      font-size: 15px;
+      line-height: 1.85;
+    }
+
+    .post-content__body > * {
+      margin-top: 0;
+      margin-bottom: 24px;
+    }
+
+    .post-content__body p { max-width: 680px; }
+
+    .post-content__body h2 {
+      max-width: 680px;
+      margin-top: 56px;
+      font-size: 28px;
+      line-height: 1;
+      font-weight: 500;
+      letter-spacing: -0.04em;
+    }
+
+    .post-content__body blockquote {
+      max-width: 640px;
+      margin-top: 40px;
+      margin-bottom: 40px;
+      padding-left: 20px;
+      border-left: 2px solid var(--text);
+      font-size: 20px;
+      line-height: 1.4;
+      font-weight: 500;
+      letter-spacing: -0.025em;
+    }
+
+    .post-content__body figure {
+      margin: 48px 0;
+    }
+
+    .post-content__body figure img {
+      width: 100%;
+      border-radius: var(--radius-md);
+    }
+
+    .post-content__body figcaption {
+      margin-top: 10px;
+      font-size: 10px;
+      line-height: 1.4;
+      color: var(--muted);
+    }
+
+    .post-content__aside {
+      position: sticky;
+      top: 120px;
+    }
+
+    .post-content__aside-label {
+      margin: 0 0 16px;
+      font-size: 10px;
+      line-height: 1;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .post-content__aside-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      border-top: 1px solid var(--line);
+    }
+
+    .post-content__aside-item {
+      padding: 14px 0;
+      border-bottom: 1px solid var(--line);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .post-content__aside-item--current {
+      font-weight: 600;
+    }
+
+    .related-posts__header {
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .related-posts__eyebrow {
+      margin: 0;
+      font-size: 10px;
+      line-height: 1;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .related-posts__title {
+      margin: 6px 0 0;
+      font-size: 28px;
+      line-height: 0.95;
+      font-weight: 500;
+      letter-spacing: -0.045em;
+    }
+
+    .related-posts__link {
+      font-size: 11px;
+      font-weight: 600;
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3px;
+    }
+
+    .related-posts__grid {
+      margin-top: 24px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 24px;
+    }
+
+    .related-card { min-width: 0; }
+
+    .related-card__image {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      object-fit: cover;
+      border-radius: var(--radius-md);
+      background: var(--soft);
+    }
+
+    .related-card__body { padding-top: 14px; }
+
+    .related-card__meta {
+      margin: 0 0 8px;
+      font-size: 9px;
+      line-height: 1;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .related-card__title {
+      margin: 0;
+      font-size: 17px;
+      line-height: 1.05;
+      font-weight: 500;
+      letter-spacing: -0.03em;
+    }
+
+    .footer {
+      padding: 88px 0 40px;
+    }
+
+    .footer-divider {
+      width: min(var(--max-width), calc(100% - 48px));
+      height: 1px;
+      margin: 0 auto 48px;
+      background: var(--line);
+    }
+
+    .footer-inner {
+      width: min(var(--max-width), calc(100% - 48px));
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 64px;
+    }
+
+    .footer-main {
+      display: grid;
+      grid-template-columns: minmax(0, 1.5fr) minmax(180px, 0.5fr);
+      gap: 64px;
+    }
+
+    .footer-brand { max-width: 620px; }
+
+    .footer-brand__name {
+      margin: 0;
+      font-size: clamp(3rem, 6vw, 6rem);
+      line-height: 0.86;
+      font-weight: 500;
+      letter-spacing: -0.07em;
+    }
+
+    .footer-brand__text {
+      max-width: 460px;
+      margin: 24px 0 0;
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--muted);
+    }
+
+    .footer-nav {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .footer-nav__eyebrow {
+      margin: 0 0 8px;
+      font-size: 10px;
+      line-height: 1;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .footer-nav__link {
+      margin: 0;
+      padding: 0;
+      font-size: 14px;
+      line-height: 1.4;
+      font-weight: 500;
+      transition: color 0.2s ease;
+    }
+
+    .footer-nav__link:hover { color: var(--muted); }
+
+    .footer-bottom {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+      padding-top: 20px;
+      border-top: 1px solid var(--line);
+    }
+
+    .footer__copy,
+    .footer__label {
+      margin: 0;
+      font-size: 11px;
+      line-height: 1.4;
+      color: var(--muted);
+    }
+
+    @media (max-width: 960px) {
+      .post-layout {
+        grid-template-columns: 1fr;
+        gap: 48px;
+      }
+
+      .post-content__aside {
+        position: static;
+      }
+
+      .post-content__aside-list {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        column-gap: 24px;
+      }
+
+      .related-posts__grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .footer-main {
+        grid-template-columns: 1fr 200px;
+      }
+    }
+
+    @media (max-width: 767px) {
+      :root { --section-gap: 56px; }
+
+      .page-shell {
+        width: calc(100% - 32px);
+      }
+
+      .capsule-navbar {
+        top: 12px;
+        width: calc(100% - 24px);
+      }
+
+      .capsule-navbar__bar {
+        min-height: 64px;
+        padding: 10px 20px;
+      }
+
+      .capsule-navbar__nav { display: none; }
+
+      .capsule-navbar__toggle { display: flex; }
+
+      .capsule-navbar__panel { display: block; }
+
+      .main-content { padding-top: 100px; }
+
+      .post-header__back {
+        margin-bottom: 24px;
+      }
+
+      .post-header__title {
+        font-size: clamp(2.9rem, 13vw, 4.8rem);
+      }
+
+      .post-header__summary {
+        margin-top: 18px;
+        font-size: 14px;
+      }
+
+      .post-header__info {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 12px;
+        margin-top: 24px;
+        padding-top: 16px;
+        padding-bottom: 16px;
+      }
+
+      .post-header__info-group {
+        flex-wrap: wrap;
+        gap: 8px 18px;
+      }
+
+      .post-content__hero {
+        margin-bottom: 32px;
+        border-radius: 18px;
+      }
+
+      .post-content__body {
+        font-size: 14px;
+        line-height: 1.75;
+      }
+
+      .post-content__body h2 {
+        margin-top: 44px;
+        font-size: 24px;
+      }
+
+      .post-content__body blockquote {
+        font-size: 18px;
+      }
+
+      .post-content__body figure {
+        margin: 40px 0;
+      }
+
+      .post-content__aside-list {
+        grid-template-columns: 1fr;
+      }
+
+      .related-posts__header {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .related-posts__grid {
+        grid-template-columns: 1fr;
+        gap: 32px;
+      }
+
+      .footer {
+        padding: 64px 0 28px;
+      }
+
+      .footer-divider {
+        width: calc(100% - 32px);
+        margin: 0 auto 40px;
+      }
+
+      .footer-inner {
+        width: calc(100% - 32px);
+        gap: 48px;
+      }
+
+      .footer-main {
+        grid-template-columns: 1fr;
+        gap: 40px;
+      }
+
+      .footer-bottom {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 8px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="capsule-navbar" id="site-header">
+    <div class="capsule-navbar__bar">
+
+      <a
+        class="capsule-navbar__brand"
+        href="/"
+        aria-label="Archive home"
+      >
+        ARCHIVE / 01
+      </a>
+
+      <nav
+        class="capsule-navbar__nav"
+        aria-label="Primary navigation"
+      >
+        <a class="capsule-navbar__link" href="/posts">
+          Posts
+        </a>
+
+        <a class="capsule-navbar__link" href="/books">
+          Books
+        </a>
+      </nav>
+
+      <button
+        class="capsule-navbar__toggle"
+        id="menu-toggle"
+        type="button"
+        aria-expanded="false"
+        aria-controls="mobile-panel"
+        aria-label="Open menu"
+      >
+        <span
+          class="capsule-navbar__icon"
+          aria-hidden="true"
+        ></span>
+      </button>
+    </div>
+
+    <div
+      class="capsule-navbar__panel"
+      id="mobile-panel"
+    >
+      <nav
+        class="capsule-navbar__panel-inner"
+        aria-label="Mobile navigation"
+      >
+        <a
+          class="capsule-navbar__panel-link"
+          href="/posts"
+        >
+          Posts
+        </a>
+
+        <a
+          class="capsule-navbar__panel-link"
+          href="/books"
+        >
+          Books
+        </a>
+      </nav>
+    </div>
+  </header>
+
+
+  <main class="main-content">
+
+    <section class="post-header">
+      <div class="page-shell">
+
+        <a
+          class="post-header__back"
+          href="/posts"
+        >
+          ← Back to posts
+        </a>
+
+        <p class="post-header__meta">
+          18 SEP 2026 · FEATURED
+        </p>
+
+        <h1 class="post-header__title">
+          Notes from a quieter city
+        </h1>
+
+        <p class="post-header__summary">
+          A collection of observations, places,
+          and small details found while moving
+          through the city.
+        </p>
+
+        <div class="post-header__info">
+
+          <div class="post-header__info-group">
+
+            <p class="post-header__info-item">
+              Author:
+              <strong>A. Morgan</strong>
+            </p>
+
+            <p class="post-header__info-item">
+              Category:
+              <strong>Observations</strong>
+            </p>
+
+          </div>
+
+          <div class="post-header__info-group">
+
+            <p class="post-header__info-item">
+              Published:
+              <strong>18 September 2026</strong>
+            </p>
+
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+
+    <section class="post-content-section">
+      <div class="page-shell">
+
+        <div class="post-layout">
+
+          <article class="post-content">
+
+            <figure class="post-content__hero">
+              <img
+                src="https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=1400&q=85"
+                alt="Quiet city landscape"
+              />
+            </figure>
+
+            <div class="post-content__body">
+
+              <p>
+                Some cities are easiest to understand
+                when nothing important seems to be
+                happening. The streets become quieter,
+                the pace slows down, and the smaller
+                details become easier to notice.
+              </p>
+
+              <p>
+                This collection began with a series
+                of ordinary walks. No route was planned.
+                The purpose was simply to look closely
+                at the places that usually disappear
+                into the background.
+              </p>
+
+              <h2>
+                Looking closer
+              </h2>
+
+              <p>
+                A closed storefront, a chair left
+                outside a café, a faded sign above
+                a narrow entrance. These things rarely
+                ask for attention, but together they
+                form a record of how a place is lived in.
+              </p>
+
+              <figure>
+                <img
+                  src="https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1200&q=85"
+                  alt="Quiet interior with natural light"
+                />
+
+                <figcaption>
+                  An empty room during the afternoon.
+                </figcaption>
+              </figure>
+
+              <blockquote>
+                The quieter a place becomes,
+                the more detail it seems to return.
+              </blockquote>
+
+              <p>
+                There is something useful about
+                slowing down enough to notice these
+                details without immediately turning
+                them into a story. They can remain
+                what they are: evidence that someone
+                was here, something happened here,
+                and the day continued.
+              </p>
+
+              <h2>
+                A record of ordinary things
+              </h2>
+
+              <p>
+                The archive is made from these small
+                observations. Not landmarks or major
+                events, but the quieter material that
+                gives a place its character.
+              </p>
+
+              <p>
+                A city changes constantly. Keeping
+                a record does not stop that change.
+                It simply gives us something to look
+                back at when the familiar has become
+                unfamiliar again.
+              </p>
+
+            </div>
+          </article>
+
+
+          <aside class="post-content__aside">
+
+            <p class="post-content__aside-label">
+              In this post
+            </p>
+
+            <ul class="post-content__aside-list">
+
+              <li
+                class="post-content__aside-item
+                post-content__aside-item--current"
+              >
+                Looking closer
+              </li>
+
+              <li class="post-content__aside-item">
+                A record of ordinary things
+              </li>
+
+              <li class="post-content__aside-item">
+                Closing notes
+              </li>
+
+            </ul>
+
+          </aside>
+
+        </div>
+      </div>
+    </section>
+
+
+    <section class="related-posts">
+      <div class="page-shell">
+
+        <div class="related-posts__header">
+
+          <div>
+            <p class="related-posts__eyebrow">
+              More posts
+            </p>
+
+            <h2 class="related-posts__title">
+              Continue reading
+            </h2>
+          </div>
+
+          <a
+            class="related-posts__link"
+            href="/posts"
+          >
+            View all posts
+          </a>
+
+        </div>
+
+
+        <div class="related-posts__grid">
+
+          <article class="related-card">
+
+            <a href="/posts/spaces-built-for-slower-days">
+              <img
+                class="related-card__image"
+                src="https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1000&q=85"
+                alt="Quiet interior"
+              />
+            </a>
+
+            <div class="related-card__body">
+
+              <p class="related-card__meta">
+                16 SEP 2026
+              </p>
+
+              <h3 class="related-card__title">
+                Spaces built for slower days
+              </h3>
+
+            </div>
+
+          </article>
+
+
+          <article class="related-card">
+
+            <a href="/posts/what-remains-on-the-desk">
+              <img
+                class="related-card__image"
+                src="https://images.unsplash.com/photo-1494438639946-1ebd1d20bf85?auto=format&fit=crop&w=1000&q=85"
+                alt="Desk with notebook and objects"
+              />
+            </a>
+
+            <div class="related-card__body">
+
+              <p class="related-card__meta">
+                13 SEP 2026
+              </p>
+
+              <h3 class="related-card__title">
+                What remains on the desk
+              </h3>
+
+            </div>
+
+          </article>
+
+
+          <article class="related-card">
+
+            <a href="/posts/shelves-full-of-unfinished-ideas">
+              <img
+                class="related-card__image"
+                src="https://images.unsplash.com/photo-1516979187457-637abb4f9353?auto=format&fit=crop&w=1000&q=85"
+                alt="Bookshelf"
+              />
+            </a>
+
+            <div class="related-card__body">
+
+              <p class="related-card__meta">
+                10 SEP 2026
+              </p>
+
+              <h3 class="related-card__title">
+                Shelves full of unfinished ideas
+              </h3>
+
+            </div>
+
+          </article>
+
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+
+  <footer class="footer">
+
+    <div class="footer-divider"></div>
+
+    <div class="footer-inner">
+
+      <div class="footer-main">
+
+        <div class="footer-brand">
+
+          <h2 class="footer-brand__name">
+            ARCHIVE/01
+          </h2>
+
+          <p class="footer-brand__text">
+            A digital publication and book library
+            for stories, observations, and things
+            worth keeping.
+          </p>
+
+        </div>
+
+
+        <nav
+          class="footer-nav"
+          aria-label="Footer navigation"
+        >
+
+          <p class="footer-nav__eyebrow">
+            Explore
+          </p>
+
+          <a
+            class="footer-nav__link"
+            href="/posts"
+          >
+            Posts
+          </a>
+
+          <a
+            class="footer-nav__link"
+            href="/books"
+          >
+            Books
+          </a>
+
+        </nav>
+
+      </div>
+
+
+      <div class="footer-bottom">
+
+        <p class="footer__copy">
+          © 2026 Archive / 01
+        </p>
+
+        <p class="footer__label">
+          Digital Publication &amp; Book Library
+        </p>
+
+      </div>
+
+    </div>
+
+  </footer>
+
+
+  <script>
+    const header =
+      document.getElementById("site-header");
+
+    const menuToggle =
+      document.getElementById("menu-toggle");
+
+    const mobilePanel =
+      document.getElementById("mobile-panel");
+
+    let lastScrollY =
+      window.scrollY;
+
+
+    function setMenuState(isOpen) {
+      if (isOpen) {
+
+        mobilePanel.classList.add("is-open");
+
+        mobilePanel.style.height =
+          "0px";
+
+        const targetHeight =
+          mobilePanel.scrollHeight;
+
+        mobilePanel.offsetHeight;
+
+        requestAnimationFrame(() => {
+          mobilePanel.style.height =
+            targetHeight + "px";
+        });
+
+      } else {
+
+        const currentHeight =
+          mobilePanel.scrollHeight;
+
+        mobilePanel.style.height =
+          currentHeight + "px";
+
+        mobilePanel.offsetHeight;
+
+        mobilePanel.classList.remove("is-open");
+
+        requestAnimationFrame(() => {
+          mobilePanel.style.height =
+            "0px";
+        });
+      }
+
+      menuToggle.classList.toggle(
+        "is-open",
+        isOpen
+      );
+
+      menuToggle.setAttribute(
+        "aria-expanded",
+        String(isOpen)
+      );
+
+      menuToggle.setAttribute(
+        "aria-label",
+        isOpen
+          ? "Close menu"
+          : "Open menu"
+      );
+    }
+
+
+    function closeMobileMenu() {
+      if (
+        mobilePanel.classList.contains(
+          "is-open"
+        )
+      ) {
+
+        setMenuState(false);
+
+      } else {
+
+        menuToggle.classList.remove(
+          "is-open"
+        );
+
+        menuToggle.setAttribute(
+          "aria-expanded",
+          "false"
+        );
+
+        menuToggle.setAttribute(
+          "aria-label",
+          "Open menu"
+        );
+      }
+    }
+
+
+    menuToggle.addEventListener(
+      "click",
+      () => {
+
+        const isOpen =
+          mobilePanel.classList.contains(
+            "is-open"
+          );
+
+        setMenuState(!isOpen);
+      }
+    );
+
+
+    mobilePanel.addEventListener(
+      "transitionend",
+      (event) => {
+
+        if (
+          event.propertyName !== "height"
+        ) {
+          return;
+        }
+
+        if (
+          mobilePanel.classList.contains(
+            "is-open"
+          )
+        ) {
+
+          mobilePanel.style.height =
+            "auto";
+
+        } else {
+
+          mobilePanel.style.height =
+            "0px";
+        }
+      }
+    );
+
+
+    window.addEventListener(
+      "scroll",
+      () => {
+
+        const currentScrollY =
+          window.scrollY;
+
+        if (
+          mobilePanel.classList.contains(
+            "is-open"
+          )
+        ) {
+
+          header.classList.remove(
+            "is-hidden"
+          );
+
+          lastScrollY =
+            currentScrollY;
+
+          return;
+        }
+
+        if (currentScrollY <= 16) {
+
+          header.classList.remove(
+            "is-hidden"
+          );
+
+          lastScrollY =
+            currentScrollY;
+
+          return;
+        }
+
+        if (
+          currentScrollY >
+          lastScrollY
+        ) {
+
+          header.classList.add(
+            "is-hidden"
+          );
+
+        } else {
+
+          header.classList.remove(
+            "is-hidden"
+          );
+        }
+
+        lastScrollY =
+          currentScrollY;
+      },
+      {
+        passive: true
+      }
+    );
+
+
+    document
+      .querySelectorAll(
+        ".capsule-navbar__panel-link"
+      )
+      .forEach((link) => {
+
+        link.addEventListener(
+          "click",
+          () => {
+            closeMobileMenu();
+          }
+        );
+
+      });
+
+
+    window.addEventListener(
+      "resize",
+      () => {
+
+        if (
+          window.innerWidth > 767
+        ) {
+
+          mobilePanel.classList.remove(
+            "is-open"
+          );
+
+          mobilePanel.style.height =
+            "0px";
+
+          menuToggle.classList.remove(
+            "is-open"
+          );
+
+          menuToggle.setAttribute(
+            "aria-expanded",
+            "false"
+          );
+
+          menuToggle.setAttribute(
+            "aria-label",
+            "Open menu"
+          );
+        }
+
+      }
+    );
+  </script>
+
+</body>
+</html>

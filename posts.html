@@ -1,0 +1,1353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Posts / Archive / 01</title>
+
+  <style>
+    :root {
+      --bg: #ffffff;
+      --text: #171717;
+      --muted: #737373;
+      --line: #deddd8;
+      --soft: #f4f4f1;
+      --accent: #d9ff4f;
+      --max-width: 1200px;
+      --header-max-width: 1280px;
+      --radius-md: 18px;
+      --section-gap: 72px;
+      --header-ease: cubic-bezier(0.65, 0, 0.35, 1);
+      --header-duration-expand: 520ms;
+      --header-duration-icon: 420ms;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      min-width: 320px;
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    img {
+      display: block;
+      max-width: 100%;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    .page-shell {
+      width: min(var(--max-width), calc(100% - 48px));
+      margin: 0 auto;
+    }
+
+    .capsule-navbar {
+      position: fixed;
+      z-index: 1000;
+      top: 16px;
+      left: 50%;
+      width: min(var(--header-max-width), calc(100% - 48px));
+      border: 1px solid rgba(23, 23, 23, 0.06);
+      border-radius: 48px;
+      background: rgba(255, 255, 255, 0.94);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+      transform: translateX(-50%);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .capsule-navbar.is-hidden {
+      transform: translate(-50%, -120%);
+    }
+
+    .capsule-navbar__bar {
+      min-height: 80px;
+      padding: 10px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 40px;
+    }
+
+    .capsule-navbar__brand {
+      flex: 0 0 auto;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    .capsule-navbar__nav {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+    }
+
+    .capsule-navbar__link {
+      min-height: 40px;
+      margin: 0;
+      padding: 0 18px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 500;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+
+    .capsule-navbar__link:hover {
+      background: #f1f1ee;
+    }
+
+    .capsule-navbar__link[aria-current="page"] {
+      background: var(--text);
+      color: white;
+    }
+
+    .capsule-navbar__toggle {
+      position: relative;
+      width: 40px;
+      height: 40px;
+      margin: 0;
+      padding: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      border: 0;
+      border-radius: 999px;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .capsule-navbar__icon {
+      position: relative;
+      width: 18px;
+      height: 18px;
+      display: block;
+      transform: rotate(0deg);
+      transition: transform var(--header-duration-icon) var(--header-ease);
+    }
+
+    .capsule-navbar__icon::before,
+    .capsule-navbar__icon::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 18px;
+      height: 1.5px;
+      background: var(--text);
+      transform: translate(-50%, -50%);
+    }
+
+    .capsule-navbar__icon::after {
+      transform: translate(-50%, -50%) rotate(90deg);
+    }
+
+    .capsule-navbar__toggle.is-open .capsule-navbar__icon {
+      transform: rotate(45deg);
+    }
+
+    .capsule-navbar__panel {
+      display: none;
+      height: 0;
+      overflow: hidden;
+      padding: 0 20px;
+      will-change: height;
+      transition:
+        height var(--header-duration-expand) var(--header-ease),
+        padding var(--header-duration-expand) var(--header-ease);
+    }
+
+    .capsule-navbar__panel.is-open {
+      padding: 8px 20px 20px;
+    }
+
+    .capsule-navbar__panel-inner {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 22px;
+    }
+
+    .capsule-navbar__panel-link {
+      margin: 0;
+      padding: 6px 0;
+      font-size: 14px;
+      font-weight: 500;
+      text-align: left;
+    }
+
+    .main-content {
+      padding-top: 128px;
+      display: flex;
+      flex-direction: column;
+      gap: var(--section-gap);
+    }
+
+    .posts-header {
+      margin: 0;
+      padding: 0;
+    }
+
+    .posts-header__top {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 32px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .posts-header__eyebrow {
+      margin: 0 0 8px;
+      font-size: 10px;
+      line-height: 1;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .posts-header__title {
+      margin: 0;
+      font-size: clamp(2.4rem, 5vw, 4.4rem);
+      line-height: 0.95;
+      font-weight: 500;
+      letter-spacing: -0.055em;
+    }
+
+    .posts-header__description {
+      max-width: 360px;
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--muted);
+      text-align: right;
+    }
+
+    .posts-section,
+    .posts-more {
+      margin: 0;
+      padding: 0;
+    }
+
+    .posts-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 48px 24px;
+    }
+
+    .post-card {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .post-card__image-wrap {
+      position: relative;
+      width: 100%;
+      overflow: hidden;
+      border-radius: var(--radius-md);
+      background: var(--soft);
+    }
+
+    .post-card__image {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      object-fit: cover;
+      transition: transform 0.25s ease;
+    }
+
+    .post-card:hover .post-card__image {
+      transform: scale(1.025);
+    }
+
+    .post-card__body {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .post-card__meta {
+      margin: 0;
+      font-size: 10px;
+      line-height: 1;
+      font-weight: 600;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .post-card__title {
+      margin: 0;
+      font-size: 20px;
+      line-height: 1.02;
+      font-weight: 500;
+      letter-spacing: -0.035em;
+    }
+
+    .post-card__excerpt {
+      max-width: 440px;
+      margin: 2px 0 0;
+      font-size: 12px;
+      line-height: 1.55;
+      color: var(--muted);
+    }
+
+    .post-card__link {
+      align-self: flex-start;
+      margin-top: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3px;
+    }
+
+    .posts-more__inner {
+      padding-top: 24px;
+      border-top: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .posts-more__label {
+      margin: 0;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .posts-more__link {
+      min-height: 42px;
+      padding: 0 18px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      background: var(--text);
+      color: white;
+      font-size: 11px;
+      font-weight: 600;
+      transition: background 0.2s ease, transform 0.2s ease;
+    }
+
+    .posts-more__link:hover {
+      background: #2b2b2b;
+      transform: translateY(-1px);
+    }
+
+    .footer {
+      padding: 88px 0 40px;
+    }
+
+    .footer-divider {
+      width: min(var(--max-width), calc(100% - 48px));
+      height: 1px;
+      margin: 0 auto 48px;
+      background: var(--line);
+    }
+
+    .footer-inner {
+      width: min(var(--max-width), calc(100% - 48px));
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 64px;
+    }
+
+    .footer-main {
+      display: grid;
+      grid-template-columns: minmax(0, 1.5fr) minmax(180px, 0.5fr);
+      gap: 64px;
+    }
+
+    .footer-brand {
+      max-width: 620px;
+    }
+
+    .footer-brand__name {
+      margin: 0;
+      font-size: clamp(3rem, 6vw, 6rem);
+      line-height: 0.86;
+      font-weight: 500;
+      letter-spacing: -0.07em;
+    }
+
+    .footer-brand__text {
+      max-width: 460px;
+      margin: 24px 0 0;
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--muted);
+    }
+
+    .footer-nav {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .footer-nav__eyebrow {
+      margin: 0 0 8px;
+      font-size: 10px;
+      line-height: 1;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .footer-nav__link {
+      margin: 0;
+      padding: 0;
+      font-size: 14px;
+      line-height: 1.4;
+      font-weight: 500;
+      transition: color 0.2s ease;
+    }
+
+    .footer-nav__link:hover {
+      color: var(--muted);
+    }
+
+    .footer-bottom {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+      padding-top: 20px;
+      border-top: 1px solid var(--line);
+    }
+
+    .footer__copy,
+    .footer__label {
+      margin: 0;
+      font-size: 11px;
+      line-height: 1.4;
+      color: var(--muted);
+    }
+
+    @media (max-width: 960px) {
+      .posts-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .posts-header__top {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .posts-header__description {
+        max-width: 520px;
+        text-align: left;
+      }
+
+      .footer-main {
+        grid-template-columns: 1fr 200px;
+      }
+    }
+
+    @media (max-width: 767px) {
+      :root {
+        --section-gap: 56px;
+      }
+
+      .page-shell {
+        width: calc(100% - 32px);
+      }
+
+      .capsule-navbar {
+        top: 12px;
+        width: calc(100% - 24px);
+      }
+
+      .capsule-navbar__bar {
+        min-height: 64px;
+        padding: 10px 20px;
+      }
+
+      .capsule-navbar__nav {
+        display: none;
+      }
+
+      .capsule-navbar__toggle {
+        display: flex;
+      }
+
+      .capsule-navbar__panel {
+        display: block;
+      }
+
+      .main-content {
+        padding-top: 100px;
+      }
+
+      .posts-header__top {
+        gap: 20px;
+        padding-bottom: 20px;
+      }
+
+      .posts-header__title {
+        font-size: clamp(2.5rem, 12vw, 4rem);
+      }
+
+      .posts-header__description {
+        font-size: 12px;
+      }
+
+      .posts-grid {
+        grid-template-columns: 1fr;
+        gap: 40px;
+      }
+
+      .post-card {
+        gap: 14px;
+      }
+
+      .post-card__title {
+        font-size: 19px;
+      }
+
+      .post-card__excerpt {
+        font-size: 12px;
+      }
+
+      .posts-more__inner {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .footer {
+        padding: 64px 0 28px;
+      }
+
+      .footer-divider {
+        width: calc(100% - 32px);
+        margin: 0 auto 40px;
+      }
+
+      .footer-inner {
+        width: calc(100% - 32px);
+        gap: 48px;
+      }
+
+      .footer-main {
+        grid-template-columns: 1fr;
+        gap: 40px;
+      }
+
+      .footer-bottom {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 8px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header class="capsule-navbar" id="site-header">
+    <div class="capsule-navbar__bar">
+
+      <a
+        class="capsule-navbar__brand"
+        href="/"
+        aria-label="Archive home"
+      >
+        ARCHIVE / 01
+      </a>
+
+      <nav
+        class="capsule-navbar__nav"
+        aria-label="Primary navigation"
+      >
+        <a
+          class="capsule-navbar__link"
+          href="/posts"
+          aria-current="page"
+        >
+          Posts
+        </a>
+
+        <a
+          class="capsule-navbar__link"
+          href="/books"
+        >
+          Books
+        </a>
+      </nav>
+
+      <button
+        class="capsule-navbar__toggle"
+        id="menu-toggle"
+        type="button"
+        aria-expanded="false"
+        aria-controls="mobile-panel"
+        aria-label="Open menu"
+      >
+        <span
+          class="capsule-navbar__icon"
+          aria-hidden="true"
+        ></span>
+      </button>
+
+    </div>
+
+    <div
+      class="capsule-navbar__panel"
+      id="mobile-panel"
+    >
+      <nav
+        class="capsule-navbar__panel-inner"
+        aria-label="Mobile navigation"
+      >
+        <a
+          class="capsule-navbar__panel-link"
+          href="/posts"
+        >
+          Posts
+        </a>
+
+        <a
+          class="capsule-navbar__panel-link"
+          href="/books"
+        >
+          Books
+        </a>
+      </nav>
+    </div>
+  </header>
+
+
+  <main class="main-content">
+
+    <section class="posts-header">
+      <div class="page-shell">
+
+        <div class="posts-header__top">
+
+          <div>
+            <p class="posts-header__eyebrow">
+              Archive / Posts
+            </p>
+
+            <h1 class="posts-header__title">
+              Posts
+            </h1>
+          </div>
+
+          <p class="posts-header__description">
+            Published stories, observations,
+            and notes from the archive.
+          </p>
+
+        </div>
+
+      </div>
+    </section>
+
+
+    <section class="posts-section">
+      <div class="page-shell">
+
+        <div class="posts-grid">
+
+          <article class="post-card">
+            <a
+              class="post-card__image-wrap"
+              href="/posts/notes-from-a-quieter-city"
+            >
+              <img
+                class="post-card__image"
+                src="https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=1000&q=85"
+                alt="City landscape"
+              />
+            </a>
+
+            <div class="post-card__body">
+              <p class="post-card__meta">
+                18 SEP 2026 · FEATURED
+              </p>
+
+              <h2 class="post-card__title">
+                Notes from a quieter city
+              </h2>
+
+              <p class="post-card__excerpt">
+                Observations, places, and small
+                details found while moving through
+                the city.
+              </p>
+
+              <a
+                class="post-card__link"
+                href="/posts/notes-from-a-quieter-city"
+              >
+                Read post
+              </a>
+            </div>
+          </article>
+
+
+          <article class="post-card">
+            <a
+              class="post-card__image-wrap"
+              href="/posts/spaces-built-for-slower-days"
+            >
+              <img
+                class="post-card__image"
+                src="https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1000&q=85"
+                alt="Quiet interior"
+              />
+            </a>
+
+            <div class="post-card__body">
+              <p class="post-card__meta">
+                16 SEP 2026
+              </p>
+
+              <h2 class="post-card__title">
+                Spaces built for slower days
+              </h2>
+
+              <p class="post-card__excerpt">
+                Thoughts on rooms, light, and
+                the feeling of staying.
+              </p>
+
+              <a
+                class="post-card__link"
+                href="/posts/spaces-built-for-slower-days"
+              >
+                Read post
+              </a>
+            </div>
+          </article>
+
+
+          <article class="post-card">
+            <a
+              class="post-card__image-wrap"
+              href="/posts/what-remains-on-the-desk"
+            >
+              <img
+                class="post-card__image"
+                src="https://images.unsplash.com/photo-1494438639946-1ebd1d20bf85?auto=format&fit=crop&w=1000&q=85"
+                alt="Desk with notebook and objects"
+              />
+            </a>
+
+            <div class="post-card__body">
+              <p class="post-card__meta">
+                13 SEP 2026
+              </p>
+
+              <h2 class="post-card__title">
+                What remains on the desk
+              </h2>
+
+              <p class="post-card__excerpt">
+                Objects become records when
+                we stop moving them.
+              </p>
+
+              <a
+                class="post-card__link"
+                href="/posts/what-remains-on-the-desk"
+              >
+                Read post
+              </a>
+            </div>
+          </article>
+
+
+          <article class="post-card">
+            <a
+              class="post-card__image-wrap"
+              href="/posts/shelves-full-of-unfinished-ideas"
+            >
+              <img
+                class="post-card__image"
+                src="https://images.unsplash.com/photo-1516979187457-637abb4f9353?auto=format&fit=crop&w=1000&q=85"
+                alt="Bookshelf"
+              />
+            </a>
+
+            <div class="post-card__body">
+              <p class="post-card__meta">
+                10 SEP 2026
+              </p>
+
+              <h2 class="post-card__title">
+                Shelves full of unfinished ideas
+              </h2>
+
+              <p class="post-card__excerpt">
+                A few books, notes, and fragments
+                worth returning to.
+              </p>
+
+              <a
+                class="post-card__link"
+                href="/posts/shelves-full-of-unfinished-ideas"
+              >
+                Read post
+              </a>
+            </div>
+          </article>
+
+
+          <article class="post-card">
+            <a
+              class="post-card__image-wrap"
+              href="/posts/keeping-a-record-of-ordinary-things"
+            >
+              <img
+                class="post-card__image"
+                src="https://images.unsplash.com/photo-1456324504439-367cee3b3c32?auto=format&fit=crop&w=1000&q=85"
+                alt="Notebook and handwritten notes"
+              />
+            </a>
+
+            <div class="post-card__body">
+              <p class="post-card__meta">
+                07 SEP 2026
+              </p>
+
+              <h2 class="post-card__title">
+                Keeping a record of ordinary things
+              </h2>
+
+              <p class="post-card__excerpt">
+                Why everyday details often become
+                the most useful archive.
+              </p>
+
+              <a
+                class="post-card__link"
+                href="/posts/keeping-a-record-of-ordinary-things"
+              >
+                Read post
+              </a>
+            </div>
+          </article>
+
+
+          <article class="post-card">
+            <a
+              class="post-card__image-wrap"
+              href="/posts/light-across-the-room"
+            >
+              <img
+                class="post-card__image"
+                src="https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1000&q=85"
+                alt="Sunlight across an interior"
+              />
+            </a>
+
+            <div class="post-card__body">
+              <p class="post-card__meta">
+                03 SEP 2026
+              </p>
+
+              <h2 class="post-card__title">
+                Light across the room
+              </h2>
+
+              <p class="post-card__excerpt">
+                Small changes in light can make
+                familiar places feel new.
+              </p>
+
+              <a
+                class="post-card__link"
+                href="/posts/light-across-the-room"
+              >
+                Read post
+              </a>
+            </div>
+          </article>
+
+
+          <article class="post-card">
+            <a
+              class="post-card__image-wrap"
+              href="/posts/a-walk-between-buildings"
+            >
+              <img
+                class="post-card__image"
+                src="https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?auto=format&fit=crop&w=1000&q=85"
+                alt="City street between buildings"
+              />
+            </a>
+
+            <div class="post-card__body">
+              <p class="post-card__meta">
+                30 AUG 2026
+              </p>
+
+              <h2 class="post-card__title">
+                A walk between buildings
+              </h2>
+
+              <p class="post-card__excerpt">
+                Looking closer at streets we usually
+                cross without noticing.
+              </p>
+
+              <a
+                class="post-card__link"
+                href="/posts/a-walk-between-buildings"
+              >
+                Read post
+              </a>
+            </div>
+          </article>
+
+
+          <article class="post-card">
+            <a
+              class="post-card__image-wrap"
+              href="/posts/notes-on-making-time"
+            >
+              <img
+                class="post-card__image"
+                src="https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=1000&q=85"
+                alt="Desk with laptop and notebook"
+              />
+            </a>
+
+            <div class="post-card__body">
+              <p class="post-card__meta">
+                26 AUG 2026
+              </p>
+
+              <h2 class="post-card__title">
+                Notes on making time
+              </h2>
+
+              <p class="post-card__excerpt">
+                Thoughts on attention, routine,
+                and making room for ideas.
+              </p>
+
+              <a
+                class="post-card__link"
+                href="/posts/notes-on-making-time"
+              >
+                Read post
+              </a>
+            </div>
+          </article>
+
+
+          <article class="post-card">
+            <a
+              class="post-card__image-wrap"
+              href="/posts/the-things-we-leave-behind"
+            >
+              <img
+                class="post-card__image"
+                src="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1000&q=85"
+                alt="Landscape with distant mountains"
+              />
+            </a>
+
+            <div class="post-card__body">
+              <p class="post-card__meta">
+                22 AUG 2026
+              </p>
+
+              <h2 class="post-card__title">
+                The things we leave behind
+              </h2>
+
+              <p class="post-card__excerpt">
+                Places, objects, and memories that
+                stay with us longer than expected.
+              </p>
+
+              <a
+                class="post-card__link"
+                href="/posts/the-things-we-leave-behind"
+              >
+                Read post
+              </a>
+            </div>
+          </article>
+
+        </div>
+
+      </div>
+    </section>
+
+
+    <section class="posts-more">
+      <div class="page-shell">
+
+        <div class="posts-more__inner">
+
+          <p class="posts-more__label">
+            Explore the collection
+          </p>
+
+          <a
+            class="posts-more__link"
+            href="/books"
+          >
+            Browse books
+          </a>
+
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+
+  <footer class="footer">
+
+    <div class="footer-divider"></div>
+
+    <div class="footer-inner">
+
+      <div class="footer-main">
+
+        <div class="footer-brand">
+
+          <h2 class="footer-brand__name">
+            ARCHIVE/01
+          </h2>
+
+          <p class="footer-brand__text">
+            A digital publication and book library
+            for stories, observations, and things
+            worth keeping.
+          </p>
+
+        </div>
+
+        <nav
+          class="footer-nav"
+          aria-label="Footer navigation"
+        >
+
+          <p class="footer-nav__eyebrow">
+            Explore
+          </p>
+
+          <a
+            class="footer-nav__link"
+            href="/posts"
+          >
+            Posts
+          </a>
+
+          <a
+            class="footer-nav__link"
+            href="/books"
+          >
+            Books
+          </a>
+
+        </nav>
+
+      </div>
+
+      <div class="footer-bottom">
+
+        <p class="footer__copy">
+          © 2026 Archive / 01
+        </p>
+
+        <p class="footer__label">
+          Digital Publication &amp; Book Library
+        </p>
+
+      </div>
+
+    </div>
+
+  </footer>
+
+
+  <script>
+    const header =
+      document.getElementById("site-header");
+
+    const menuToggle =
+      document.getElementById("menu-toggle");
+
+    const mobilePanel =
+      document.getElementById("mobile-panel");
+
+    let lastScrollY =
+      window.scrollY;
+
+
+    function setMenuState(isOpen) {
+      if (isOpen) {
+
+        mobilePanel.classList.add("is-open");
+
+        mobilePanel.style.height =
+          "0px";
+
+        const targetHeight =
+          mobilePanel.scrollHeight;
+
+        mobilePanel.offsetHeight;
+
+        requestAnimationFrame(() => {
+          mobilePanel.style.height =
+            targetHeight + "px";
+        });
+
+      } else {
+
+        const currentHeight =
+          mobilePanel.scrollHeight;
+
+        mobilePanel.style.height =
+          currentHeight + "px";
+
+        mobilePanel.offsetHeight;
+
+        mobilePanel.classList.remove("is-open");
+
+        requestAnimationFrame(() => {
+          mobilePanel.style.height =
+            "0px";
+        });
+      }
+
+      menuToggle.classList.toggle(
+        "is-open",
+        isOpen
+      );
+
+      menuToggle.setAttribute(
+        "aria-expanded",
+        String(isOpen)
+      );
+
+      menuToggle.setAttribute(
+        "aria-label",
+        isOpen
+          ? "Close menu"
+          : "Open menu"
+      );
+    }
+
+
+    function closeMobileMenu() {
+      if (
+        mobilePanel.classList.contains(
+          "is-open"
+        )
+      ) {
+
+        setMenuState(false);
+
+      } else {
+
+        menuToggle.classList.remove(
+          "is-open"
+        );
+
+        menuToggle.setAttribute(
+          "aria-expanded",
+          "false"
+        );
+
+        menuToggle.setAttribute(
+          "aria-label",
+          "Open menu"
+        );
+      }
+    }
+
+
+    menuToggle.addEventListener(
+      "click",
+      () => {
+
+        const isOpen =
+          mobilePanel.classList.contains(
+            "is-open"
+          );
+
+        setMenuState(!isOpen);
+      }
+    );
+
+
+    mobilePanel.addEventListener(
+      "transitionend",
+      (event) => {
+
+        if (
+          event.propertyName !== "height"
+        ) {
+          return;
+        }
+
+        if (
+          mobilePanel.classList.contains(
+            "is-open"
+          )
+        ) {
+
+          mobilePanel.style.height =
+            "auto";
+
+        } else {
+
+          mobilePanel.style.height =
+            "0px";
+        }
+      }
+    );
+
+
+    window.addEventListener(
+      "scroll",
+      () => {
+
+        const currentScrollY =
+          window.scrollY;
+
+        if (
+          mobilePanel.classList.contains(
+            "is-open"
+          )
+        ) {
+
+          header.classList.remove(
+            "is-hidden"
+          );
+
+          lastScrollY =
+            currentScrollY;
+
+          return;
+        }
+
+        if (currentScrollY <= 16) {
+
+          header.classList.remove(
+            "is-hidden"
+          );
+
+          lastScrollY =
+            currentScrollY;
+
+          return;
+        }
+
+        if (
+          currentScrollY >
+          lastScrollY
+        ) {
+
+          header.classList.add(
+            "is-hidden"
+          );
+
+        } else {
+
+          header.classList.remove(
+            "is-hidden"
+          );
+        }
+
+        lastScrollY =
+          currentScrollY;
+      },
+      {
+        passive: true
+      }
+    );
+
+
+    document
+      .querySelectorAll(
+        ".capsule-navbar__panel-link"
+      )
+      .forEach((link) => {
+
+        link.addEventListener(
+          "click",
+          () => {
+            closeMobileMenu();
+          }
+        );
+
+      });
+
+
+    window.addEventListener(
+      "resize",
+      () => {
+
+        if (
+          window.innerWidth > 767
+        ) {
+
+          mobilePanel.classList.remove(
+            "is-open"
+          );
+
+          mobilePanel.style.height =
+            "0px";
+
+          menuToggle.classList.remove(
+            "is-open"
+          );
+
+          menuToggle.setAttribute(
+            "aria-expanded",
+            "false"
+          );
+
+          menuToggle.setAttribute(
+            "aria-label",
+            "Open menu"
+          );
+        }
+
+      }
+    );
+  </script>
+
+</body>
+</html>
