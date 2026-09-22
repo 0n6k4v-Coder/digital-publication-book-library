@@ -4,31 +4,53 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Archive — Post Editor</title>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  >
+
   <style>
     :root {
-      --surface: #fff;
+      --surface: #ffffff;
       --surface-soft: #f7f7f4;
       --text: #171717;
+      --body-text: #2b2b28;
       --muted: #85857f;
+      --placeholder: #aaa9a2;
       --line: #e5e5df;
       --line-strong: #d2d2cb;
       --accent: #d9ff4f;
       --accent-border: #bedf3c;
       --accent-hover: #d0f447;
+
       --topbar-height: 64px;
       --page-padding: 24px;
+      --content-width: 820px;
+      --body-width: 720px;
+
       --control-height: 40px;
       --back-size: 44px;
+      --title-size: 48px;
+      --subtitle-size: 24px;
+      --body-size: 19px;
+
       --radius-sm: 8px;
       --radius-md: 10px;
       --transition-fast: 160ms ease;
-      --shadow-menu: 0 16px 36px rgb(23 23 23 / .12), 0 3px 10px rgb(23 23 23 / .05);
+
+      --shadow-menu:
+        0 16px 36px rgb(23 23 23 / 0.12),
+        0 3px 10px rgb(23 23 23 / 0.05);
     }
 
-    *, *::before, *::after { box-sizing: border-box; }
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
 
     html {
       min-width: 320px;
@@ -47,10 +69,23 @@
       text-rendering: optimizeLegibility;
     }
 
-    button, a { font: inherit; }
-    button { border: 0; }
-    a { color: inherit; text-decoration: none; }
-    svg { display: block; }
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    svg {
+      display: block;
+    }
 
     button:focus-visible,
     a:focus-visible {
@@ -69,16 +104,20 @@
       z-index: 50;
       width: 100%;
       min-height: var(--topbar-height);
+
       padding-inline:
         max(var(--page-padding), env(safe-area-inset-left))
         max(var(--page-padding), env(safe-area-inset-right));
       padding-top: env(safe-area-inset-top);
+
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 16px;
+
       border-bottom: 1px solid var(--line);
-      background: rgb(255 255 255 / .96);
+      background: rgb(255 255 255 / 0.96);
+
       backdrop-filter: blur(14px);
       -webkit-backdrop-filter: blur(14px);
     }
@@ -100,15 +139,22 @@
       min-width: var(--back-size);
       height: var(--back-size);
       padding: 0;
+
       display: inline-flex;
       align-items: center;
       justify-content: center;
+
       border: 1px solid transparent;
       border-radius: var(--radius-sm);
+
       background: transparent;
       color: var(--text);
+
       cursor: pointer;
-      transition: background var(--transition-fast), border-color var(--transition-fast);
+
+      transition:
+        background var(--transition-fast),
+        border-color var(--transition-fast);
     }
 
     .back-button:hover {
@@ -124,20 +170,29 @@
     .preview-button {
       min-height: var(--control-height);
       padding-inline: 15px;
+
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
+
       border: 1px solid var(--line);
       border-radius: var(--radius-sm);
+
       background: var(--surface);
       color: #5e5e58;
+
       font-size: 11px;
       line-height: 1;
       font-weight: 700;
+
       white-space: nowrap;
       cursor: pointer;
-      transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+
+      transition:
+        background var(--transition-fast),
+        border-color var(--transition-fast),
+        color var(--transition-fast);
     }
 
     .preview-button:hover {
@@ -149,6 +204,7 @@
     .preview-button__icon {
       width: 15px;
       height: 15px;
+      flex: 0 0 auto;
     }
 
     .status-action {
@@ -161,24 +217,33 @@
     .status-action__menu {
       min-height: var(--control-height);
       cursor: pointer;
-      transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+
+      transition:
+        background var(--transition-fast),
+        border-color var(--transition-fast),
+        color var(--transition-fast);
     }
 
     .status-action__main {
       min-width: 92px;
       padding-inline: 15px;
+
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
+
       border: 1px solid var(--accent-border);
       border-right: 0;
       border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+
       background: var(--accent);
       color: #181818;
+
       font-size: 11px;
       line-height: 1;
       font-weight: 700;
+
       white-space: nowrap;
     }
 
@@ -190,28 +255,32 @@
     .status-action__main--draft {
       border-color: var(--text);
       background: var(--text);
-      color: #fff;
+      color: #ffffff;
     }
 
     .status-action__main--draft:hover {
-      border-color: #000;
-      background: #000;
-      color: #fff;
+      border-color: #000000;
+      background: #000000;
+      color: #ffffff;
     }
 
     .status-action__icon {
       width: 15px;
       height: 15px;
+      flex: 0 0 auto;
     }
 
     .status-action__menu {
       width: 34px;
       padding: 0;
+
       display: inline-flex;
       align-items: center;
       justify-content: center;
+
       border: 1px solid var(--accent-border);
       border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+
       background: var(--accent);
       color: #181818;
     }
@@ -224,13 +293,13 @@
     .status-action__main--draft + .status-action__menu {
       border-color: var(--text);
       background: var(--text);
-      color: #fff;
+      color: #ffffff;
     }
 
     .status-action__main--draft + .status-action__menu:hover {
-      border-color: #000;
-      background: #000;
-      color: #fff;
+      border-color: #000000;
+      background: #000000;
+      color: #ffffff;
     }
 
     .status-action__menu-icon {
@@ -242,22 +311,32 @@
       position: absolute;
       top: calc(100% + 8px);
       right: 0;
+
       width: max-content;
       min-width: 184px;
       max-width: min(240px, calc(100vw - 16px));
+
       padding: 6px;
+
       display: flex;
       flex-direction: column;
       gap: 5px;
+
       border: 1px solid var(--line);
       border-radius: var(--radius-md);
+
       background: var(--surface);
       box-shadow: var(--shadow-menu);
+
       opacity: 0;
       visibility: hidden;
       transform: translateY(-4px);
       pointer-events: none;
-      transition: opacity var(--transition-fast), transform var(--transition-fast), visibility var(--transition-fast);
+
+      transition:
+        opacity var(--transition-fast),
+        transform var(--transition-fast),
+        visibility var(--transition-fast);
     }
 
     .status-action.is-open .status-action__popup {
@@ -270,10 +349,11 @@
     .status-action__popup-label {
       padding: 5px 9px 4px;
       color: var(--muted);
+
       font-size: 8px;
       line-height: 1;
       font-weight: 800;
-      letter-spacing: .12em;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
     }
 
@@ -281,16 +361,24 @@
       width: 100%;
       min-height: 42px;
       padding: 0 10px;
+
       display: inline-flex;
       align-items: center;
       gap: 14px;
+
       border: 1px solid transparent;
       border-radius: 7px;
+
       background: transparent;
       color: var(--text);
+
       text-align: left;
       cursor: pointer;
-      transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+
+      transition:
+        background var(--transition-fast),
+        border-color var(--transition-fast),
+        color var(--transition-fast);
     }
 
     .status-action__option:hover {
@@ -321,6 +409,7 @@
 
     .status-action__option-copy {
       min-width: 0;
+
       display: flex;
       flex-direction: column;
       gap: 3px;
@@ -335,6 +424,7 @@
 
     .status-action__option-description {
       color: var(--muted);
+
       font-size: 8px;
       line-height: 1.35;
       font-weight: 500;
@@ -343,7 +433,151 @@
 
     .writing-canvas {
       min-height: calc(100vh - var(--topbar-height));
+
+      padding:
+        64px
+        max(var(--page-padding), env(safe-area-inset-right))
+        120px
+        max(var(--page-padding), env(safe-area-inset-left));
+
       background: var(--surface);
+    }
+
+    .post-editor {
+      width: min(100%, var(--content-width));
+      margin-inline: auto;
+
+      display: flex;
+      flex-direction: column;
+    }
+
+    .post-field__label {
+      position: absolute;
+
+      width: 1px;
+      height: 1px;
+
+      padding: 0;
+      margin: -1px;
+
+      overflow: hidden;
+
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+
+      border: 0;
+    }
+
+    .post-title,
+    .post-subtitle {
+      width: 100%;
+      padding: 0;
+
+      border: 0;
+      outline: 0;
+
+      background: transparent;
+      font-family: inherit;
+
+      caret-color: var(--text);
+    }
+
+    .post-title {
+      color: var(--text);
+
+      font-size: var(--title-size);
+      line-height: 1.08;
+      font-weight: 700;
+      letter-spacing: -0.035em;
+    }
+
+    .post-title::placeholder {
+      color: var(--placeholder);
+      opacity: 1;
+    }
+
+    .post-title:focus::placeholder {
+      color: #b5b5ae;
+    }
+
+    .post-subtitle {
+      margin-top: 18px;
+
+      color: #60605a;
+
+      font-size: var(--subtitle-size);
+      line-height: 1.4;
+      font-weight: 400;
+      letter-spacing: -0.015em;
+    }
+
+    .post-subtitle::placeholder {
+      color: var(--placeholder);
+      opacity: 1;
+    }
+
+    .post-subtitle:focus::placeholder {
+      color: #b5b5ae;
+    }
+
+    .post-body {
+      width: min(100%, var(--body-width));
+      min-height: 480px;
+
+      margin-top: 48px;
+      padding: 0;
+
+      outline: 0;
+      border: 0;
+
+      color: var(--body-text);
+
+      font-family: inherit;
+      font-size: var(--body-size);
+      line-height: 1.75;
+      font-weight: 400;
+      letter-spacing: -0.005em;
+
+      caret-color: var(--text);
+
+      white-space: pre-wrap;
+      overflow-wrap: break-word;
+
+      cursor: text;
+    }
+
+    .post-body:empty::before {
+      content: attr(data-placeholder);
+
+      display: inline;
+      color: var(--placeholder);
+
+      pointer-events: none;
+    }
+
+    .post-body p {
+      margin: 0 0 1.25em;
+    }
+
+    .post-body p:last-child {
+      margin-bottom: 0;
+    }
+
+    @media (max-width: 760px) {
+      :root {
+        --title-size: 42px;
+        --subtitle-size: 22px;
+        --body-size: 18px;
+      }
+
+      .writing-canvas {
+        padding-top: 48px;
+        padding-bottom: 96px;
+      }
+
+      .post-body {
+        margin-top: 42px;
+      }
     }
 
     @media (max-width: 640px) {
@@ -351,12 +585,28 @@
         --topbar-height: 58px;
         --page-padding: 12px;
         --back-size: 40px;
+
+        --title-size: 36px;
+        --subtitle-size: 20px;
+        --body-size: 18px;
       }
 
-      .writing-topbar { gap: 10px; }
-      .writing-topbar__right { gap: 6px; }
-      .back-button { border-radius: 7px; }
-      .back-button__icon { width: 18px; height: 18px; }
+      .writing-topbar {
+        gap: 10px;
+      }
+
+      .writing-topbar__right {
+        gap: 6px;
+      }
+
+      .back-button {
+        border-radius: 7px;
+      }
+
+      .back-button__icon {
+        width: 18px;
+        height: 18px;
+      }
 
       .preview-button {
         min-height: 40px;
@@ -401,130 +651,419 @@
       .status-action__option {
         gap: 13px;
       }
+
+      .writing-canvas {
+        padding-top: 40px;
+        padding-bottom: 72px;
+      }
+
+      .post-subtitle {
+        margin-top: 14px;
+      }
+
+      .post-body {
+        min-height: 380px;
+        margin-top: 36px;
+      }
     }
 
     @media (max-width: 460px) {
-      :root { --page-padding: 8px; }
-      .writing-topbar__right { gap: 5px; }
-      .preview-button { padding-inline: 10px; }
-      .status-action__main { min-width: 84px; padding-inline: 10px; }
-      .status-action__menu { width: 30px; }
-      .status-action__popup { min-width: 176px; }
-      .status-action__option { padding-inline: 9px; gap: 12px; }
+      :root {
+        --page-padding: 8px;
+        --title-size: 32px;
+        --subtitle-size: 19px;
+        --body-size: 17px;
+      }
+
+      .writing-topbar__right {
+        gap: 5px;
+      }
+
+      .preview-button {
+        padding-inline: 10px;
+      }
+
+      .status-action__main {
+        min-width: 84px;
+        padding-inline: 10px;
+      }
+
+      .status-action__menu {
+        width: 30px;
+      }
+
+      .status-action__popup {
+        min-width: 176px;
+      }
+
+      .status-action__option {
+        padding-inline: 9px;
+        gap: 12px;
+      }
+
+      .writing-canvas {
+        padding-top: 34px;
+      }
+
+      .post-body {
+        margin-top: 32px;
+      }
     }
 
     @media (max-width: 380px) {
-      .preview-button__icon { display: none; }
-      .preview-button { padding-inline: 11px; }
-      .status-action__main { min-width: 80px; padding-inline: 9px; font-size: 9.5px; }
-      .status-action__main .status-action__icon { display: none; }
-      .status-action__popup { min-width: 172px; }
+      .preview-button__icon {
+        display: none;
+      }
+
+      .preview-button {
+        padding-inline: 11px;
+      }
+
+      .status-action__main {
+        min-width: 80px;
+        padding-inline: 9px;
+        font-size: 9.5px;
+      }
+
+      .status-action__main .status-action__icon {
+        display: none;
+      }
+
+      .status-action__popup {
+        min-width: 172px;
+      }
+
+      .post-title {
+        font-size: 30px;
+      }
+
+      .post-subtitle {
+        font-size: 18px;
+      }
+
+      .post-body {
+        font-size: 17px;
+        line-height: 1.7;
+      }
     }
 
     @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after { transition-duration: .01ms !important; }
+      *,
+      *::before,
+      *::after {
+        transition-duration: 0.01ms !important;
+      }
     }
   </style>
 </head>
 
 <body>
   <div class="writing-workspace">
+
     <header class="writing-topbar" aria-label="Post editor actions">
       <div class="writing-topbar__left">
-        <a class="back-button" href="/admin/posts" aria-label="Back to posts">
-          <svg class="back-button__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <a
+          class="back-button"
+          href="/admin/posts"
+          aria-label="Back to posts"
+        >
+          <svg
+            class="back-button__icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
             <path d="M15 18l-6-6 6-6"></path>
           </svg>
         </a>
       </div>
 
       <div class="writing-topbar__right">
-        <button class="preview-button" type="button" aria-label="Preview post" data-preview-button>
-          <svg class="preview-button__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M2.5 12s3.5-6 9.5-6s9.5 6 9.5 6s-3.5 6-9.5 6s-9.5-6-9.5-6Z"></path>
-            <circle cx="12" cy="12" r="2.5"></circle>
+
+        <button
+          class="preview-button"
+          type="button"
+          aria-label="Preview post"
+          data-preview-button
+        >
+          <svg
+            class="preview-button__icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path
+              d="M2.5 12s3.5-6 9.5-6s9.5 6 9.5 6s-3.5 6-9.5 6s-9.5-6-9.5-6Z"
+            ></path>
+
+            <circle
+              cx="12"
+              cy="12"
+              r="2.5"
+            ></circle>
           </svg>
+
           <span>Preview</span>
         </button>
 
-        <div class="status-action" data-status-action>
-          <button class="status-action__main" type="button" data-status-main aria-label="Publish post">
-            <svg class="status-action__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-status-main-icon>
+        <div
+          class="status-action"
+          data-status-action
+        >
+          <button
+            class="status-action__main"
+            type="button"
+            data-status-main
+            aria-label="Publish post"
+          >
+            <svg
+              class="status-action__icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+              data-status-main-icon
+            >
               <path d="M22 2L11 13"></path>
               <path d="M22 2L15 22L11 13L2 9L22 2Z"></path>
             </svg>
-            <span data-status-main-label>Publish</span>
+
+            <span data-status-main-label>
+              Publish
+            </span>
           </button>
 
-          <button class="status-action__menu" type="button" aria-label="Change post action" aria-haspopup="menu" aria-expanded="false" data-status-menu-button>
-            <svg class="status-action__menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <button
+            class="status-action__menu"
+            type="button"
+            aria-label="Change post action"
+            aria-haspopup="menu"
+            aria-expanded="false"
+            data-status-menu-button
+          >
+            <svg
+              class="status-action__menu-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
               <path d="M7 10l5 5l5-5"></path>
             </svg>
           </button>
 
-          <div class="status-action__popup" role="menu" aria-label="Post action" data-status-menu>
-            <div class="status-action__popup-label">Action</div>
+          <div
+            class="status-action__popup"
+            role="menu"
+            aria-label="Post action"
+            data-status-menu
+          >
+            <div class="status-action__popup-label">
+              Action
+            </div>
 
-            <button class="status-action__option is-active" type="button" role="menuitemradio" aria-checked="true" data-action-option="publish">
-              <svg class="status-action__option-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <button
+              class="status-action__option is-active"
+              type="button"
+              role="menuitemradio"
+              aria-checked="true"
+              data-action-option="publish"
+            >
+              <svg
+                class="status-action__option-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
                 <path d="M22 2L11 13"></path>
                 <path d="M22 2L15 22L11 13L2 9L22 2Z"></path>
               </svg>
+
               <span class="status-action__option-copy">
-                <span class="status-action__option-title">Publish</span>
-                <span class="status-action__option-description">Publish the current post.</span>
+                <span class="status-action__option-title">
+                  Publish
+                </span>
+
+                <span class="status-action__option-description">
+                  Publish the current post.
+                </span>
               </span>
             </button>
 
-            <button class="status-action__option" type="button" role="menuitemradio" aria-checked="false" data-action-option="draft">
-              <svg class="status-action__option-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <button
+              class="status-action__option"
+              type="button"
+              role="menuitemradio"
+              aria-checked="false"
+              data-action-option="draft"
+            >
+              <svg
+                class="status-action__option-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
                 <path d="M5 4H16L19 7V20H5Z"></path>
                 <path d="M8 4V10H16V4"></path>
                 <path d="M8 20V14H16V20"></path>
               </svg>
+
               <span class="status-action__option-copy">
-                <span class="status-action__option-title">Save As Draft</span>
-                <span class="status-action__option-description">Keep the post unpublished.</span>
+                <span class="status-action__option-title">
+                  Save As Draft
+                </span>
+
+                <span class="status-action__option-description">
+                  Keep the post unpublished.
+                </span>
               </span>
             </button>
           </div>
         </div>
+
       </div>
     </header>
 
-    <main class="writing-canvas" aria-label="Post editor"></main>
+    <main
+      class="writing-canvas"
+      aria-label="Create post"
+    >
+      <article class="post-editor">
+
+        <label
+          class="post-field__label"
+          for="post-title"
+        >
+          Title
+        </label>
+
+        <input
+          class="post-title"
+          id="post-title"
+          name="title"
+          type="text"
+          placeholder="Title"
+          autocomplete="off"
+          data-post-title
+        >
+
+        <label
+          class="post-field__label"
+          for="post-subtitle"
+        >
+          Subtitle
+        </label>
+
+        <input
+          class="post-subtitle"
+          id="post-subtitle"
+          name="subtitle"
+          type="text"
+          placeholder="Subtitle"
+          autocomplete="off"
+          data-post-subtitle
+        >
+
+        <div
+          class="post-body"
+          id="post-body"
+          role="textbox"
+          contenteditable="true"
+          aria-multiline="true"
+          aria-label="Post body"
+          data-placeholder="Start writing your post..."
+          data-post-body
+        ></div>
+
+      </article>
+    </main>
+
   </div>
 
   <script>
     document.addEventListener("DOMContentLoaded", () => {
-      const statusAction = document.querySelector("[data-status-action]");
-      const statusMain = document.querySelector("[data-status-main]");
-      const statusMainIcon = document.querySelector("[data-status-main-icon]");
-      const statusMainLabel = document.querySelector("[data-status-main-label]");
-      const statusMenuButton = document.querySelector("[data-status-menu-button]");
-      const actionOptions = document.querySelectorAll("[data-action-option]");
+      const statusAction =
+        document.querySelector("[data-status-action]");
+
+      const statusMain =
+        document.querySelector("[data-status-main]");
+
+      const statusMainIcon =
+        document.querySelector("[data-status-main-icon]");
+
+      const statusMainLabel =
+        document.querySelector("[data-status-main-label]");
+
+      const statusMenuButton =
+        document.querySelector(
+          "[data-status-menu-button]"
+        );
+
+      const actionOptions =
+        document.querySelectorAll(
+          "[data-action-option]"
+        );
+
+      const titleInput =
+        document.querySelector(
+          "[data-post-title]"
+        );
+
+      const subtitleInput =
+        document.querySelector(
+          "[data-post-subtitle]"
+        );
+
+      const postBody =
+        document.querySelector(
+          "[data-post-body]"
+        );
 
       let selectedAction = "publish";
 
       function setPublishIcon() {
-        statusMainIcon.innerHTML = [
-          '<path d="M22 2L11 13"></path>',
-          '<path d="M22 2L15 22L11 13L2 9L22 2Z"></path>'
-        ].join("");
+        statusMainIcon.innerHTML =
+          '<path d="M22 2L11 13"></path>' +
+          '<path d="M22 2L15 22L11 13L2 9L22 2Z"></path>';
       }
 
       function setDraftIcon() {
-        statusMainIcon.innerHTML = [
-          '<path d="M5 4H16L19 7V20H5Z"></path>',
-          '<path d="M8 4V10H16V4"></path>',
-          '<path d="M8 20V14H16V20"></path>'
-        ].join("");
+        statusMainIcon.innerHTML =
+          '<path d="M5 4H16L19 7V20H5Z"></path>' +
+          '<path d="M8 4V10H16V4"></path>' +
+          '<path d="M8 20V14H16V20"></path>';
       }
 
       function setSelectedAction(action) {
-        selectedAction = action === "draft" ? "draft" : "publish";
+        selectedAction =
+          action === "draft"
+            ? "draft"
+            : "publish";
 
-        const isDraftAction = selectedAction === "draft";
+        const isDraftAction =
+          selectedAction === "draft";
 
         statusMain.classList.toggle(
           "status-action__main--draft",
@@ -532,7 +1071,9 @@
         );
 
         statusMainLabel.textContent =
-          isDraftAction ? "Save As Draft" : "Publish";
+          isDraftAction
+            ? "Save As Draft"
+            : "Publish";
 
         statusMain.setAttribute(
           "aria-label",
@@ -549,45 +1090,95 @@
 
         actionOptions.forEach((option) => {
           const isActive =
-            option.dataset.actionOption === selectedAction;
+            option.dataset.actionOption ===
+            selectedAction;
 
-          option.classList.toggle("is-active", isActive);
-          option.setAttribute("aria-checked", String(isActive));
+          option.classList.toggle(
+            "is-active",
+            isActive
+          );
+
+          option.setAttribute(
+            "aria-checked",
+            String(isActive)
+          );
         });
       }
 
+      function getPostContent() {
+        return {
+          title:
+            titleInput.value.trim(),
+
+          subtitle:
+            subtitleInput.value.trim(),
+
+          body:
+            postBody.innerHTML.trim()
+        };
+      }
+
+      function executeSelectedAction() {
+        const post =
+          getPostContent();
+
+        /*
+         * Execute only.
+         * Do not change selectedAction here.
+         * The real API should update persisted state
+         * only after a successful operation.
+         */
+
+        if (
+          selectedAction === "publish"
+        ) {
+          console.info(
+            "Publish action requested",
+            post
+          );
+
+          return;
+        }
+
+        console.info(
+          "Save As Draft action requested",
+          post
+        );
+      }
+
       function openActionMenu() {
-        statusAction.classList.add("is-open");
-        statusMenuButton.setAttribute("aria-expanded", "true");
+        statusAction.classList.add(
+          "is-open"
+        );
+
+        statusMenuButton.setAttribute(
+          "aria-expanded",
+          "true"
+        );
       }
 
       function closeActionMenu() {
-        statusAction.classList.remove("is-open");
-        statusMenuButton.setAttribute("aria-expanded", "false");
+        statusAction.classList.remove(
+          "is-open"
+        );
+
+        statusMenuButton.setAttribute(
+          "aria-expanded",
+          "false"
+        );
       }
 
       function toggleActionMenu() {
-        if (statusAction.classList.contains("is-open")) {
+        if (
+          statusAction.classList.contains(
+            "is-open"
+          )
+        ) {
           closeActionMenu();
           return;
         }
 
         openActionMenu();
-      }
-
-      function executeSelectedAction() {
-        /*
-         * Execute only. Do not change selectedAction here.
-         *
-         * The eventual persistence/API layer should update the
-         * real post state only after a successful operation.
-         */
-        if (selectedAction === "publish") {
-          console.info("Publish action requested");
-          return;
-        }
-
-        console.info("Save As Draft action requested");
       }
 
       statusMain.addEventListener(
@@ -596,28 +1187,60 @@
       );
 
       actionOptions.forEach((option) => {
-        option.addEventListener("click", () => {
-          setSelectedAction(option.dataset.actionOption);
-          closeActionMenu();
-        });
+        option.addEventListener(
+          "click",
+          () => {
+            setSelectedAction(
+              option.dataset.actionOption
+            );
+
+            closeActionMenu();
+          }
+        );
       });
 
-      statusMenuButton.addEventListener("click", (event) => {
-        event.stopPropagation();
-        toggleActionMenu();
-      });
-
-      document.addEventListener("click", (event) => {
-        if (!statusAction.contains(event.target)) {
-          closeActionMenu();
+      statusMenuButton.addEventListener(
+        "click",
+        (event) => {
+          event.stopPropagation();
+          toggleActionMenu();
         }
-      });
+      );
 
-      document.addEventListener("keydown", (event) => {
-        if (event.key === "Escape") {
-          closeActionMenu();
+      document.addEventListener(
+        "click",
+        (event) => {
+          if (
+            !statusAction.contains(
+              event.target
+            )
+          ) {
+            closeActionMenu();
+          }
         }
-      });
+      );
+
+      document.addEventListener(
+        "keydown",
+        (event) => {
+          if (
+            event.key === "Escape"
+          ) {
+            closeActionMenu();
+          }
+        }
+      );
+
+      postBody.addEventListener(
+        "input",
+        () => {
+          if (
+            postBody.innerHTML === "<br>"
+          ) {
+            postBody.innerHTML = "";
+          }
+        }
+      );
 
       setSelectedAction("publish");
     });
