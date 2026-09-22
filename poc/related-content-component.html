@@ -1,0 +1,894 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Related Content</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap"
+    rel="stylesheet"
+  >
+
+  <style>
+    :root {
+      --surface: #ffffff;
+      --surface-soft: #f7f7f4;
+
+      --text: #171717;
+      --muted: #85857f;
+      --muted-strong: #666660;
+
+      --line: #e5e5df;
+      --line-strong: #d2d2cb;
+
+      --wide-width: 1080px;
+      --page-padding: clamp(18px, 4vw, 40px);
+
+      --radius-sm: 8px;
+      --radius-md: 12px;
+
+      --shadow-card:
+        0 10px 30px rgb(23 23 23 / .06),
+        0 2px 8px rgb(23 23 23 / .03);
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-width: 320px;
+      background: var(--surface);
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      background: var(--surface);
+      color: var(--text);
+
+      font-family: "DM Sans", sans-serif;
+
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .related-content {
+      width: min(100%, var(--wide-width));
+      margin-inline: auto;
+
+      padding:
+        72px
+        var(--page-padding)
+        110px;
+    }
+
+    .related-section + .related-section {
+      margin-top: 82px;
+    }
+
+    .related-section__header {
+      margin-bottom: 26px;
+
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+
+      gap: 20px;
+    }
+
+    .related-section__heading {
+      margin: 0;
+
+      color: var(--text);
+
+      font-family:
+        "Playfair Display",
+        Georgia,
+        serif;
+
+      font-size:
+        clamp(28px, 4vw, 40px);
+
+      line-height: 1.1;
+      letter-spacing: -.025em;
+    }
+
+    .related-section__link {
+      flex: 0 0 auto;
+
+      color: var(--muted-strong);
+
+      font-size: 12px;
+      font-weight: 700;
+
+      transition:
+        color 160ms ease;
+    }
+
+    .related-section__link:hover {
+      color: var(--text);
+    }
+
+    .post-card-grid {
+      display: grid;
+
+      grid-template-columns:
+        repeat(
+          3,
+          minmax(0, 1fr)
+        );
+
+      gap: 18px;
+    }
+
+    .post-card {
+      min-width: 0;
+
+      display: flex;
+      flex-direction: column;
+
+      overflow: hidden;
+
+      border:
+        1px solid
+        var(--line);
+
+      border-radius:
+        var(--radius-md);
+
+      background:
+        var(--surface);
+
+      transition:
+        transform 180ms ease,
+        border-color 180ms ease,
+        box-shadow 180ms ease;
+    }
+
+    .post-card:hover {
+      transform: translateY(-3px);
+
+      border-color:
+        var(--line-strong);
+
+      box-shadow:
+        var(--shadow-card);
+    }
+
+    .post-card__media {
+      position: relative;
+
+      overflow: hidden;
+
+      background:
+        var(--surface-soft);
+
+      aspect-ratio: 16 / 10;
+    }
+
+    .post-card__media::before {
+      content: "";
+
+      position: absolute;
+
+      width: 54%;
+      height: 68%;
+
+      left: 23%;
+      top: 16%;
+
+      border-radius: 7px;
+
+      background:
+        linear-gradient(
+          145deg,
+          #fff,
+          #d9d9cf
+        );
+
+      box-shadow:
+        0 18px 28px
+        rgb(23 23 23 / .12);
+
+      transform:
+        rotate(-4deg);
+    }
+
+    .post-card__media::after {
+      content: "";
+
+      position: absolute;
+
+      left: 31%;
+      right: 31%;
+      top: 43%;
+
+      height: 7px;
+
+      border-radius: 99px;
+
+      background:
+        #85857f;
+
+      box-shadow:
+        0 16px 0 #b7b7ae,
+        0 32px 0 #c8c8bf;
+    }
+
+    .post-card:nth-child(2)
+    .post-card__media {
+      background:
+        linear-gradient(
+          140deg,
+          #e3e3dc,
+          #c4c4b8
+        );
+    }
+
+    .post-card:nth-child(2)
+    .post-card__media::before {
+      transform: rotate(5deg);
+    }
+
+    .post-card:nth-child(3)
+    .post-card__media {
+      background:
+        linear-gradient(
+          140deg,
+          #d2d2c9,
+          #eeeeea
+        );
+    }
+
+    .post-card__body {
+      flex: 1;
+
+      padding:
+        18px
+        18px
+        20px;
+
+      display: flex;
+      flex-direction: column;
+    }
+
+    .post-card__date {
+      margin-bottom: 9px;
+
+      color: var(--muted);
+
+      font-size: 10px;
+      font-weight: 700;
+
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .post-card__title {
+      margin: 0;
+
+      color: var(--text);
+
+      font-family:
+        "Playfair Display",
+        Georgia,
+        serif;
+
+      font-size: 23px;
+      line-height: 1.15;
+
+      letter-spacing: -.02em;
+    }
+
+    .post-card__excerpt {
+      margin: 10px 0 0;
+
+      color:
+        var(--muted-strong);
+
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .post-card__cta {
+      margin-top: auto;
+      padding-top: 20px;
+
+      color: var(--text);
+
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .book-card-grid {
+      display: grid;
+
+      grid-template-columns:
+        repeat(
+          3,
+          minmax(0, 1fr)
+        );
+
+      gap: 18px;
+    }
+
+    .book-card {
+      min-width: 0;
+
+      display: grid;
+
+      grid-template-columns:
+        126px
+        minmax(0, 1fr);
+
+      gap: 18px;
+
+      padding: 18px;
+
+      border:
+        1px solid
+        var(--line);
+
+      border-radius:
+        var(--radius-md);
+
+      background:
+        var(--surface);
+
+      transition:
+        transform 180ms ease,
+        border-color 180ms ease,
+        box-shadow 180ms ease;
+    }
+
+    .book-card:hover {
+      transform: translateY(-3px);
+
+      border-color:
+        var(--line-strong);
+
+      box-shadow:
+        var(--shadow-card);
+    }
+
+    .book-card__cover {
+      position: relative;
+
+      overflow: hidden;
+
+      border-radius: 6px;
+
+      background:
+        linear-gradient(
+          145deg,
+          #252523,
+          #4b4b45
+        );
+
+      aspect-ratio: 3 / 4;
+    }
+
+    .book-card__cover::before {
+      content: "ARCHIVE";
+
+      position: absolute;
+
+      left: 14px;
+      top: 18px;
+
+      color:
+        rgb(255 255 255 / .74);
+
+      font-size: 9px;
+      font-weight: 700;
+
+      letter-spacing: .12em;
+    }
+
+    .book-card__cover::after {
+      content: "";
+
+      position: absolute;
+
+      left: 14px;
+      right: 14px;
+      bottom: 17px;
+
+      height: 42%;
+
+      border-top:
+        1px solid
+        rgb(255 255 255 / .25);
+
+      background:
+        linear-gradient(
+          to bottom,
+          transparent,
+          rgb(255 255 255 / .06)
+        );
+    }
+
+    .book-card:nth-child(2)
+    .book-card__cover {
+      background:
+        linear-gradient(
+          145deg,
+          #59615b,
+          #29332e
+        );
+    }
+
+    .book-card:nth-child(3)
+    .book-card__cover {
+      background:
+        linear-gradient(
+          145deg,
+          #626052,
+          #302f29
+        );
+    }
+
+    .book-card__body {
+      min-width: 0;
+
+      display: flex;
+      flex-direction: column;
+    }
+
+    .book-card__type {
+      margin-bottom: 8px;
+
+      color:
+        var(--muted);
+
+      font-size: 10px;
+      font-weight: 700;
+
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .book-card__title {
+      margin: 0;
+
+      color: var(--text);
+
+      font-family:
+        "Playfair Display",
+        Georgia,
+        serif;
+
+      font-size: 22px;
+      line-height: 1.15;
+
+      letter-spacing: -.02em;
+    }
+
+    .book-card__author {
+      margin-top: 8px;
+
+      color:
+        var(--muted-strong);
+
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .book-card__category {
+      margin-top: 5px;
+
+      color:
+        var(--muted);
+
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .book-card__cta {
+      margin-top: auto;
+      padding-top: 20px;
+
+      color: var(--text);
+
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    @media (max-width: 900px) {
+
+      .post-card-grid,
+      .book-card-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .post-card {
+        display: grid;
+
+        grid-template-columns:
+          220px
+          minmax(0, 1fr);
+      }
+
+      .post-card__media {
+        min-height: 190px;
+        aspect-ratio: auto;
+      }
+    }
+
+    @media (max-width: 640px) {
+
+      .related-content {
+        padding-top: 52px;
+        padding-bottom: 80px;
+      }
+
+      .related-section + .related-section {
+        margin-top: 62px;
+      }
+
+      .related-section__header {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .post-card {
+        display: flex;
+      }
+
+      .post-card__media {
+        min-height: auto;
+        aspect-ratio: 16 / 10;
+      }
+
+      .book-card {
+        grid-template-columns:
+          108px
+          minmax(0, 1fr);
+      }
+    }
+
+    @media (max-width: 420px) {
+
+      :root {
+        --page-padding: 14px;
+      }
+
+      .book-card {
+        grid-template-columns:
+          92px
+          minmax(0, 1fr);
+
+        gap: 14px;
+        padding: 14px;
+      }
+
+      .book-card__title {
+        font-size: 19px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <section
+    class="related-content"
+    aria-label="Related content"
+  >
+
+    <!-- =======================================================
+         RELATED POSTS
+         ======================================================= -->
+
+    <section
+      class="related-section"
+      aria-labelledby="related-posts-heading"
+    >
+
+      <div class="related-section__header">
+
+        <h2
+          class="related-section__heading"
+          id="related-posts-heading"
+        >
+          Related Posts
+        </h2>
+
+        <a
+          class="related-section__link"
+          href="/posts"
+        >
+          View all posts →
+        </a>
+
+      </div>
+
+
+      <div class="post-card-grid">
+
+        <!-- Post 1 -->
+
+        <a
+          class="post-card"
+          href="/posts/building-a-small-archive"
+        >
+
+          <div
+            class="post-card__media"
+            role="img"
+            aria-label="Abstract editorial image"
+          ></div>
+
+          <div class="post-card__body">
+
+            <div class="post-card__date">
+              September 18, 2026
+            </div>
+
+            <h3 class="post-card__title">
+              Building a Small Archive
+            </h3>
+
+            <p class="post-card__excerpt">
+              What makes a small digital publication feel organized,
+              useful, and calm?
+            </p>
+
+            <div class="post-card__cta">
+              Read article →
+            </div>
+
+          </div>
+
+        </a>
+
+
+        <!-- Post 2 -->
+
+        <a
+          class="post-card"
+          href="/posts/designing-for-reading"
+        >
+
+          <div
+            class="post-card__media"
+            role="img"
+            aria-label="Editorial reading image"
+          ></div>
+
+          <div class="post-card__body">
+
+            <div class="post-card__date">
+              September 12, 2026
+            </div>
+
+            <h3 class="post-card__title">
+              Designing for Reading
+            </h3>
+
+            <p class="post-card__excerpt">
+              A closer look at typography, spacing, and hierarchy
+              for long-form content.
+            </p>
+
+            <div class="post-card__cta">
+              Read article →
+            </div>
+
+          </div>
+
+        </a>
+
+
+        <!-- Post 3 -->
+
+        <a
+          class="post-card"
+          href="/posts/the-case-for-simple-tools"
+        >
+
+          <div
+            class="post-card__media"
+            role="img"
+            aria-label="Minimal workspace image"
+          ></div>
+
+          <div class="post-card__body">
+
+            <div class="post-card__date">
+              September 05, 2026
+            </div>
+
+            <h3 class="post-card__title">
+              The Case for Simple Tools
+            </h3>
+
+            <p class="post-card__excerpt">
+              Why a focused publishing workflow can often be
+              more useful than a crowded interface.
+            </p>
+
+            <div class="post-card__cta">
+              Read article →
+            </div>
+
+          </div>
+
+        </a>
+
+      </div>
+
+    </section>
+
+
+    <!-- =======================================================
+         RELATED BOOKS
+         ======================================================= -->
+
+    <section
+      class="related-section"
+      aria-labelledby="related-books-heading"
+    >
+
+      <div class="related-section__header">
+
+        <h2
+          class="related-section__heading"
+          id="related-books-heading"
+        >
+          Related Books
+        </h2>
+
+        <a
+          class="related-section__link"
+          href="/books"
+        >
+          Explore the library →
+        </a>
+
+      </div>
+
+
+      <div class="book-card-grid">
+
+        <!-- Book 1 -->
+
+        <a
+          class="book-card"
+          href="/book/the-art-of-the-archive"
+        >
+
+          <div
+            class="book-card__cover"
+            role="img"
+            aria-label="Book cover for The Art of the Archive"
+          ></div>
+
+          <div class="book-card__body">
+
+            <div class="book-card__type">
+              Book
+            </div>
+
+            <h3 class="book-card__title">
+              The Art of the Archive
+            </h3>
+
+            <div class="book-card__author">
+              Jane Doe
+            </div>
+
+            <div class="book-card__category">
+              Digital Publishing
+            </div>
+
+            <div class="book-card__cta">
+              View book →
+            </div>
+
+          </div>
+
+        </a>
+
+
+        <!-- Book 2 -->
+
+        <a
+          class="book-card"
+          href="/book/editorial-thinking"
+        >
+
+          <div
+            class="book-card__cover"
+            role="img"
+            aria-label="Book cover for Editorial Thinking"
+          ></div>
+
+          <div class="book-card__body">
+
+            <div class="book-card__type">
+              Book
+            </div>
+
+            <h3 class="book-card__title">
+              Editorial Thinking
+            </h3>
+
+            <div class="book-card__author">
+              Michael Lee
+            </div>
+
+            <div class="book-card__category">
+              Writing & Design
+            </div>
+
+            <div class="book-card__cta">
+              View book →
+            </div>
+
+          </div>
+
+        </a>
+
+
+        <!-- Book 3 -->
+
+        <a
+          class="book-card"
+          href="/book/quiet-publication"
+        >
+
+          <div
+            class="book-card__cover"
+            role="img"
+            aria-label="Book cover for Quiet Publication"
+          ></div>
+
+          <div class="book-card__body">
+
+            <div class="book-card__type">
+              Book
+            </div>
+
+            <h3 class="book-card__title">
+              Quiet Publication
+            </h3>
+
+            <div class="book-card__author">
+              Anna Miller
+            </div>
+
+            <div class="book-card__category">
+              Publishing
+            </div>
+
+            <div class="book-card__cta">
+              View book →
+            </div>
+
+          </div>
+
+        </a>
+
+      </div>
+
+    </section>
+
+  </section>
+
+</body>
+</html>
