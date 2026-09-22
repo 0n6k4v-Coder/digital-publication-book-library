@@ -5,10 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta
     name="description"
-    content="Archive / 01 admin sidebar and mobile navigation component PoC."
+    content="Archive / 01 admin shell PoC."
   />
+  <title>Admin / Archive / 01</title>
 
-  <title>Sidebar Components / Archive / 01</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
 
   <style>
     :root {
@@ -16,36 +22,31 @@
       --sidebar: #ffffff;
       --sidebar-hover: #f6f6f3;
       --sidebar-active: #181818;
+
+      --surface: #ffffff;
+      --content: #ffffff;
+
       --text: #171717;
       --muted: #85857f;
       --line: #e5e5df;
+
       --accent: #d9ff4f;
+
       --danger: #c93227;
       --danger-dark: #a8241b;
       --danger-soft: #fff0ed;
+
       --white: #ffffff;
 
       --sidebar-width: 248px;
-      --shell-padding: 6px;
-      --shell-gap: 6px;
+      --transition-fast: 160ms ease;
+      --transition-normal: 220ms ease;
+      --transition-drawer: 300ms cubic-bezier(0.22, 1, 0.36, 1);
 
-      --sidebar-radius: 24px;
       --radius-sm: 10px;
       --radius-md: 14px;
       --radius-lg: 18px;
       --radius-pill: 999px;
-
-      --shadow:
-        0 1px 2px rgba(0, 0, 0, 0.04),
-        0 10px 30px rgba(0, 0, 0, 0.06);
-
-      --floating-shadow:
-        0 1px 2px rgba(0, 0, 0, 0.05),
-        0 12px 35px rgba(0, 0, 0, 0.08);
-
-      --ease: cubic-bezier(0.22, 1, 0.36, 1);
-      --transition-fast: 180ms var(--ease);
-      --transition-drawer: 300ms var(--ease);
     }
 
     * {
@@ -53,23 +54,27 @@
     }
 
     html {
-      scroll-behavior: smooth;
+      min-width: 320px;
+      background: var(--page);
     }
 
     body {
       min-width: 320px;
       min-height: 100vh;
       margin: 0;
+
       background: var(--page);
       color: var(--text);
+
       font-family:
-        Inter,
+        "DM Sans",
         ui-sans-serif,
         system-ui,
         -apple-system,
         BlinkMacSystemFont,
         "Segoe UI",
         sans-serif;
+
       -webkit-font-smoothing: antialiased;
       text-rendering: optimizeLegibility;
     }
@@ -83,642 +88,569 @@
       font: inherit;
     }
 
+    button,
+    a {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    svg {
+      display: block;
+    }
+
     /* =========================================================
-       Demo shell
+       DESKTOP SHELL
     ========================================================= */
 
-    .demo-shell {
+    .admin-shell {
       min-height: 100vh;
-      padding: var(--shell-padding);
+
       display: grid;
       grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
-      gap: var(--shell-gap);
-    }
 
-    .demo-content {
-      min-width: 0;
-      min-height: calc(100vh - (var(--shell-padding) * 2));
-      border: 1px solid var(--line);
-      border-radius: var(--sidebar-radius);
-      background: #f8f8f5;
-      overflow: hidden;
-    }
-
-    .content-inner {
-      width: min(900px, calc(100% - 64px));
-      margin: 0 auto;
-      padding: 116px 0 120px;
-    }
-
-    .eyebrow {
-      margin: 0 0 10px;
-      color: var(--muted);
-      font-size: 10px;
-      font-weight: 800;
-      letter-spacing: 0.12em;
-      line-height: 1;
-      text-transform: uppercase;
-    }
-
-    .page-title {
-      max-width: 760px;
-      margin: 0;
-      font-size: clamp(3.4rem, 7vw, 7.5rem);
-      font-weight: 500;
-      letter-spacing: -0.075em;
-      line-height: 0.88;
-    }
-
-    .page-description {
-      max-width: 540px;
-      margin: 24px 0 0;
-      color: var(--muted);
-      font-size: 15px;
-      line-height: 1.7;
-    }
-
-    .content-blocks {
-      display: grid;
-      gap: 16px;
-      margin-top: 72px;
-    }
-
-    .content-card {
-      min-height: 260px;
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      border: 1px solid var(--line);
-      border-radius: var(--radius-lg);
-      background: var(--white);
-    }
-
-    .content-card__number {
-      margin: 0;
-      color: var(--muted);
-      font-size: 10px;
-      font-weight: 800;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-    }
-
-    .content-card__title {
-      max-width: 660px;
-      margin: 48px 0 0;
-      font-size: clamp(1.8rem, 3vw, 3rem);
-      font-weight: 500;
-      letter-spacing: -0.05em;
-      line-height: 0.98;
-    }
-
-    .content-card__copy {
-      max-width: 520px;
-      margin: 14px 0 0;
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.65;
+      background: var(--page);
     }
 
     /* =========================================================
-       Desktop sidebar
+       SIDEBAR
     ========================================================= */
 
     .sidebar {
       position: sticky;
-      top: var(--shell-padding);
-      height: calc(100vh - (var(--shell-padding) * 2));
+      top: 0;
+
+      height: 100vh;
       padding: 18px;
+
       display: flex;
       flex-direction: column;
-      border: 1px solid var(--line);
-      border-radius: var(--sidebar-radius);
+
+      border-right: 1px solid var(--line);
+
       background: var(--sidebar);
-      box-shadow: var(--shadow);
-      overflow: hidden;
-      z-index: 100;
     }
 
-    .sidebar-brand {
+    .sidebar__brand {
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 4px 4px 22px;
+
+      margin-bottom: 38px;
     }
 
     .brand-mark {
-      width: 28px;
-      height: 28px;
+      width: 29px;
+      height: 29px;
       flex: 0 0 auto;
+
       display: grid;
       place-items: center;
+
       border-radius: 9px;
+
       background: var(--accent);
       color: var(--text);
-      font-size: 10px;
-      font-weight: 800;
-      letter-spacing: -0.04em;
-    }
 
-    .brand-name {
-      font-size: 12px;
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      line-height: 1;
-    }
-
-    .brand-meta {
-      margin-top: 4px;
-      color: var(--muted);
-      font-size: 10px;
-      font-weight: 600;
-      letter-spacing: 0.02em;
-      line-height: 1;
-    }
-
-    .sidebar-section-label,
-    .drawer-label {
-      padding: 0 6px 8px;
-      color: var(--muted);
       font-size: 9px;
       font-weight: 800;
-      letter-spacing: 0.1em;
+      letter-spacing: -0.03em;
+    }
+
+    .sidebar__brand-copy {
+      min-width: 0;
+    }
+
+    .sidebar__brand-name {
+      margin: 0;
+
+      font-size: 11px;
       line-height: 1;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+
+    .sidebar__brand-meta {
+      margin-top: 4px;
+
+      color: var(--muted);
+
+      font-size: 9px;
+      line-height: 1;
+      font-weight: 600;
+    }
+
+    .sidebar__section-label {
+      margin: 0 0 9px;
+      padding-left: 4px;
+
+      color: var(--muted);
+
+      font-size: 9px;
+      line-height: 1;
+      font-weight: 800;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
     }
 
-    .nav {
+    .sidebar__nav {
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 3px;
     }
 
-    .nav-link {
-      min-height: 46px;
+    .sidebar__nav-link {
+      min-height: 42px;
       padding: 0 12px;
+
       display: flex;
       align-items: center;
       gap: 11px;
-      border-radius: 13px;
-      color: #60605b;
-      font-size: 13px;
-      font-weight: 650;
+
+      border-radius: 8px;
+
+      background: transparent;
+      color: #65655f;
+
+      font-size: 12px;
+      font-weight: 600;
+
       transition:
         background var(--transition-fast),
-        color var(--transition-fast),
-        transform var(--transition-fast);
+        color var(--transition-fast);
     }
 
-    .nav-link:hover {
+    .sidebar__nav-link:hover {
       background: var(--sidebar-hover);
       color: var(--text);
     }
 
-    .nav-link:active {
-      transform: scale(0.985);
-    }
-
-    .nav-link.active {
+    .sidebar__nav-link.active {
       background: var(--sidebar-active);
-      color: #ffffff;
+      color: var(--white);
     }
 
-    .nav-icon {
-      width: 17px;
-      height: 17px;
+    .sidebar__nav-icon {
+      width: 16px;
+      height: 16px;
       flex: 0 0 auto;
-      display: grid;
-      place-items: center;
-      color: currentColor;
-      opacity: 0.92;
     }
 
-    .nav-icon svg {
-      width: 17px;
-      height: 17px;
-      display: block;
-    }
+    .sidebar__footer {
+      margin-top: auto;
 
-    .sidebar-spacer,
-    .drawer-spacer {
-      flex: 1;
-    }
-
-    .sidebar-footer,
-    .drawer-footer {
       display: flex;
       flex-direction: column;
-      gap: 8px;
-      padding-top: 18px;
+      gap: 3px;
     }
 
-    .footer-link {
-      min-height: 44px;
+    .sidebar__footer-link {
+      min-height: 40px;
       padding: 0 12px;
+
       display: flex;
       align-items: center;
-      gap: 10px;
-      border-radius: 13px;
+      gap: 11px;
+
+      border: 0;
+      border-radius: 8px;
+
       background: transparent;
-      color: #62625c;
-      cursor: pointer;
+      color: #65655f;
+
       font-size: 12px;
-      font-weight: 650;
-      text-align: left;
+      font-weight: 600;
+
+      cursor: pointer;
+
       transition:
         background var(--transition-fast),
-        color var(--transition-fast),
-        transform var(--transition-fast);
+        color var(--transition-fast);
     }
 
-    .footer-link:hover {
+    .sidebar__footer-link:hover {
       background: var(--sidebar-hover);
       color: var(--text);
     }
 
-    .footer-link:active {
-      transform: scale(0.985);
-    }
-
-    .footer-link .arrow {
-      margin-left: auto;
-      color: #96968f;
-    }
-
-    .sign-out {
+    .sidebar__footer-link--danger:hover {
       background: var(--danger-soft);
       color: var(--danger);
     }
 
-    .sign-out:hover {
-      background: #ffe4df;
-      color: var(--danger-dark);
-    }
+    /* =========================================================
+       EMPTY CONTENT SHELL
+    ========================================================= */
 
-    .sign-out .arrow {
-      color: currentColor;
+    .content-shell {
+      min-width: 0;
+      min-height: 100vh;
+
+      background: var(--content);
     }
 
     /* =========================================================
-       Mobile floating capsule
+       MOBILE HEADER
     ========================================================= */
 
     .mobile-header {
       position: fixed;
-      top: 10px;
-      left: 10px;
-      right: 10px;
-      height: 64px;
-      padding: 0 8px 0 14px;
+      z-index: 80;
+
+      top: 0;
+      left: 0;
+      right: 0;
+
+      width: 100%;
+      height: 56px;
+      padding: 0 14px;
+
       display: none;
       align-items: center;
       justify-content: space-between;
-      border: 1px solid rgba(229, 229, 223, 0.96);
-      border-radius: var(--radius-pill);
-      background: rgba(255, 255, 255, 0.94);
-      box-shadow: var(--floating-shadow);
-      backdrop-filter: blur(18px);
-      -webkit-backdrop-filter: blur(18px);
-      opacity: 1;
-      transform: translateY(0);
+      gap: 12px;
+
+      border: 0;
+      border-radius: 0;
+
+      background: rgba(255, 255, 255, 0.98);
+
+      box-shadow: none;
+
       transition:
-        transform 260ms var(--ease),
-        opacity 180ms ease;
-      will-change: transform, opacity;
-      z-index: 300;
+        transform var(--transition-normal),
+        opacity var(--transition-normal);
     }
 
-    .mobile-header.is-hidden {
+    .mobile-header.hidden {
+      transform: translateY(-64px);
       opacity: 0;
       pointer-events: none;
-      transform: translateY(calc(-100% - 22px));
     }
 
-    .mobile-brand {
+    .mobile-header__brand {
       min-width: 0;
+
       display: flex;
       align-items: center;
       gap: 9px;
     }
 
-    .mobile-brand .brand-mark {
-      width: 32px;
-      height: 32px;
-      border-radius: 9px;
-      font-size: 10px;
-    }
-
-    .mobile-brand-text {
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-    }
-
-    .mobile-brand-name {
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      line-height: 1;
-    }
-
-    .mobile-brand-meta {
-      color: var(--muted);
-      font-size: 8px;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      line-height: 1;
-      text-transform: uppercase;
-    }
-
-    .mobile-menu-button,
-    .drawer-close {
-      display: grid;
-      place-items: center;
-      border: 1px solid var(--line);
-      border-radius: 50%;
-      background: var(--white);
-      color: var(--text);
-      cursor: pointer;
-      transition:
-        background var(--transition-fast),
-        transform var(--transition-fast);
-    }
-
-    .mobile-menu-button {
-      width: 46px;
-      height: 46px;
+    .mobile-header__square {
+      width: 12px;
+      height: 12px;
       flex: 0 0 auto;
+
+      background: var(--accent);
+      border: 1px solid var(--text);
     }
 
-    .mobile-menu-button:hover,
-    .drawer-close:hover {
-      background: var(--sidebar-hover);
+    .mobile-header__title {
+      overflow: hidden;
+
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      text-overflow: ellipsis;
     }
 
-    .mobile-menu-button:active,
-    .drawer-close:active {
-      transform: scale(0.94);
+    .mobile-header__menu {
+      width: 38px;
+      height: 38px;
+      flex: 0 0 auto;
+
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+
+      border: 0;
+      border-radius: 50%;
+
+      background: var(--text);
+      color: var(--white);
+
+      cursor: pointer;
     }
 
-    .mobile-menu-button svg,
-    .drawer-close svg {
-      width: 19px;
-      height: 19px;
+    .mobile-header__menu svg {
+      width: 17px;
+      height: 17px;
     }
 
     /* =========================================================
-       Mobile drawer
+       MOBILE DRAWER
     ========================================================= */
 
     .mobile-overlay {
       position: fixed;
+      z-index: 90;
       inset: 0;
-      background: rgba(20, 20, 18, 0.24);
+
+      background: rgb(23 23 23 / 0.24);
+
       opacity: 0;
-      visibility: hidden;
       pointer-events: none;
-      transition:
-        opacity 220ms ease,
-        visibility 220ms ease;
-      z-index: 350;
+
+      transition: opacity var(--transition-normal);
     }
 
-    .mobile-overlay.is-open {
+    .mobile-overlay.open {
       opacity: 1;
-      visibility: visible;
       pointer-events: auto;
     }
 
     .mobile-drawer {
       position: fixed;
+      z-index: 100;
+
       top: 0;
       left: 0;
       bottom: 0;
-      width: min(86vw, 320px);
-      padding:
-        max(18px, env(safe-area-inset-top))
-        16px
-        max(18px, env(safe-area-inset-bottom));
+
+      width: min(82vw, 310px);
+      padding: 18px;
+
       display: flex;
       flex-direction: column;
+
+      background: var(--sidebar);
       border-right: 1px solid var(--line);
-      background: var(--white);
-      box-shadow: 16px 0 42px rgba(0, 0, 0, 0.08);
-      transform: translateX(-105%);
+
+      transform: translateX(-102%);
+
       transition: transform var(--transition-drawer);
-      z-index: 400;
+
+      overflow-y: auto;
     }
 
-    .mobile-drawer.is-open {
+    .mobile-drawer.open {
       transform: translateX(0);
     }
 
-    .drawer-top {
+    .mobile-drawer__top {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 16px;
-      padding-bottom: 26px;
+      gap: 12px;
+
+      margin-bottom: 38px;
     }
 
-    .drawer-brand {
+    .mobile-drawer__brand {
       display: flex;
       align-items: center;
-      gap: 10px;
-      min-width: 0;
+      gap: 9px;
     }
 
-    .drawer-brand .brand-mark {
-      width: 29px;
-      height: 29px;
+    .mobile-drawer__close {
+      width: 34px;
+      height: 34px;
+
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+
+      border: 1px solid var(--line);
+      border-radius: 50%;
+
+      background: var(--white);
+      color: var(--text);
+
+      cursor: pointer;
     }
 
-    .drawer-brand-text {
-      min-width: 0;
+    .mobile-drawer__section-label {
+      margin: 0 0 9px;
+      padding-left: 4px;
+
+      color: var(--muted);
+
+      font-size: 9px;
+      line-height: 1;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .mobile-drawer__nav {
       display: flex;
       flex-direction: column;
       gap: 3px;
     }
 
-    .drawer-brand-name {
+    .mobile-drawer__link {
+      min-height: 44px;
+      padding: 0 12px;
+
+      display: flex;
+      align-items: center;
+      gap: 11px;
+
+      border: 0;
+      border-radius: 8px;
+
+      background: transparent;
+      color: #65655f;
+
       font-size: 12px;
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      line-height: 1;
+      font-weight: 600;
+
+      cursor: pointer;
     }
 
-    .drawer-brand-meta {
-      color: var(--muted);
-      font-size: 9px;
-      font-weight: 700;
-      letter-spacing: 0.07em;
-      line-height: 1;
-      text-transform: uppercase;
+    .mobile-drawer__link:hover {
+      background: var(--sidebar-hover);
+      color: var(--text);
     }
 
-    .drawer-close {
-      width: 40px;
-      height: 40px;
-      flex: 0 0 auto;
+    .mobile-drawer__link.active {
+      background: var(--sidebar-active);
+      color: var(--white);
     }
 
-    .drawer-label {
-      padding-bottom: 9px;
-    }
+    .mobile-drawer__bottom {
+      margin-top: auto;
+      padding-top: 32px;
 
-    .drawer-nav {
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 3px;
     }
 
-    .drawer-nav .nav-link {
-      min-height: 48px;
-      border-radius: 14px;
+    .mobile-drawer__bottom .signout:hover {
+      background: var(--danger-soft);
+      color: var(--danger);
     }
 
     /* =========================================================
-       Sign-out dialog
+       SIGN OUT DIALOG
     ========================================================= */
 
-    dialog {
-      width: min(420px, calc(100vw - 32px));
+    .signout-dialog {
+      width: min(92vw, 420px);
       padding: 0;
-      border: 0;
-      border-radius: 22px;
+
+      border: 1px solid var(--line);
+      border-radius: 14px;
+
       background: var(--white);
-      box-shadow:
-        0 20px 60px rgba(0, 0, 0, 0.16),
-        0 2px 8px rgba(0, 0, 0, 0.07);
       color: var(--text);
+
+      box-shadow:
+        0 18px 44px rgb(23 23 23 / 0.12),
+        0 3px 10px rgb(23 23 23 / 0.06);
     }
 
-    dialog::backdrop {
-      background: rgba(15, 15, 14, 0.32);
-      backdrop-filter: blur(5px);
-      -webkit-backdrop-filter: blur(5px);
+    .signout-dialog::backdrop {
+      background: rgb(23 23 23 / 0.28);
     }
 
-    .dialog-body {
-      padding: 26px;
+    .signout-dialog__content {
+      padding: 24px;
     }
 
-    .dialog-kicker {
+    .signout-dialog__eyebrow {
       margin-bottom: 8px;
-      color: var(--danger);
+
+      color: var(--muted);
+
       font-size: 9px;
-      font-weight: 850;
-      letter-spacing: 0.1em;
       line-height: 1;
+      font-weight: 800;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
     }
 
-    .dialog-title {
+    .signout-dialog__title {
+      margin: 0 0 9px;
+
+      font-size: 19px;
+      line-height: 1.2;
+      font-weight: 600;
+      letter-spacing: -0.025em;
+    }
+
+    .signout-dialog__copy {
       margin: 0;
-      font-size: 22px;
-      font-weight: 760;
-      letter-spacing: -0.045em;
-      line-height: 1.05;
-    }
 
-    .dialog-copy {
-      margin: 12px 0 0;
       color: var(--muted);
-      font-size: 13px;
-      line-height: 1.55;
+
+      font-size: 11px;
+      line-height: 1.6;
     }
 
-    .dialog-actions {
-      margin-top: 24px;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
+    .signout-dialog__actions {
+      padding: 14px 24px 18px;
+
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
       gap: 8px;
+
+      border-top: 1px solid var(--line);
     }
 
     .dialog-button {
-      min-height: 44px;
-      padding: 0 14px;
-      border-radius: 12px;
+      min-height: 36px;
+      padding: 0 13px;
+
+      border-radius: 7px;
+
+      font-size: 10px;
+      font-weight: 700;
+
       cursor: pointer;
-      font-size: 12px;
-      font-weight: 750;
     }
 
-    .dialog-cancel {
-      background: #f3f3ef;
-      color: var(--text);
+    .dialog-button--cancel {
+      background: #f5f5f2;
+      color: #5d5d58;
     }
 
-    .dialog-confirm {
+    .dialog-button--confirm {
       background: var(--danger);
       color: var(--white);
     }
 
-    .dialog-confirm:hover {
+    .dialog-button--confirm:hover {
       background: var(--danger-dark);
     }
 
     /* =========================================================
-       Mobile layout
+       MOBILE
     ========================================================= */
 
     @media (max-width: 820px) {
-      body {
-        overflow-x: hidden;
-      }
-
-      .demo-shell {
+      .admin-shell {
         display: block;
         min-height: 100vh;
-        padding: 0;
       }
 
       .sidebar {
         display: none;
       }
 
-      .demo-content {
-        min-height: 100vh;
-        border: 0;
-        border-radius: 0;
-        background: #f8f8f5;
-      }
-
       .mobile-header {
         display: flex;
       }
 
-      .content-inner {
-        width: min(900px, calc(100% - 40px));
-        padding: 132px 0 90px;
-      }
-
-      .content-blocks {
-        margin-top: 52px;
+      .content-shell {
+        min-height: 100vh;
+        background: var(--content);
       }
     }
 
     @media (max-width: 520px) {
       .mobile-header {
-        top: 10px;
-        left: 10px;
-        right: 10px;
-        height: 64px;
+        height: 54px;
+        padding: 0 12px;
       }
+    }
 
-      .mobile-brand-meta {
-        display: none;
-      }
-
-      .content-inner {
-        width: calc(100% - 32px);
-        padding-top: 132px;
-      }
-
-      .content-card {
-        min-height: 230px;
-        padding: 20px;
+    @media (max-width: 400px) {
+      .mobile-header {
+        height: 52px;
+        padding: 0 10px;
       }
     }
 
@@ -736,31 +668,29 @@
 </head>
 
 <body>
-  <!-- =======================================================
-       Mobile floating capsule
-  ======================================================== -->
+  <!-- =========================================================
+       MOBILE HEADER
+  ========================================================== -->
 
-  <header class="mobile-header" id="mobileHeader">
-    <a
-      class="mobile-brand"
-      href="/admin"
-      aria-label="Archive admin home"
-    >
-      <span class="brand-mark">01</span>
+  <header class="mobile-header" data-mobile-header>
+    <div class="mobile-header__brand">
+      <span
+        class="mobile-header__square"
+        aria-hidden="true"
+      ></span>
 
-      <span class="mobile-brand-text">
-        <span class="mobile-brand-name">ARCHIVE / 01</span>
-        <span class="mobile-brand-meta">Admin workspace</span>
+      <span class="mobile-header__title">
+        Archive / 01
       </span>
-    </a>
+    </div>
 
     <button
-      class="mobile-menu-button"
-      id="mobileMenuButton"
+      class="mobile-header__menu"
       type="button"
-      aria-label="Open admin navigation"
-      aria-controls="mobileDrawer"
+      aria-label="Open navigation"
+      aria-controls="mobile-drawer"
       aria-expanded="false"
+      data-menu-open
     >
       <svg
         viewBox="0 0 24 24"
@@ -769,232 +699,736 @@
         stroke-width="1.8"
         stroke-linecap="round"
       >
-        <path d="M5 8h14"></path>
-        <path d="M5 16h14"></path>
+        <path d="M4 7h16"></path>
+        <path d="M4 12h16"></path>
+        <path d="M4 17h16"></path>
       </svg>
     </button>
   </header>
 
+  <!-- =========================================================
+       DESKTOP + PAGE SHELL
+  ========================================================== -->
 
-  <!-- =======================================================
-       Desktop + content shell
-  ======================================================== -->
-
-  <main class="demo-shell">
+  <div class="admin-shell">
+    <!-- =======================================================
+         DESKTOP SIDEBAR
+    ======================================================== -->
 
     <aside
       class="sidebar"
       aria-label="Admin navigation"
     >
-      <div class="sidebar-brand">
-        <span class="brand-mark">01</span>
+      <div>
+        <div class="sidebar__brand">
+          <span
+            class="brand-mark"
+            aria-hidden="true"
+          >
+            01
+          </span>
 
-        <div>
-          <div class="brand-name">ARCHIVE / 01</div>
-          <div class="brand-meta">Admin workspace</div>
+          <div class="sidebar__brand-copy">
+            <div class="sidebar__brand-name">
+              ARCHIVE / 01
+            </div>
+
+            <div class="sidebar__brand-meta">
+              Admin workspace
+            </div>
+          </div>
         </div>
-      </div>
 
-      <div class="sidebar-section-label">
-        Workspace
-      </div>
+        <div class="sidebar__section-label">
+          Workspace
+        </div>
 
-      <nav class="nav" aria-label="Desktop admin navigation">
-        <a class="nav-link" href="/admin">
-          <span class="nav-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
-              <rect x="4" y="4" width="6" height="6" rx="1"></rect>
-              <rect x="14" y="4" width="6" height="6" rx="1"></rect>
-              <rect x="4" y="14" width="6" height="6" rx="1"></rect>
-              <rect x="14" y="14" width="6" height="6" rx="1"></rect>
+        <nav class="sidebar__nav">
+          <a
+            class="sidebar__nav-link"
+            href="/admin"
+          >
+            <svg
+              class="sidebar__nav-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <rect
+                x="3"
+                y="3"
+                width="7"
+                height="7"
+                rx="1"
+              ></rect>
+
+              <rect
+                x="14"
+                y="3"
+                width="7"
+                height="7"
+                rx="1"
+              ></rect>
+
+              <rect
+                x="3"
+                y="14"
+                width="7"
+                height="7"
+                rx="1"
+              ></rect>
+
+              <rect
+                x="14"
+                y="14"
+                width="7"
+                height="7"
+                rx="1"
+              ></rect>
             </svg>
-          </span>
-          <span>Dashboard</span>
-        </a>
 
+            <span>
+              Dashboard
+            </span>
+          </a>
+
+          <a
+            class="sidebar__nav-link active"
+            href="/admin/posts"
+            aria-current="page"
+          >
+            <svg
+              class="sidebar__nav-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M5 4h14"></path>
+              <path d="M5 8h14"></path>
+              <path d="M5 12h9"></path>
+              <path d="M5 16h14"></path>
+              <path d="M5 20h9"></path>
+            </svg>
+
+            <span>
+              Posts
+            </span>
+          </a>
+
+          <a
+            class="sidebar__nav-link"
+            href="/admin/books"
+          >
+            <svg
+              class="sidebar__nav-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path
+                d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 0 4 22V5.5Z"
+              ></path>
+
+              <path d="M4 5.5V22"></path>
+              <path d="M8 7h8"></path>
+            </svg>
+
+            <span>
+              Books
+            </span>
+          </a>
+        </nav>
+      </div>
+
+      <div class="sidebar__footer">
         <a
-          class="nav-link active"
-          href="/admin/posts"
-          aria-current="page"
+          class="sidebar__footer-link"
+          href="/"
         >
-          <span class="nav-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
-              <path d="M5 5h14"></path>
-              <path d="M5 10h14"></path>
-              <path d="M5 15h9"></path>
-              <path d="M5 20h7"></path>
-            </svg>
-          </span>
-          <span>Posts</span>
-        </a>
+          <svg
+            class="sidebar__nav-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M14 5h5v5"></path>
+            <path d="M19 5l-8 8"></path>
 
-        <a class="nav-link" href="/admin/books">
-          <span class="nav-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
-              <path d="M6 4.5h11a1.5 1.5 0 0 1 1.5 1.5v13.5H7.5A1.5 1.5 0 0 1 6 18V4.5Z"></path>
-              <path d="M6 18c0 1.1.9 2 2 2h10.5"></path>
-              <path d="M9.5 8h5"></path>
-              <path d="M9.5 11.5h5"></path>
-            </svg>
-          </span>
-          <span>Books</span>
-        </a>
-      </nav>
+            <path
+              d="M19 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h4"
+            ></path>
+          </svg>
 
-      <div class="sidebar-spacer"></div>
-
-      <div class="sidebar-footer">
-        <a class="footer-link" href="/">
-          <span class="nav-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
-              <path d="M12 4v9"></path>
-              <path d="m8.5 9.5 3.5 3.5 3.5-3.5"></path>
-              <path d="M5 16.5v2A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5v-2"></path>
-            </svg>
+          <span>
+            View website
           </span>
-          <span>View website</span>
-          <span class="arrow" aria-hidden="true">↗</span>
         </a>
 
         <button
-          class="footer-link sign-out"
-          id="desktopSignOut"
+          class="sidebar__footer-link sidebar__footer-link--danger"
           type="button"
+          data-signout-open
         >
-          <span class="nav-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-              <path d="M10 5H6.5A1.5 1.5 0 0 0 5 6.5v11A1.5 1.5 0 0 0 6.5 19H10"></path>
-              <path d="m14 8 4 4-4 4"></path>
-              <path d="M18 12H9"></path>
-            </svg>
+          <svg
+            class="sidebar__nav-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M10 12h10"></path>
+            <path d="M17 8l4 4-4 4"></path>
+
+            <path
+              d="M14 5V4a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2v-1"
+            ></path>
+          </svg>
+
+          <span>
+            Sign out
           </span>
-          <span>Sign out</span>
-          <span class="arrow" aria-hidden="true">→</span>
         </button>
       </div>
     </aside>
 
+    <!-- =======================================================
+         EMPTY CONTENT
+    ======================================================== -->
 
-    <section class="demo-content">
-      <div class="content-inner">
-        <p class="eyebrow">Sidebar components / PoC</p>
+    <main
+      class="content-shell"
+      aria-label="Empty admin content area"
+    ></main>
+  </div>
 
-        <h1 class="page-title">
-          A focused admin shell.
-        </h1>
-
-        <p class="page-description">
-          This page is intentionally content-heavy so the mobile
-          floating capsule can be tested while scrolling. Scroll down
-          to hide the bar, then scroll up to reveal it again.
-        </p>
-
-        <div class="content-blocks">
-          <article class="content-card">
-            <p class="content-card__number">01 / Desktop</p>
-            <div>
-              <h2 class="content-card__title">
-                Floating light sidebar with a compact workspace hierarchy.
-              </h2>
-              <p class="content-card__copy">
-                The parent shell controls the six-pixel outer spacing and
-                the six-pixel gap between sidebar and content. The sidebar
-                does not define its own outer space.
-              </p>
-            </div>
-          </article>
-
-          <article class="content-card">
-            <p class="content-card__number">02 / Mobile</p>
-            <div>
-              <h2 class="content-card__title">
-                A 64px capsule stays out of the way while reading.
-              </h2>
-              <p class="content-card__copy">
-                Scrolling downward hides the floating top bar. Scrolling
-                upward reveals it. Reaching the top always brings it back.
-              </p>
-            </div>
-          </article>
-
-          <article class="content-card">
-            <p class="content-card__number">03 / Drawer</p>
-            <div>
-              <h2 class="content-card__title">
-                Navigation slides in from the left without compressing the page.
-              </h2>
-              <p class="content-card__copy">
-                Open the mobile menu to test the preserved slide-in drawer,
-                overlay, close interaction, navigation links, and distinct
-                sign-out action.
-              </p>
-            </div>
-          </article>
-
-          <article class="content-card">
-            <p class="content-card__number">04 / Scroll test</p>
-            <div>
-              <h2 class="content-card__title">
-                Keep scrolling for a few sections to validate the behavior.
-              </h2>
-              <p class="content-card__copy">
-                Small scroll deltas are ignored to reduce jitter. The menu
-                remains visible whenever the drawer is open.
-              </p>
-            </div>
-          </article>
-
-          <article class="content-card">
-            <p class="content-card__number">05 / Interaction</p>
-            <div>
-              <h2 class="content-card__title">
-                Sign out stays visually separate from everyday navigation.
-              </h2>
-              <p class="content-card__copy">
-                The same confirmation dialog is available from both desktop
-                and mobile navigation so the interaction remains consistent.
-              </p>
-            </div>
-          </article>
-
-          <article class="content-card">
-            <p class="content-card__number">06 / End</p>
-            <div>
-              <h2 class="content-card__title">
-                Scroll back up to bring the capsule home.
-              </h2>
-              <p class="content-card__copy">
-                At the top of the page, the mobile capsule is always visible,
-                regardless of the previous scroll direction.
-              </p>
-            </div>
-          </article>
-        </div>
-      </div>
-    </section>
-
-  </main>
-
-
-  <!-- =======================================================
-       Mobile overlay
-  ======================================================== -->
+  <!-- =========================================================
+       MOBILE DRAWER
+  ========================================================== -->
 
   <div
     class="mobile-overlay"
-    id="mobileOverlay"
-    aria-hidden="true"
+    data-drawer-overlay
   ></div>
-
-
-  <!-- =======================================================
-       Mobile drawer
-  ======================================================== -->
 
   <aside
     class="mobile-drawer"
-    id="mobileDrawer"
+    id="mobile-drawer"
     aria-label="Mobile admin navigation"
     aria-hidden="true"
+    data-mobile-drawer
   >
-    <div class="drawer-top">
+    <div class="mobile-drawer__top">
+      <div class="mobile-drawer__brand">
+        <span
+          class="brand-mark"
+          aria-hidden="true"
+        >
+          01
+        </span>
+
+        <div class="sidebar__brand-copy">
+          <div class="sidebar__brand-name">
+            ARCHIVE / 01
+          </div>
+
+          <div class="sidebar__brand-meta">
+            Admin workspace
+          </div>
+        </div>
+      </div>
+
+      <button
+        class="mobile-drawer__close"
+        type="button"
+        aria-label="Close navigation"
+        data-menu-close
+      >
+        <svg
+          width="15"
+          height="15"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <path d="M6 6l12 12"></path>
+          <path d="M18 6L6 18"></path>
+        </svg>
+      </button>
+    </div>
+
+    <div class="mobile-drawer__section-label">
+      Workspace
+    </div>
+
+    <nav class="mobile-drawer__nav">
+      <a
+        class="mobile-drawer__link"
+        href="/admin"
+      >
+        <svg
+          class="sidebar__nav-icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.7"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <rect
+            x="3"
+            y="3"
+            width="7"
+            height="7"
+            rx="1"
+          ></rect>
+
+          <rect
+            x="14"
+            y="3"
+            width="7"
+            height="7"
+            rx="1"
+          ></rect>
+
+          <rect
+            x="3"
+            y="14"
+            width="7"
+            height="7"
+            rx="1"
+          ></rect>
+
+          <rect
+            x="14"
+            y="14"
+            width="7"
+            height="7"
+            rx="1"
+          ></rect>
+        </svg>
+
+        <span>
+          Dashboard
+        </span>
+      </a>
+
+      <a
+        class="mobile-drawer__link active"
+        href="/admin/posts"
+        aria-current="page"
+      >
+        <svg
+          class="sidebar__nav-icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.7"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M5 4h14"></path>
+          <path d="M5 8h14"></path>
+          <path d="M5 12h9"></path>
+          <path d="M5 16h14"></path>
+          <path d="M5 20h9"></path>
+        </svg>
+
+        <span>
+          Posts
+        </span>
+      </a>
+
+      <a
+        class="mobile-drawer__link"
+        href="/admin/books"
+      >
+        <svg
+          class="sidebar__nav-icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.7"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path
+            d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 0 4 22V5.5Z"
+          ></path>
+
+          <path d="M4 5.5V22"></path>
+          <path d="M8 7h8"></path>
+        </svg>
+
+        <span>
+          Books
+        </span>
+      </a>
+    </nav>
+
+    <div class="mobile-drawer__bottom">
+      <a
+        class="mobile-drawer__link"
+        href="/"
+      >
+        <svg
+          class="sidebar__nav-icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.7"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M14 5h5v5"></path>
+          <path d="M19 5l-8 8"></path>
+
+          <path
+            d="M19 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h4"
+          ></path>
+        </svg>
+
+        <span>
+          View website
+        </span>
+      </a>
+
+      <button
+        class="mobile-drawer__link signout"
+        type="button"
+        data-signout-open
+      >
+        <svg
+          class="sidebar__nav-icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.7"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M10 12h10"></path>
+          <path d="M17 8l4 4-4 4"></path>
+
+          <path
+            d="M14 5V4a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2v-1"
+          ></path>
+        </svg>
+
+        <span>
+          Sign out
+        </span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- =========================================================
+       SIGN OUT DIALOG
+  ========================================================== -->
+
+  <dialog
+    class="signout-dialog"
+    data-signout-dialog
+  >
+    <div class="signout-dialog__content">
+      <div class="signout-dialog__eyebrow">
+        Account
+      </div>
+
+      <h2 class="signout-dialog__title">
+        Sign out of the admin workspace?
+      </h2>
+
+      <p class="signout-dialog__copy">
+        You will be returned to the admin login page.
+      </p>
+    </div>
+
+    <div class="signout-dialog__actions">
+      <button
+        class="dialog-button dialog-button--cancel"
+        type="button"
+        data-signout-cancel
+      >
+        Cancel
+      </button>
+
+      <button
+        class="dialog-button dialog-button--confirm"
+        type="button"
+        data-signout-confirm
+      >
+        Sign out
+      </button>
+    </div>
+  </dialog>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      /* =======================================================
+         MOBILE DRAWER
+      ======================================================== */
+
+      const drawer = document.querySelector(
+        "[data-mobile-drawer]"
+      );
+
+      const overlay = document.querySelector(
+        "[data-drawer-overlay]"
+      );
+
+      const openButton = document.querySelector(
+        "[data-menu-open]"
+      );
+
+      const closeButton = document.querySelector(
+        "[data-menu-close]"
+      );
+
+      function openDrawer() {
+        if (!drawer || !overlay) {
+          return;
+        }
+
+        drawer.classList.add("open");
+        overlay.classList.add("open");
+
+        drawer.setAttribute(
+          "aria-hidden",
+          "false"
+        );
+
+        openButton?.setAttribute(
+          "aria-expanded",
+          "true"
+        );
+
+        document.body.style.overflow = "hidden";
+      }
+
+      function closeDrawer() {
+        if (!drawer || !overlay) {
+          return;
+        }
+
+        drawer.classList.remove("open");
+        overlay.classList.remove("open");
+
+        drawer.setAttribute(
+          "aria-hidden",
+          "true"
+        );
+
+        openButton?.setAttribute(
+          "aria-expanded",
+          "false"
+        );
+
+        document.body.style.overflow = "";
+      }
+
+      openButton?.addEventListener(
+        "click",
+        openDrawer
+      );
+
+      closeButton?.addEventListener(
+        "click",
+        closeDrawer
+      );
+
+      overlay?.addEventListener(
+        "click",
+        closeDrawer
+      );
+
+      drawer?.querySelectorAll("a").forEach(
+        (link) => {
+          link.addEventListener(
+            "click",
+            closeDrawer
+          );
+        }
+      );
+
+      window.addEventListener(
+        "resize",
+        () => {
+          if (window.innerWidth > 820) {
+            closeDrawer();
+          }
+        }
+      );
+
+      /* =======================================================
+         MOBILE HEADER SCROLL BEHAVIOR
+      ======================================================== */
+
+      const mobileHeader =
+        document.querySelector(
+          "[data-mobile-header]"
+        );
+
+      let lastScrollY =
+        window.scrollY;
+
+      window.addEventListener(
+        "scroll",
+        () => {
+          if (
+            !mobileHeader ||
+            window.innerWidth > 820
+          ) {
+            return;
+          }
+
+          const currentScrollY =
+            window.scrollY;
+
+          if (currentScrollY <= 4) {
+            mobileHeader.classList.remove(
+              "hidden"
+            );
+          } else if (
+            currentScrollY >
+            lastScrollY + 4
+          ) {
+            mobileHeader.classList.add(
+              "hidden"
+            );
+          } else if (
+            currentScrollY <
+            lastScrollY - 4
+          ) {
+            mobileHeader.classList.remove(
+              "hidden"
+            );
+          }
+
+          lastScrollY = currentScrollY;
+        },
+        { passive: true }
+      );
+
+      /* =======================================================
+         SIGN OUT
+      ======================================================== */
+
+      const signoutDialog =
+        document.querySelector(
+          "[data-signout-dialog]"
+        );
+
+      const signoutOpenButtons =
+        document.querySelectorAll(
+          "[data-signout-open]"
+        );
+
+      const signoutCancel =
+        document.querySelector(
+          "[data-signout-cancel]"
+        );
+
+      const signoutConfirm =
+        document.querySelector(
+          "[data-signout-confirm]"
+        );
+
+      signoutOpenButtons.forEach(
+        (button) => {
+          button.addEventListener(
+            "click",
+            () => {
+              closeDrawer();
+
+              if (
+                signoutDialog &&
+                typeof signoutDialog.showModal ===
+                  "function"
+              ) {
+                signoutDialog.showModal();
+              }
+            }
+          );
+        }
+      );
+
+      signoutCancel?.addEventListener(
+        "click",
+        () => {
+          signoutDialog?.close();
+        }
+      );
+
+      signoutDialog?.addEventListener(
+        "click",
+        (event) => {
+          const rect =
+            signoutDialog.getBoundingClientRect();
+
+          const clickedInside =
+            event.clientX >= rect.left &&
+            event.clientX <= rect.right &&
+            event.clientY >= rect.top &&
+            event.clientY <= rect.bottom;
+
+          if (!clickedInside) {
+            signoutDialog.close();
+          }
+        }
+      );
+
+      signoutConfirm?.addEventListener(
+        "click",
+        () => {
+          window.location.href =
+            "/admin/login";
+        }
+      );
+
+      /* =======================================================
+         ESCAPE
+      ======================================================== */
+
+      document.addEventListener(
+        "keydown",
+        (event) => {
+          if (event.key === "Escape") {
+            closeDrawer();
+
+            if (signoutDialog?.open) {
+              signoutDialog.close();
+            }
+          }
+        }
+      );
+    });
+  </script>
+</body>
+</html>
