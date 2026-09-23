@@ -46,15 +46,14 @@ Task 1: Read and analyze the given context and relevant documents.
    - Review the existing design documents for blockers specific to the objective.
    - Identify any missing, ambiguous, contradictory, or technically insufficient design decisions.
    - Do not treat missing implementation, code, infrastructure, or unrelated domains as blockers.
-   - If no design blockers exist, the table must state that the objective is design-ready.
-   - If design blockers exist, clearly identify each blocker and exactly what must be defined or resolved.
-   - Output: Simple, clear, direct, explicit, and concise.
-
-Output format:
+   - If there are no design blockers, output only: `Ready`
+   - If design blockers exist, output only the following table:
 
 | ID | Details | Solutions |
 |---|---|---|
-| <Design ID or blocker ID> | <Specific design blocker or "No blocker"> | <Exact action required or "None"> |
+| <Design ID or blocker ID> | <Specific design blocker> | <Exact action required to resolve it> |
+
+   - Output must be simple, clear, direct, explicit, and concise.
 ```
 
 ```text
