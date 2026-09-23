@@ -2,7 +2,7 @@ use sqlx::PgPool;
 use time::OffsetDateTime;
 use uuid::Uuid;
 
-use super::model::{CreatedAccount, ListedAccount, ListedAccounts};
+use super::model::{CreatedAccount, ListedAccount, ListedAccounts, ViewedAccount};
 
 const EMAIL_UNIQUE_CONSTRAINT: &str = "account_credentials_email_normalized_key";
 
@@ -141,6 +141,34 @@ impl AccountRepository {
             total,
         })
     }
+
+    pub async fn find_by_id(
+        &self,
+        account_id: Uuid,
+    ) -> Result<Option<ViewedAccount>, ViewAccountRepositoryError> {
+        let row = sqlx::query_as::<_, ViewedAccountRow>(
+            r#"
+            SELECT
+                a.id,
+                ac.email,
+                a.status,
+                a.created_at,
+                a.updated_at,
+                a.deleted_at
+            FROM account AS a
+            INNER JOIN account_credentials AS ac
+                ON ac.account_id = a.id
+            WHERE a.id = $1
+              AND a.deleted_at IS NULL
+            "#,
+        )
+        .bind(account_id)
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(ViewAccountRepositoryError::Database)?;
+
+        Ok(row.map(ViewedAccount::from))
+    }
 }
 
 #[derive(Debug, sqlx::FromRow)]
@@ -162,8 +190,31 @@ struct ListedAccountRow {
     deleted_at: Option<OffsetDateTime>,
 }
 
+#[derive(Debug, sqlx::FromRow)]
+struct ViewedAccountRow {
+    id: Uuid,
+    email: String,
+    status: String,
+    created_at: OffsetDateTime,
+    updated_at: OffsetDateTime,
+    deleted_at: Option<OffsetDateTime>,
+}
+
 impl From<ListedAccountRow> for ListedAccount {
     fn from(row: ListedAccountRow) -> Self {
+        Self {
+            id: row.id,
+            email: row.email,
+            status: row.status,
+            created_at: row.created_at,
+            updated_at: row.updated_at,
+            deleted_at: row.deleted_at,
+        }
+    }
+}
+
+impl From<ViewedAccountRow> for ViewedAccount {
+    fn from(row: ViewedAccountRow) -> Self {
         Self {
             id: row.id,
             email: row.email,
@@ -206,3 +257,18 @@ impl std::fmt::Display for ListAccountsRepositoryError {
 }
 
 impl std::error::Error for ListAccountsRepositoryError {}
+
+#[derive(Debug)]
+pub enum ViewAccountRepositoryError {
+    Database(sqlx::Error),
+}
+
+impl std::fmt::Display for ViewAccountRepositoryError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Database(error) => write!(f, "{error}"),
+        }
+    }
+}
+
+impl std::error::Error for ViewAccountRepositoryError {}

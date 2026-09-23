@@ -15,9 +15,12 @@ use crate::shared::{
 use super::{
     model::{
         CreateAccountRequest, CreatedAccount, ListAccountsQuery, ListAccountsQueryValidationError,
-        ListedAccounts,
+        ListedAccounts, ViewedAccount,
     },
-    repository::{AccountRepository, CreateAccountRepositoryError, ListAccountsRepositoryError},
+    repository::{
+        AccountRepository, CreateAccountRepositoryError, ListAccountsRepositoryError,
+        ViewAccountRepositoryError,
+    },
 };
 
 pub struct AccountService {
@@ -89,6 +92,18 @@ impl AccountService {
                     crate::shared::error::internal_error(error)
                 }
             })
+    }
+
+    pub async fn view_account(&self, account_id: Uuid) -> Result<ViewedAccount, AppError> {
+        self.repository
+            .find_by_id(account_id)
+            .await
+            .map_err(|error| match error {
+                ViewAccountRepositoryError::Database(error) => {
+                    crate::shared::error::internal_error(error)
+                }
+            })?
+            .ok_or(AppError::AccountNotFound)
     }
 
     async fn hash_password(&self, password: SecretString) -> Result<String, AppError> {

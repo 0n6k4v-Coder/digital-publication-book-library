@@ -1,12 +1,13 @@
 use axum::{
     extract::{
         rejection::{JsonRejection, QueryRejection},
-        Query, State,
+        Path, Query, State,
     },
     http::{header, HeaderValue, StatusCode},
     response::{IntoResponse, Response},
     Json,
 };
+use uuid::Uuid;
 
 use crate::{
     app::state::AppState,
@@ -66,6 +67,28 @@ pub async fn view_accounts(
 
     let accounts = service.list_accounts(query).await?;
     let response_body = AccountListResponse::from(accounts);
+
+    let mut response = (StatusCode::OK, Json(response_body)).into_response();
+    add_no_store(response.headers_mut());
+
+    Ok(response)
+}
+
+pub async fn view_account(
+    _auth: AuthenticatedAdmin,
+    State(state): State<AppState>,
+    Path(account_id): Path<String>,
+) -> Result<Response, AppError> {
+    let account_id = Uuid::parse_str(&account_id).map_err(|_| AppError::InvalidAccountId)?;
+
+    let service = AccountService::new(
+        AccountRepository::new(state.pool.clone()),
+        state.password_policy.clone(),
+        state.password_hash_semaphore.clone(),
+    );
+
+    let account = service.view_account(account_id).await?;
+    let response_body = AccountResponse::from(account);
 
     let mut response = (StatusCode::OK, Json(response_body)).into_response();
     add_no_store(response.headers_mut());

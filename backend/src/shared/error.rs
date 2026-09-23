@@ -17,6 +17,10 @@ pub enum AppError {
     InvalidRequest(&'static str),
     #[error("validation error: {0}")]
     Validation(&'static str),
+    #[error("invalid account id")]
+    InvalidAccountId,
+    #[error("account not found")]
+    AccountNotFound,
     #[error("email already in use")]
     EmailAlreadyInUse,
     #[error("internal server error")]
@@ -47,6 +51,20 @@ impl AppError {
                 *detail,
                 "https://github.com/0n6k4v-Coder/digital-publication-book-library/problems/validation-error",
             ),
+            Self::InvalidAccountId => (
+                StatusCode::BAD_REQUEST,
+                "INVALID_ACCOUNT_ID",
+                "Invalid account ID",
+                "The account ID must be a valid UUID.",
+                "https://github.com/0n6k4v-Coder/digital-publication-book-library/problems/invalid-account-id",
+            ),
+            Self::AccountNotFound => (
+                StatusCode::NOT_FOUND,
+                "ACCOUNT_NOT_FOUND",
+                "Account not found",
+                "The requested account was not found.",
+                "https://github.com/0n6k4v-Coder/digital-publication-book-library/problems/account-not-found",
+            ),
             Self::EmailAlreadyInUse => (
                 StatusCode::CONFLICT,
                 "EMAIL_ALREADY_IN_USE",
@@ -75,6 +93,7 @@ impl AppError {
 
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
+        let is_unauthorized = matches!(&self, Self::Unauthorized);
         let problem = self.problem();
 
         let status =
@@ -88,6 +107,13 @@ impl IntoResponse for AppError {
             header::CONTENT_TYPE,
             HeaderValue::from_static("application/problem+json"),
         );
+
+        if is_unauthorized {
+            response.headers_mut().insert(
+                header::WWW_AUTHENTICATE,
+                HeaderValue::from_static(r#"Bearer realm="admin-api""#),
+            );
+        }
 
         response
     }

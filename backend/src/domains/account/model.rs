@@ -89,6 +89,16 @@ pub struct CreatedAccount {
 }
 
 #[derive(Debug)]
+pub struct ViewedAccount {
+    pub id: Uuid,
+    pub email: String,
+    pub status: String,
+    pub created_at: OffsetDateTime,
+    pub updated_at: OffsetDateTime,
+    pub deleted_at: Option<OffsetDateTime>,
+}
+
+#[derive(Debug)]
 pub struct ListedAccount {
     pub id: Uuid,
     pub email: String,
@@ -108,6 +118,19 @@ pub struct ListedAccounts {
 
 impl From<CreatedAccount> for AccountResponse {
     fn from(account: CreatedAccount) -> Self {
+        Self {
+            id: account.id,
+            email: account.email,
+            status: account.status,
+            created_at: account.created_at,
+            updated_at: account.updated_at,
+            deleted_at: account.deleted_at,
+        }
+    }
+}
+
+impl From<ViewedAccount> for AccountResponse {
+    fn from(account: ViewedAccount) -> Self {
         Self {
             id: account.id,
             email: account.email,
