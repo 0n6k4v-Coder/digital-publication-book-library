@@ -122,23 +122,44 @@ docker compose -f backend/compose/docker-compose.test.yml run --rm test sh -c 'c
 ### Unit Test Command
 
 ```bash
-docker compose -f backend/compose/docker-compose.test.yml run --rm test cargo test --test unit --no-fail-fast
+docker compose -f backend/compose/docker-compose.test.yml run --rm test sh -c '
+trap "rm -f tests/unit.rs" EXIT
+ln -s unit/account_create.rs tests/unit.rs
+cargo test --test unit --no-fail-fast
+'
 ```
 
 ### Integration Test Command
 
 ```bash
-docker compose -f backend/compose/docker-compose.test.yml run --rm test cargo test --test integration --no-fail-fast -- --include-ignored
+docker compose -f backend/compose/docker-compose.test.yml run --rm test sh -c '
+trap "rm -f tests/integration.rs" EXIT
+ln -s integration/create_account.rs tests/integration.rs
+cargo test --test integration --no-fail-fast -- --include-ignored
+'
 ```
 
 ### E2E Test Command
 
 ```bash
-docker compose -f backend/compose/docker-compose.test.yml run --rm test cargo test --test e2e --no-fail-fast -- --include-ignored
+docker compose -f backend/compose/docker-compose.test.yml run --rm test sh -c '
+trap "rm -f tests/e2e.rs" EXIT
+ln -s e2e/account_create.rs tests/e2e.rs
+cargo test --test e2e --no-fail-fast -- --include-ignored
+'
 ```
 
 ### Full Test Command
 
 ```bash
-docker compose -f backend/compose/docker-compose.test.yml run --rm test cargo test --tests --no-fail-fast -- --include-ignored
+docker compose -f backend/compose/docker-compose.test.yml run --rm test sh -c '
+set -e
+trap "rm -f tests/unit.rs tests/integration.rs tests/e2e.rs" EXIT
+
+ln -s unit/account_create.rs tests/unit.rs
+ln -s integration/create_account.rs tests/integration.rs
+ln -s e2e/account_create.rs tests/e2e.rs
+
+cargo test --tests --no-fail-fast -- --include-ignored
+'
 ```
