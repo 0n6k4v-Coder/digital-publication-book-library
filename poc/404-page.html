@@ -1,0 +1,540 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="The page you are looking for could not be found.">
+  <title>Archive — Page Not Found</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap"
+    rel="stylesheet"
+  >
+
+  <style>
+    :root {
+      --bg: #fff;
+      --text: #171717;
+      --muted: #777770;
+      --soft: #f7f7f4;
+      --line: #e5e5df;
+      --accent: #d9ff4f;
+      --accent-border: #bedf3c;
+      --accent-hover: #d0f447;
+      --pad: clamp(20px, 5vw, 40px);
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-width: 320px;
+      background: var(--bg);
+      scroll-behavior: smooth;
+    }
+
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "DM Sans", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    a:focus-visible {
+      outline: 2px solid var(--text);
+      outline-offset: 3px;
+    }
+
+    svg {
+      display: block;
+    }
+
+    .site-header {
+      min-height: 68px;
+      padding: env(safe-area-inset-top, 0) var(--pad) 0;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand__mark {
+      width: 30px;
+      height: 30px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--text);
+      color: var(--accent);
+      font-family: "Playfair Display", Georgia, serif;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .brand__name {
+      font-family: "Playfair Display", Georgia, serif;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -.03em;
+    }
+
+    .nav {
+      display: flex;
+      gap: 4px;
+    }
+
+    .nav__link {
+      padding: 9px 11px;
+      border-radius: var(--radius);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      transition: background 160ms ease, color 160ms ease;
+    }
+
+    .nav__link:hover {
+      background: var(--soft);
+      color: var(--text);
+    }
+
+    .error-main {
+      width: min(100%, 820px);
+      min-height: calc(100vh - 68px);
+      min-height: calc(100svh - 68px);
+      margin: 0 auto;
+      padding: 64px var(--pad);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .error-code {
+      margin: 0;
+      font-family: "Playfair Display", Georgia, serif;
+      font-size: clamp(110px, 20vw, 210px);
+      line-height: .8;
+      font-weight: 700;
+      letter-spacing: -.07em;
+    }
+
+    .eyebrow {
+      margin: 28px 0 0;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+
+    .error-title {
+      max-width: 620px;
+      margin: 10px 0 0;
+      font-family: "Playfair Display", Georgia, serif;
+      font-size: clamp(32px, 6vw, 52px);
+      line-height: 1.05;
+      font-weight: 700;
+      letter-spacing: -.045em;
+    }
+
+    .error-description {
+      max-width: 500px;
+      margin: 16px 0 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.65;
+    }
+
+    .actions {
+      margin-top: 28px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 9px;
+    }
+
+    .action {
+      min-height: 44px;
+      padding: 0 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      border-radius: var(--radius);
+      font-size: 11px;
+      font-weight: 700;
+      transition:
+        background 160ms ease,
+        border-color 160ms ease,
+        box-shadow 160ms ease;
+    }
+
+    .action--primary {
+      border: 1px solid var(--accent-border);
+      background: var(--accent);
+      color: #181818;
+    }
+
+    .action--primary:hover {
+      border-color: #aed12f;
+      background: var(--accent-hover);
+      box-shadow: 0 7px 18px rgb(23 23 23 / .08);
+    }
+
+    .action--secondary {
+      border: 1px solid var(--line);
+      background: var(--bg);
+      color: var(--muted);
+    }
+
+    .action--secondary:hover {
+      border-color: #cfcfc8;
+      background: var(--soft);
+      color: var(--text);
+    }
+
+    .icon {
+      width: 15px;
+      height: 15px;
+    }
+
+    .recovery {
+      width: min(100%, 520px);
+      margin-top: 46px;
+      padding-top: 22px;
+      border-top: 1px solid var(--line);
+    }
+
+    .recovery__label {
+      margin: 0;
+      color: var(--muted);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .recovery__links {
+      margin-top: 11px;
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 8px 20px;
+    }
+
+    .recovery__link {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      color: #44443f;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .recovery__link:hover {
+      color: var(--text);
+    }
+
+    .recovery__arrow {
+      color: var(--muted);
+    }
+
+    .site-footer {
+      padding: 18px var(--pad) calc(18px + env(safe-area-inset-bottom, 0));
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 10px;
+      text-align: center;
+    }
+
+    @media (max-width: 600px) {
+      .site-header {
+        min-height: 62px;
+      }
+
+      .brand__name {
+        font-size: 18px;
+      }
+
+      .nav__link {
+        padding-inline: 8px;
+        font-size: 10px;
+      }
+
+      .error-main {
+        min-height: calc(100svh - 62px);
+        padding-top: 52px;
+        padding-bottom: 54px;
+      }
+
+      .error-code {
+        font-size: clamp(100px, 30vw, 160px);
+      }
+
+      .eyebrow {
+        margin-top: 24px;
+      }
+
+      .error-title {
+        font-size: clamp(31px, 9vw, 44px);
+      }
+
+      .actions {
+        width: 100%;
+        flex-direction: column;
+      }
+
+      .action {
+        width: min(100%, 280px);
+      }
+
+      .recovery {
+        margin-top: 40px;
+      }
+
+      .recovery__links {
+        flex-direction: column;
+        gap: 9px;
+      }
+    }
+
+    @media (max-width: 400px) {
+      .brand__name {
+        display: none;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition: none !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header class="site-header">
+
+    <a
+      class="brand"
+      href="/"
+      aria-label="Archive home"
+    >
+      <span
+        class="brand__mark"
+        aria-hidden="true"
+      >
+        A
+      </span>
+
+      <span class="brand__name">
+        Archive
+      </span>
+    </a>
+
+
+    <nav
+      class="nav"
+      aria-label="Primary navigation"
+    >
+      <a
+        class="nav__link"
+        href="/posts"
+      >
+        Posts
+      </a>
+
+      <a
+        class="nav__link"
+        href="/books"
+      >
+        Books
+      </a>
+    </nav>
+
+  </header>
+
+
+  <main
+    class="error-main"
+    aria-labelledby="error-title"
+  >
+
+    <p
+      class="error-code"
+      aria-hidden="true"
+    >
+      404
+    </p>
+
+
+    <p class="eyebrow">
+      Page not found
+    </p>
+
+
+    <h1
+      class="error-title"
+      id="error-title"
+    >
+      This page is not in the archive.
+    </h1>
+
+
+    <p class="error-description">
+      The page you are looking for does not exist or may have moved.
+      Choose another place to continue exploring.
+    </p>
+
+
+    <div class="actions">
+
+      <a
+        class="action action--primary"
+        href="/"
+      >
+        <svg
+          class="icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.7"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M3 10.5L12 3l9 7.5"></path>
+          <path d="M5.5 9.5V21h13V9.5"></path>
+          <path d="M9.5 21v-6h5v6"></path>
+        </svg>
+
+        Back to home
+      </a>
+
+
+      <a
+        class="action action--secondary"
+        href="/posts"
+      >
+        <svg
+          class="icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.7"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M5 4h14v16H5z"></path>
+          <path d="M8 8h8"></path>
+          <path d="M8 12h8"></path>
+          <path d="M8 16h5"></path>
+        </svg>
+
+        Browse posts
+      </a>
+
+    </div>
+
+
+    <section
+      class="recovery"
+      aria-labelledby="recovery-label"
+    >
+
+      <p
+        class="recovery__label"
+        id="recovery-label"
+      >
+        Continue exploring
+      </p>
+
+
+      <div class="recovery__links">
+
+        <a
+          class="recovery__link"
+          href="/posts"
+        >
+          Latest posts
+
+          <svg
+            class="recovery__arrow"
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M5 12h13"></path>
+            <path d="M13 6l6 6-6 6"></path>
+          </svg>
+        </a>
+
+
+        <a
+          class="recovery__link"
+          href="/books"
+        >
+          Explore the book library
+
+          <svg
+            class="recovery__arrow"
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M5 12h13"></path>
+            <path d="M13 6l6 6-6 6"></path>
+          </svg>
+        </a>
+
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <footer class="site-footer">
+    Archive — Digital Publication &amp; Book Library
+  </footer>
+
+</body>
+</html>
