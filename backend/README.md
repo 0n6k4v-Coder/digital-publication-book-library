@@ -116,7 +116,11 @@ docker compose -f backend/compose/docker-compose.test.yml down --volumes --remov
 ### Static Code Test Command
 
 ```bash
-docker compose -f backend/compose/docker-compose.test.yml run --rm test sh -c 'cargo fmt --all && cargo clippy --fix --allow-dirty --allow-staged --allow-no-vcs --all-targets --all-features && cargo fmt --all -- --check && cargo check --tests && cargo clippy --all-targets --all-features -- -D warnings && cargo test --tests --no-fail-fast -- --include-ignored'
+# Fix Formatting
+docker compose -f backend/compose/docker-compose.test.yml run --rm test cargo fmt --all
+
+# Check Only
+docker compose -f backend/compose/docker-compose.test.yml run --rm test sh -c 'cargo fmt --all -- --check && cargo check --tests && cargo clippy --all-targets --all-features -- -D warnings && cargo test --tests --no-fail-fast -- --include-ignored'
 ```
 
 ### Unit Test Command
