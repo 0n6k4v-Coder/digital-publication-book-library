@@ -13,6 +13,10 @@ use super::response::add_no_store;
 pub enum AppError {
     #[error("unauthorized")]
     Unauthorized,
+    #[error("invalid authentication")]
+    InvalidAuthentication,
+    #[error("forbidden")]
+    Forbidden,
     #[error("invalid request: {0}")]
     InvalidRequest(&'static str),
     #[error("validation error: {0}")]
@@ -36,6 +40,20 @@ impl AppError {
                 "Authentication required",
                 "Authentication is required to access this resource.",
                 "https://github.com/0n6k4v-Coder/digital-publication-book-library/problems/unauthorized",
+            ),
+            Self::InvalidAuthentication => (
+                StatusCode::UNAUTHORIZED,
+                "UNAUTHORIZED",
+                "Authentication required",
+                "The supplied authentication credentials are invalid or no longer valid.",
+                "https://github.com/0n6k4v-Coder/digital-publication-book-library/problems/unauthorized",
+            ),
+            Self::Forbidden => (
+                StatusCode::FORBIDDEN,
+                "FORBIDDEN",
+                "Forbidden",
+                "The authenticated principal is not authorized to perform this operation.",
+                "https://github.com/0n6k4v-Coder/digital-publication-book-library/problems/forbidden",
             ),
             Self::InvalidRequest(detail) => (
                 StatusCode::BAD_REQUEST,
@@ -93,12 +111,17 @@ impl AppError {
 
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
-        let is_unauthorized = matches!(&self, Self::Unauthorized);
-        let problem = self.problem();
+        let auth_challenge = match &self {
+            AppError::Unauthorized => Some(r#"Bearer realm="admin-api""#),
+            AppError::InvalidAuthentication => {
+                Some(r#"Bearer realm="admin-api", error="invalid_token""#)
+            }
+            _ => None,
+        };
 
+        let problem = self.problem();
         let status =
             StatusCode::from_u16(problem.status).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
-
         let mut response = (status, Json(problem)).into_response();
 
         add_no_store(response.headers_mut());
@@ -108,10 +131,10 @@ impl IntoResponse for AppError {
             HeaderValue::from_static("application/problem+json"),
         );
 
-        if is_unauthorized {
+        if let Some(challenge) = auth_challenge {
             response.headers_mut().insert(
                 header::WWW_AUTHENTICATE,
-                HeaderValue::from_static(r#"Bearer realm="admin-api""#),
+                HeaderValue::from_static(challenge),
             );
         }
 

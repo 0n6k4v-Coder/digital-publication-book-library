@@ -11,6 +11,7 @@ use uuid::Uuid;
 
 use crate::{
     app::state::AppState,
+    domains::authorization::extractor::AuthorizedAccountCreate,
     shared::{auth::AuthenticatedAdmin, error::AppError, response::add_no_store},
 };
 
@@ -21,7 +22,7 @@ use super::{
 };
 
 pub async fn create_account(
-    auth: AuthenticatedAdmin,
+    authorized: AuthorizedAccountCreate,
     State(state): State<AppState>,
     request: Result<Json<CreateAccountRequest>, JsonRejection>,
 ) -> Result<Response, AppError> {
@@ -33,7 +34,9 @@ pub async fn create_account(
         state.password_hash_semaphore.clone(),
     );
 
-    let account = service.create_account(auth.account_id, request).await?;
+    let account = service
+        .create_account(authorized.account_id(), request)
+        .await?;
 
     let account_id = account.id;
     let response_body = AccountResponse::from(account);

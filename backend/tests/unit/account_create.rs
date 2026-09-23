@@ -1,14 +1,17 @@
 use std::sync::Arc;
 
+use axum::http::{header, HeaderMap, HeaderValue};
 use secrecy::SecretString;
 use sha1::{Digest, Sha1};
 
-use digital_publication_backend::shared::validation::{
-    hash_password,
-    normalize_email,
-    PasswordBlocklist,
-    PasswordPolicy,
-    PasswordValidationError,
+use digital_publication_backend::{
+    domains::authentication::extractor::{
+        parse_bearer_token, sha256_token_verifier, BearerAuthError,
+    },
+    shared::validation::{
+        hash_password, normalize_email, PasswordBlocklist, PasswordPolicy,
+        PasswordValidationError,
+    },
 };
 
 fn sha1_hash(password: &str) -> [u8; 20] {
@@ -192,4 +195,84 @@ fn password_hash_is_not_deterministic() {
         hash_password(password).unwrap();
 
     assert_ne!(first, second);
+}
+
+#[test]
+fn bearer_auth_extracts_authorization_header_token() {
+    let mut headers = HeaderMap::new();
+    headers.insert(
+        header::AUTHORIZATION,
+        HeaderValue::from_static("Bearer opaque-token"),
+    );
+
+    assert_eq!(
+        parse_bearer_token(&headers),
+        Ok("opaque-token")
+    );
+}
+
+#[test]
+fn bearer_auth_scheme_is_case_insensitive() {
+    let mut headers = HeaderMap::new();
+    headers.insert(
+        header::AUTHORIZATION,
+        HeaderValue::from_static("bEaReR opaque-token"),
+    );
+
+    assert_eq!(
+        parse_bearer_token(&headers),
+        Ok("opaque-token")
+    );
+}
+
+#[test]
+fn bearer_auth_distinguishes_missing_and_invalid_credentials() {
+    let headers = HeaderMap::new();
+    assert_eq!(
+        parse_bearer_token(&headers),
+        Err(BearerAuthError::Missing)
+    );
+
+    let mut headers = HeaderMap::new();
+    headers.insert(
+        header::AUTHORIZATION,
+        HeaderValue::from_static("Basic abc"),
+    );
+
+    assert_eq!(
+        parse_bearer_token(&headers),
+        Err(BearerAuthError::Invalid)
+    );
+}
+
+#[test]
+fn bearer_auth_rejects_malformed_or_multiple_credentials() {
+    for value in [
+        "",
+        "Bearer",
+        "Bearer ",
+        "Bearer token extra",
+        "Bearer\ttoken",
+        "Basic token",
+    ] {
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            header::AUTHORIZATION,
+            HeaderValue::from_str(value).unwrap(),
+        );
+
+        assert_eq!(
+            parse_bearer_token(&headers),
+            Err(BearerAuthError::Invalid),
+            "value={value:?}"
+        );
+    }
+}
+
+#[test]
+fn bearer_auth_uses_sha256_of_the_exact_token() {
+    assert_eq!(
+        sha256_token_verifier("hello world"),
+        "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9"
+    );
 }
