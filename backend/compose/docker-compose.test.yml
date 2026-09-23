@@ -61,9 +61,12 @@ volumes:
 
   cargo-target:
     name: digital-publication-cargo-target
+    external: true
 
   cargo-registry:
     name: digital-publication-cargo-registry
+    external: true
 
   cargo-git:
     name: digital-publication-cargo-git
+    external: true

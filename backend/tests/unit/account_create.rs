@@ -155,7 +155,7 @@ fn password_policy_does_not_reject_substrings_of_blocklisted_passwords() {
         PasswordPolicy::new(Arc::new(blocklist));
 
     let password =
-        SecretString::from("horse battery".to_owned());
+        SecretString::from("horse battery staple".to_owned());
 
     assert!(policy.validate(&password).is_ok());
 }
