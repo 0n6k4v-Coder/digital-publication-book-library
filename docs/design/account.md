@@ -52,16 +52,26 @@
    * [6.3 Create Account](#63-create-account)
    * [6.4 View Accounts](#64-view-accounts)
    * [6.5 View Account](#65-view-account)
-   * [6.6 Deactivate Account](#66-deactivate-account)
-   * [6.7 Activate Account](#67-activate-account)
-   * [6.8 Soft Delete Account](#68-soft-delete-account)
-   * [6.9 Restore Account](#69-restore-account)
-   * [6.10 Hard Delete Account](#610-hard-delete-account)
-   * [6.11 Change Email](#611-change-email)
-   * [6.12 Change Password](#612-change-password)
-   * [6.13 Account Response](#613-account-response)
-   * [6.14 Error Response](#614-error-response)
-   * [6.15 HTTP Status Codes](#615-http-status-codes)
+   * [6.6 Update Account](#66-update-account)
+   * [6.7 Deactivate Account](#67-deactivate-account)
+   * [6.8 Activate Account](#68-activate-account)
+   * [6.9 Soft Delete Account](#69-soft-delete-account)
+   * [6.10 Restore Account](#610-restore-account)
+   * [6.11 Hard Delete Account](#611-hard-delete-account)
+   * [6.12 Change Email](#612-change-email)
+   * [6.13 Change Password](#613-change-password)
+   * [6.14 Account Response](#614-account-response)
+   * [6.15 Error Response](#615-error-response)
+   * [6.16 HTTP Status Codes](#616-http-status-codes)
+
+7. [Implementation Status](#7-implementation-status)
+
+   * [7.1 Requirements](#71-requirements)
+   * [7.2 Security](#72-security)
+   * [7.3 Design Decisions](#73-design-decisions)
+   * [7.4 Data Model](#74-data-model)
+   * [7.5 Use Cases](#75-use-cases)
+   * [7.6 API Contract](#76-api-contract)
 
 ---
 
@@ -949,3 +959,139 @@ Errors use RFC 9457 Problem Details with `application/problem+json`.
 | `500`  | Unexpected server error                                   |
 
 The status-code meanings follow HTTP Semantics defined by RFC 9110.
+
+---
+
+## 7. Implementation Status
+
+**Status:** 🟢 Implemented · 🟡 Partial · 🔴 Not Implemented
+
+### 7.1 Requirements
+
+| ID                 | Description                                                        | Status             | Reason |
+| ------------------ | ------------------------------------------------------------------ | ------------------ | ------ |
+| `AC_REQ_FC_01`     | Create an account                                                  | 🔴 Not Implemented |        |
+| `AC_REQ_FC_02`     | Assign a unique identifier to each account                         | 🔴 Not Implemented |        |
+| `AC_REQ_FC_03`     | Record account creation timestamp                                  | 🔴 Not Implemented |        |
+| `AC_REQ_FC_04`     | Record latest Account entity update timestamp                      | 🔴 Not Implemented |        |
+| `AC_REQ_FC_05`     | Support `active` and `inactive` statuses                           | 🔴 Not Implemented |        |
+| `AC_REQ_FC_06`     | Allow Account fields to be updated                                 | 🔴 Not Implemented |        |
+| `AC_REQ_FC_07`     | Record the account responsible for creating or updating an account | 🔴 Not Implemented |        |
+| `AC_REQ_FC_08`     | Each account has exactly one credential set                        | 🔴 Not Implemented |        |
+| `AC_REQ_FC_09`     | Use email and password authentication                              | 🔴 Not Implemented |        |
+| `AC_REQ_FC_10`     | Use email as the authentication identifier                         | 🔴 Not Implemented |        |
+| `AC_REQ_FC_11`     | Enforce unique email identity                                      | 🔴 Not Implemented |        |
+| `AC_REQ_FC_12`     | Allow email and password credentials to be updated                 | 🔴 Not Implemented |        |
+| `AC_REQ_FC_13`     | Support soft deletion                                              | 🔴 Not Implemented |        |
+| `AC_REQ_FC_14`     | Record soft-deletion timestamp                                     | 🔴 Not Implemented |        |
+| `AC_REQ_FC_15`     | Record the account responsible for soft deletion                   | 🔴 Not Implemented |        |
+| `AC_REQ_FC_16`     | Prevent authentication for inactive accounts                       | 🔴 Not Implemented |        |
+| `AC_REQ_FC_17`     | Prevent authentication for soft-deleted accounts                   | 🔴 Not Implemented |        |
+| `AC_REQ_FC_18`     | Prevent deactivation of the last active administrator              | 🔴 Not Implemented |        |
+| `AC_REQ_FC_19`     | Support explicit hard deletion                                     | 🔴 Not Implemented |        |
+| `AC_REQ_FC_20`     | Support restoration of a soft-deleted account                      | 🔴 Not Implemented |        |
+| `AC_REQ_NON_FC_01` | Preserve Account invariants during lifecycle operations            | 🔴 Not Implemented |        |
+| `AC_REQ_NON_FC_02` | Use `TIMESTAMPTZ` for Account timestamps                           | 🔴 Not Implemented |        |
+| `AC_REQ_NON_FC_03` | Keep Account lifecycle data separate from credential data          | 🔴 Not Implemented |        |
+| `AC_REQ_NON_FC_04` | Exclude soft-deleted accounts from normal Account operations       | 🔴 Not Implemented |        |
+| `AC_REQ_NON_FC_05` | Make hard deletion an explicit operation                           | 🔴 Not Implemented |        |
+
+### 7.2 Security
+
+| ID                       | Description                                                                | Status             | Reason |
+| ------------------------ | -------------------------------------------------------------------------- | ------------------ | ------ |
+| `AC_SEC_REQ_FC_01`       | Authenticate using email and password                                      | 🔴 Not Implemented |        |
+| `AC_SEC_REQ_FC_02`       | Verify password against stored password hash                               | 🔴 Not Implemented |        |
+| `AC_SEC_REQ_FC_03`       | Allow email address changes                                                | 🔴 Not Implemented |        |
+| `AC_SEC_REQ_FC_04`       | Allow password changes                                                     | 🔴 Not Implemented |        |
+| `AC_SEC_REQ_NON_FC_01`   | Never store passwords in plaintext                                         | 🔴 Not Implemented |        |
+| `AC_SEC_REQ_NON_FC_02`   | Hash passwords using Argon2id                                              | 🔴 Not Implemented |        |
+| `AC_SEC_REQ_NON_FC_03`   | Use a unique salt for each password                                        | 🔴 Not Implemented |        |
+| `AC_SEC_REQ_NON_FC_04`   | Require a minimum password length of 15 characters                         | 🔴 Not Implemented |        |
+| `AC_SEC_REQ_NON_FC_05`   | Support passwords of at least 64 characters                                | 🔴 Not Implemented |        |
+| `AC_SEC_REQ_NON_FC_06`   | Do not require arbitrary password composition rules                        | 🔴 Not Implemented |        |
+| `AC_SEC_REQ_NON_FC_07`   | Reject commonly used or compromised passwords                              | 🔴 Not Implemented |        |
+| `AC_SEC_REQ_NON_FC_08`   | Do not expose credentials through responses, logs, or administrative views | 🔴 Not Implemented |        |
+| `AC_SEC_DEC_EMAIL_01`    | Email identity is case-insensitive                                         | 🔴 Not Implemented |        |
+| `AC_SEC_DEC_EMAIL_02`    | Store canonical application email value                                    | 🔴 Not Implemented |        |
+| `AC_SEC_DEC_EMAIL_03`    | Trim surrounding whitespace and lowercase the domain                       | 🔴 Not Implemented |        |
+| `AC_SEC_DEC_EMAIL_04`    | Preserve local-part case                                                   | 🔴 Not Implemented |        |
+| `AC_SEC_DEC_EMAIL_05`    | Do not apply provider-specific normalization                               | 🔴 Not Implemented |        |
+| `AC_SEC_DEC_EMAIL_06`    | Enforce case-insensitive email uniqueness in PostgreSQL                    | 🔴 Not Implemented |        |
+| `AC_SEC_DEC_PASSWORD_01` | Store only the password hash                                               | 🔴 Not Implemented |        |
+| `AC_SEC_DEC_PASSWORD_02` | Use Argon2id                                                               | 🔴 Not Implemented |        |
+| `AC_SEC_DEC_PASSWORD_03` | Use a unique salt for every password                                       | 🔴 Not Implemented |        |
+| `AC_SEC_DEC_PASSWORD_04` | Minimum password length is 15 characters                                   | 🔴 Not Implemented |        |
+| `AC_SEC_DEC_PASSWORD_05` | Support passwords of at least 64 characters                                | 🔴 Not Implemented |        |
+| `AC_SEC_DEC_PASSWORD_06` | No mandatory character composition requirements                            | 🔴 Not Implemented |        |
+| `AC_SEC_DEC_PASSWORD_07` | Reject commonly used or compromised passwords                              | 🔴 Not Implemented |        |
+| `AC_SEC_DEC_PASSWORD_08` | Never persist plaintext passwords                                          | 🔴 Not Implemented |        |
+
+### 7.3 Design Decisions
+
+| ID                     | Description                                                        | Status             | Reason |
+| ---------------------- | ------------------------------------------------------------------ | ------------------ | ------ |
+| `AC_DEC_ACCOUNT_01`    | `account.id` uses PostgreSQL `uuid`                                | 🔴 Not Implemented |        |
+| `AC_DEC_ACCOUNT_02`    | Generate IDs with PostgreSQL native `uuidv7()`                     | 🔴 Not Implemented |        |
+| `AC_DEC_ACCOUNT_03`    | `created_at` uses `TIMESTAMPTZ NOT NULL`                           | 🔴 Not Implemented |        |
+| `AC_DEC_ACCOUNT_04`    | `updated_at` uses `TIMESTAMPTZ NOT NULL`                           | 🔴 Not Implemented |        |
+| `AC_DEC_ACCOUNT_05`    | `deleted_at` uses `TIMESTAMPTZ NULL`                               | 🔴 Not Implemented |        |
+| `AC_DEC_ACCOUNT_06`    | Store timestamps in UTC                                            | 🔴 Not Implemented |        |
+| `AC_DEC_ACCOUNT_07`    | Only `active` and `inactive` statuses are allowed                  | 🔴 Not Implemented |        |
+| `AC_DEC_ACCOUNT_08`    | `created_by` uses nullable FK with `ON DELETE SET NULL`            | 🔴 Not Implemented |        |
+| `AC_DEC_ACCOUNT_09`    | `updated_by` uses nullable FK with `ON DELETE SET NULL`            | 🔴 Not Implemented |        |
+| `AC_DEC_ACCOUNT_10`    | `deleted_by` uses nullable FK with `ON DELETE SET NULL`            | 🔴 Not Implemented |        |
+| `AC_DEC_CREDENTIAL_01` | One account has exactly one credential set                         | 🔴 Not Implemented |        |
+| `AC_DEC_CREDENTIAL_02` | Authentication uses email and password only                        | 🔴 Not Implemented |        |
+| `AC_DEC_CREDENTIAL_03` | `account_credentials.account_id` references `account.id`           | 🔴 Not Implemented |        |
+| `AC_DEC_CREDENTIAL_04` | Credential deletion uses `ON DELETE CASCADE`                       | 🔴 Not Implemented |        |
+| `AC_DEC_CREDENTIAL_05` | Email or password changes update credential timestamp              | 🔴 Not Implemented |        |
+| `AC_DEC_CREDENTIAL_06` | Credential changes do not update `account.updated_at`              | 🔴 Not Implemented |        |
+| `AC_DEC_LIFECYCLE_01`  | Soft-deleted account must have `status = inactive`                 | 🔴 Not Implemented |        |
+| `AC_DEC_LIFECYCLE_02`  | Soft-deleted account must not authenticate                         | 🔴 Not Implemented |        |
+| `AC_DEC_LIFECYCLE_03`  | Restored account returns to `inactive`                             | 🔴 Not Implemented |        |
+| `AC_DEC_LIFECYCLE_04`  | Hard deletion physically removes the account record                | 🔴 Not Implemented |        |
+| `AC_DEC_LIFECYCLE_05`  | Hard deletion is an explicit operation                             | 🔴 Not Implemented |        |
+| `AC_DEC_LIFECYCLE_06`  | Hard deletion never occurs during normal updates                   | 🔴 Not Implemented |        |
+| `AC_DEC_LIFECYCLE_07`  | At least one active, non-deleted administrator must remain         | 🔴 Not Implemented |        |
+| `AC_DEC_LIFECYCLE_08`  | Last-administrator protection must be transactional                | 🔴 Not Implemented |        |
+| `AC_DEC_LIFECYCLE_09`  | First administrator has null actor references when no actor exists | 🔴 Not Implemented |        |
+
+### 7.4 Data Model
+
+| ID         | Description                 | Status             | Reason |
+| ---------- | --------------------------- | ------------------ | ------ |
+| `AC_DM_01` | `account` table             | 🔴 Not Implemented |        |
+| `AC_DM_02` | `account_credentials` table | 🔴 Not Implemented |        |
+
+### 7.5 Use Cases
+
+| ID         | Description         | Status             | Reason |
+| ---------- | ------------------- | ------------------ | ------ |
+| `AC_UC_01` | Create Account      | 🔴 Not Implemented |        |
+| `AC_UC_02` | View Accounts       | 🔴 Not Implemented |        |
+| `AC_UC_03` | View Account        | 🔴 Not Implemented |        |
+| `AC_UC_04` | Update Account      | 🔴 Not Implemented |        |
+| `AC_UC_05` | Deactivate Account  | 🔴 Not Implemented |        |
+| `AC_UC_06` | Activate Account    | 🔴 Not Implemented |        |
+| `AC_UC_07` | Soft Delete Account | 🔴 Not Implemented |        |
+| `AC_UC_08` | Restore Account     | 🔴 Not Implemented |        |
+| `AC_UC_09` | Hard Delete Account | 🔴 Not Implemented |        |
+| `AC_UC_10` | Change Email        | 🔴 Not Implemented |        |
+| `AC_UC_11` | Change Password     | 🔴 Not Implemented |        |
+
+### 7.6 API Contract
+
+| ID          | Description                  | Status             | Reason |
+| ----------- | ---------------------------- | ------------------ | ------ |
+| `AC_API_01` | Create Account endpoint      | 🔴 Not Implemented |        |
+| `AC_API_02` | View Accounts endpoint       | 🔴 Not Implemented |        |
+| `AC_API_03` | View Account endpoint        | 🔴 Not Implemented |        |
+| `AC_API_04` | Update Account endpoint      | 🔴 Not Implemented |        |
+| `AC_API_05` | Deactivate Account endpoint  | 🔴 Not Implemented |        |
+| `AC_API_06` | Activate Account endpoint    | 🔴 Not Implemented |        |
+| `AC_API_07` | Soft Delete Account endpoint | 🔴 Not Implemented |        |
+| `AC_API_08` | Restore Account endpoint     | 🔴 Not Implemented |        |
+| `AC_API_09` | Hard Delete Account endpoint | 🔴 Not Implemented |        |
+| `AC_API_10` | Change Email endpoint        | 🔴 Not Implemented |        |
+| `AC_API_11` | Change Password endpoint     | 🔴 Not Implemented |        |
