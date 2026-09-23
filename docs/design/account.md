@@ -670,6 +670,16 @@ Location: /admin/accounts/{id}
 
 Soft-deleted accounts are excluded when `include_deleted = false`.
 
+### Ordering
+
+The account list MUST be returned in a deterministic order:
+
+1. Accounts MUST be ordered by `id ASC`.
+2. `id` is the Account primary key and is unique; therefore, no additional tie-breaker is required.
+3. The defined ordering MUST be applied before `LIMIT` and `OFFSET` pagination.
+4. The same ordering criteria MUST be used for every page of a request with the same filter parameters.
+5. Clients MUST NOT rely on implicit database row order.
+
 ### Success
 
 **`200 OK`**
