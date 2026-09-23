@@ -82,35 +82,49 @@ Task 6. Implement the plan and generate the required code.
 ```
 
 ```text
-Task 7: Internally review and correct the generated code.
+### Task 7: Review, Validate, and Correct the Generated Code.
 
-Perform these checks:
+Before final output, perform these checks on the actual repository:
 
-1. Check Scope
-   - Verify the generated files are limited to the objective.
-   - Verify no unnecessary files or code are included.
+1. **Scope**
 
-2. Check Design Compliance
-   - Verify the generated code against the relevant IDs in `account.md`.
-   - Verify Requirements, Security, Design Decisions, Data Model, Use Case, and API Contract.
+   * Inspect the changed files and verify they are relevant to the objective.
+   * Remove unnecessary changes, dependencies, files, or code.
 
-3. Check Code Correctness
-   - Verify logic, state transitions, edge cases, error handling, transactions, and database queries.
+2. **Design Compliance**
 
-4. Check Security
-   - Verify authentication, authorization, validation, password handling, sensitive data handling, and security requirements.
+   * Read the relevant `account.md`.
+   * Verify the implementation against the applicable Requirements, Security, Design Decisions, Data Model, Use Case, and API Contract.
 
-5. Check Code Quality
-   - Verify Rust structure, module boundaries, naming, duplication, maintainability, and unnecessary complexity.
+3. **Code Correctness**
 
-6. Check Tests
-   - Verify appropriate tests are included for the implemented behavior.
-   - Verify success, failure, and important edge cases are covered.
+   * Review logic, state transitions, edge cases, error handling, transactions, database queries, and module integration.
 
-7. Fix Findings
-   - If any issue is found, correct the generated code before final output.
-   - After making corrections, repeat the relevant review checks.
-   - Do not commit, push, or modify the Git repository.
+4. **Configuration and Runtime**
+
+   * Inspect all related Dockerfiles, Compose files, manifests, environment configuration, paths, test targets, and dependencies.
+   * Verify that commands reference files, services, tools, and components that actually exist.
+   * Execute available format, check, lint, build, and test commands in the available runtime.
+
+5. **Security**
+
+   * Verify authentication, authorization, input validation, password handling, secret handling, and sensitive-data handling.
+
+6. **Code Quality**
+
+   * Review Rust structure, module boundaries, naming, duplication, maintainability, and unnecessary complexity.
+
+7. **Tests**
+
+   * Inspect the relevant test files.
+   * Verify success cases, failure cases, edge cases, test discovery, and test configuration.
+   * Execute the relevant tests when the required runtime and dependencies are available.
+
+8. **Correct Findings**
+
+   * Fix issues found during the review.
+   * Re-run the relevant checks after corrections.
+   * Do not commit, push, or modify Git history.
 ```
 
 ```text
