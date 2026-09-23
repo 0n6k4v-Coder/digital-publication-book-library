@@ -1,0 +1,1746 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Create a new book in the Archive administration area.">
+  <title>Archive — Create Book</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --surface: #fff;
+      --surface-soft: #f7f7f4;
+      --surface-active: #ecece5;
+      --text: #171717;
+      --text-soft: #44443f;
+      --muted: #797972;
+      --line: #e5e5df;
+      --line-strong: #cfcec6;
+      --accent: #d9ff4f;
+      --accent-hover: #d0f447;
+      --accent-border: #bddc3f;
+      --success: #2e6d2e;
+      --success-surface: #f3f8ef;
+      --success-line: #c9ddc3;
+      --danger: #b42318;
+      --danger-surface: #fff4f2;
+      --danger-line: #efb8b1;
+      --page-padding: clamp(1rem, 4vw, 2rem);
+      --sidebar-width: 14.375rem;
+      --topbar-height: 4.25rem;
+      --content-width: 58rem;
+      --radius-sm: .5rem;
+      --radius-md: .75rem;
+      --radius-lg: 1rem;
+      --shadow-soft: 0 1.25rem 3rem rgb(23 23 23 / .07), 0 .25rem .75rem rgb(23 23 23 / .035);
+      --ease: 160ms ease;
+    }
+
+    *,
+    *::before,
+    *::after { box-sizing: border-box; }
+
+    html {
+      min-width: 20rem;
+      min-height: 100%;
+      background: var(--surface);
+      color-scheme: light;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      min-width: 20rem;
+      min-height: 100vh;
+      margin: 0;
+      background: var(--surface);
+      color: var(--text);
+      font-family: "DM Sans", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      overflow-x: hidden;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    button, input, textarea { font: inherit; }
+    button { border: 0; }
+    svg { display: block; }
+
+    a:focus-visible,
+    button:focus-visible,
+    input:focus-visible,
+    textarea:focus-visible {
+      outline: .125rem solid var(--text);
+      outline-offset: .1875rem;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: .0625rem;
+      height: .0625rem;
+      padding: 0;
+      margin: -.0625rem;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .shell {
+      min-height: 100vh;
+      display: flex;
+    }
+
+    .sidebar {
+      position: fixed;
+      inset: 0 auto 0 0;
+      width: var(--sidebar-width);
+      display: flex;
+      flex-direction: column;
+      border-right: .0625rem solid var(--line);
+      background: var(--surface);
+      z-index: 40;
+    }
+
+    .brand {
+      min-height: var(--topbar-height);
+      padding-inline: 1.375rem;
+      display: flex;
+      align-items: center;
+      gap: .625rem;
+      border-bottom: .0625rem solid var(--line);
+    }
+
+    .brand-mark {
+      width: 1.875rem;
+      height: 1.875rem;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--text);
+      color: var(--accent);
+      font-family: "Playfair Display", Georgia, serif;
+      font-size: .8125rem;
+      font-weight: 700;
+    }
+
+    .brand-name {
+      font-family: "Playfair Display", Georgia, serif;
+      font-size: 1.25rem;
+      line-height: 1;
+      font-weight: 700;
+      letter-spacing: -.035em;
+    }
+
+    .nav {
+      padding: 1.375rem .875rem;
+    }
+
+    .nav-label {
+      margin: 0 .625rem .5625rem;
+      color: var(--muted);
+      font-size: .625rem;
+      font-weight: 700;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+    }
+
+    .nav-item {
+      min-height: 3rem;
+      padding-inline: .75rem;
+      display: flex;
+      align-items: center;
+      gap: .6875rem;
+      border-radius: var(--radius-sm);
+      color: var(--muted);
+      font-size: .8125rem;
+      font-weight: 600;
+      transition: background var(--ease), color var(--ease);
+    }
+
+    .nav-item:hover,
+    .nav-item[aria-current="page"] {
+      background: var(--surface-active);
+      color: var(--text);
+    }
+
+    .nav-item[aria-current="page"] { font-weight: 700; }
+    .nav-icon { width: 1.125rem; height: 1.125rem; }
+
+    .account {
+      margin-top: auto;
+      padding: .875rem;
+      border-top: .0625rem solid var(--line);
+    }
+
+    .account-link {
+      padding: .625rem;
+      display: flex;
+      align-items: center;
+      gap: .625rem;
+      border-radius: var(--radius-sm);
+    }
+
+    .account-link:hover { background: var(--surface-soft); }
+
+    .avatar {
+      width: 2rem;
+      height: 2rem;
+      flex: 0 0 auto;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--text);
+      color: #fff;
+      font-size: .6875rem;
+      font-weight: 700;
+    }
+
+    .account-copy { min-width: 0; }
+    .account-name {
+      margin: 0;
+      overflow: hidden;
+      font-size: .6875rem;
+      font-weight: 700;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .account-role {
+      margin: .125rem 0 0;
+      color: var(--muted);
+      font-size: .625rem;
+    }
+
+    .main {
+      min-width: 0;
+      width: 100%;
+      margin-left: var(--sidebar-width);
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      min-height: var(--topbar-height);
+      padding: env(safe-area-inset-top, 0) var(--page-padding) 0;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      border-bottom: .0625rem solid var(--line);
+      background: rgb(255 255 255 / .96);
+      backdrop-filter: blur(.875rem);
+      -webkit-backdrop-filter: blur(.875rem);
+    }
+
+    .back {
+      min-height: 3rem;
+      min-width: 3rem;
+      padding-inline: .75rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: .5rem;
+      border-radius: var(--radius-sm);
+      color: var(--muted);
+      font-size: .75rem;
+      font-weight: 700;
+      transition: background var(--ease), color var(--ease);
+    }
+
+    .back:hover { background: var(--surface-soft); color: var(--text); }
+    .back-icon { width: 1rem; height: 1rem; }
+
+    .top-title {
+      min-width: 0;
+      margin-right: auto;
+    }
+
+    .eyebrow {
+      margin: 0 0 .1875rem;
+      color: var(--muted);
+      font-size: .625rem;
+      font-weight: 700;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+    }
+
+    .top-title-text {
+      margin: 0;
+      font-size: .9375rem;
+      font-weight: 700;
+    }
+
+    .view-link {
+      min-height: 3rem;
+      padding-inline: .8125rem;
+      display: inline-flex;
+      align-items: center;
+      gap: .4375rem;
+      border: .0625rem solid var(--line);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      color: var(--muted);
+      font-size: .75rem;
+      font-weight: 700;
+      transition: background var(--ease), border-color var(--ease), color var(--ease);
+    }
+
+    .view-link:hover {
+      background: var(--surface-soft);
+      border-color: var(--line-strong);
+      color: var(--text);
+    }
+
+    .view-icon { width: 1rem; height: 1rem; }
+
+    .content {
+      width: min(100%, var(--content-width));
+      margin-inline: auto;
+      padding: clamp(2rem, 5vw, 3rem) var(--page-padding) 6rem;
+    }
+
+    .heading {
+      margin-bottom: 2rem;
+    }
+
+    .heading-label {
+      margin: 0 0 .625rem;
+      color: var(--muted);
+      font-size: .6875rem;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .heading-title {
+      margin: 0;
+      font-family: "Playfair Display", Georgia, serif;
+      font-size: clamp(2.25rem, 6vw, 3.5rem);
+      line-height: 1;
+      font-weight: 700;
+      letter-spacing: -.045em;
+    }
+
+    .heading-copy {
+      max-width: 44rem;
+      margin: .875rem 0 0;
+      color: var(--muted);
+      font-size: .9375rem;
+      line-height: 1.65;
+    }
+
+    .heading-note {
+      margin: .875rem 0 0;
+      color: var(--text-soft);
+      font-size: .75rem;
+      line-height: 1.6;
+    }
+
+    .required { color: var(--danger); font-weight: 700; }
+
+    .error-summary {
+      display: none;
+      margin-bottom: 1.25rem;
+      padding: 1rem 1.125rem;
+      border: .0625rem solid var(--danger-line);
+      border-radius: var(--radius-md);
+      background: var(--danger-surface);
+    }
+
+    .error-summary.is-visible { display: block; }
+
+    .error-title {
+      margin: 0;
+      color: var(--danger);
+      font-size: .8125rem;
+      font-weight: 700;
+    }
+
+    .error-list {
+      margin: .5rem 0 0;
+      padding-left: 1.25rem;
+      color: var(--danger);
+      font-size: .75rem;
+      line-height: 1.6;
+    }
+
+    .error-list a {
+      text-decoration: underline;
+      text-underline-offset: .125rem;
+    }
+
+    .book-form {
+      display: grid;
+      gap: 1.25rem;
+    }
+
+    .form-section {
+      padding: 1.5rem;
+      border: .0625rem solid var(--line);
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+    }
+
+    .section-header {
+      margin-bottom: 1.5rem;
+    }
+
+    .section-title {
+      margin: 0;
+      font-size: .9375rem;
+      font-weight: 700;
+    }
+
+    .section-copy {
+      max-width: 44rem;
+      margin: .375rem 0 0;
+      color: var(--muted);
+      font-size: .75rem;
+      line-height: 1.6;
+    }
+
+    .field {
+      display: grid;
+      gap: .5rem;
+    }
+
+    .field + .field { margin-top: 1.25rem; }
+
+    .field-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem;
+    }
+
+    .field-label {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: .75rem;
+      color: var(--text);
+      font-size: .8125rem;
+      font-weight: 700;
+    }
+
+    .optional {
+      color: var(--muted);
+      font-size: .6875rem;
+      font-weight: 600;
+    }
+
+    .control,
+    .textarea {
+      width: 100%;
+      border: .0625rem solid var(--line-strong);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 1rem;
+      transition: border-color var(--ease), box-shadow var(--ease), background var(--ease);
+    }
+
+    .control {
+      min-height: 3rem;
+      padding: .625rem .8125rem;
+    }
+
+    .textarea {
+      min-height: 10.5rem;
+      padding: .75rem .8125rem;
+      resize: vertical;
+      line-height: 1.6;
+    }
+
+    .control:hover,
+    .textarea:hover { border-color: #b9b8af; }
+
+    .control:focus,
+    .textarea:focus {
+      border-color: var(--text);
+      box-shadow: 0 0 0 .1875rem rgb(23 23 23 / .05);
+    }
+
+    .control:user-invalid,
+    .textarea:user-invalid {
+      border-color: var(--danger);
+      background: var(--danger-surface);
+    }
+
+    .help {
+      margin: 0;
+      color: var(--muted);
+      font-size: .6875rem;
+      line-height: 1.55;
+    }
+
+    .input-error {
+      display: none;
+      margin: 0;
+      color: var(--danger);
+      font-size: .6875rem;
+      font-weight: 600;
+    }
+
+    .control:user-invalid + .input-error,
+    .textarea:user-invalid + .input-error {
+      display: block;
+    }
+
+    .upload-input {
+      position: absolute;
+      width: .0625rem;
+      height: .0625rem;
+      padding: 0;
+      margin: -.0625rem;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .dropzone {
+      min-height: 14rem;
+      padding: 1.5rem;
+      display: grid;
+      place-items: center;
+      border: .0625rem dashed var(--line-strong);
+      border-radius: var(--radius-md);
+      background: var(--surface-soft);
+      cursor: pointer;
+      transition: background var(--ease), border-color var(--ease), box-shadow var(--ease);
+    }
+
+    .dropzone:hover {
+      background: #f2f2ee;
+      border-color: #b5b4ab;
+    }
+
+    .dropzone:focus-within {
+      border-color: var(--text);
+      box-shadow: 0 0 0 .1875rem rgb(23 23 23 / .06);
+    }
+
+    .pdf-zone.is-dragging .dropzone {
+      border-color: var(--accent-border);
+      background: #fbffe9;
+      box-shadow: inset 0 0 0 .0625rem var(--accent-border);
+    }
+
+    .upload-content {
+      width: min(100%, 30rem);
+      display: grid;
+      justify-items: center;
+      gap: .75rem;
+      text-align: center;
+    }
+
+    .upload-icon {
+      width: 3.25rem;
+      height: 3.25rem;
+      display: grid;
+      place-items: center;
+      border-radius: .8125rem;
+      background: var(--text);
+      color: var(--accent);
+      box-shadow: 0 .5rem 1.25rem rgb(23 23 23 / .09);
+    }
+
+    .upload-icon svg {
+      width: 1.5rem;
+      height: 1.5rem;
+    }
+
+    .upload-title {
+      margin: 0;
+      font-size: .9375rem;
+      font-weight: 700;
+    }
+
+    .upload-copy {
+      margin: 0;
+      color: var(--muted);
+      font-size: .75rem;
+      line-height: 1.6;
+    }
+
+    .selected-file {
+      display: none;
+      margin-top: .75rem;
+      padding: 1rem;
+      border: .0625rem solid var(--success-line);
+      border-radius: var(--radius-md);
+      background: var(--success-surface);
+    }
+
+    .selected-file.is-visible { display: flex; align-items: center; gap: .875rem; }
+
+    .file-icon {
+      width: 2.75rem;
+      height: 2.75rem;
+      flex: 0 0 auto;
+      display: grid;
+      place-items: center;
+      border-radius: .625rem;
+      background: var(--surface);
+      color: var(--danger);
+      box-shadow: 0 .25rem .75rem rgb(23 23 23 / .05);
+    }
+
+    .file-icon svg { width: 1.25rem; height: 1.25rem; }
+
+    .file-copy {
+      min-width: 0;
+    }
+
+    .file-name {
+      margin: 0;
+      overflow: hidden;
+      font-size: .8125rem;
+      font-weight: 700;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .file-meta {
+      margin: .1875rem 0 0;
+      color: var(--muted);
+      font-size: .6875rem;
+    }
+
+    .remove-file {
+      min-height: 3rem;
+      min-width: 3rem;
+      margin-left: auto;
+      padding-inline: .75rem;
+      border: .0625rem solid var(--line);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      color: var(--muted);
+      font-size: .6875rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .remove-file:hover {
+      border-color: var(--danger-line);
+      background: var(--danger-surface);
+      color: var(--danger);
+    }
+
+    .cover-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: .75rem;
+    }
+
+    .cover-preview {
+      display: none;
+      min-height: 14rem;
+      padding: 1.25rem;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      border: .0625rem solid var(--line);
+      border-radius: var(--radius-md);
+      background: var(--surface-soft);
+    }
+
+    .cover-preview.is-visible { display: flex; }
+
+    .cover-preview img {
+      max-width: 10rem;
+      max-height: 12rem;
+      border-radius: .5rem;
+      object-fit: contain;
+      box-shadow: 0 .75rem 1.75rem rgb(23 23 23 / .13);
+    }
+
+    .cover-preview-copy {
+      min-width: 0;
+      max-width: 22rem;
+    }
+
+    .cover-preview-label {
+      margin: 0 0 .375rem;
+      color: var(--muted);
+      font-size: .625rem;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+
+    .cover-name {
+      margin: 0;
+      overflow: hidden;
+      font-size: .8125rem;
+      font-weight: 700;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .cover-meta {
+      margin: .3125rem 0 0;
+      color: var(--muted);
+      font-size: .6875rem;
+    }
+
+    .change-cover {
+      min-height: 3rem;
+      margin-top: .875rem;
+      padding-inline: .875rem;
+      border: .0625rem solid var(--line-strong);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      color: var(--text-soft);
+      font-size: .75rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .change-cover:hover {
+      background: var(--surface-soft);
+      color: var(--text);
+    }
+
+    .status-group {
+      border: 0;
+      margin: 0;
+      padding: 0;
+    }
+
+    .status-options {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: .75rem;
+    }
+
+    .status-input {
+      position: absolute;
+      width: .0625rem;
+      height: .0625rem;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+    }
+
+    .status-label {
+      min-height: 5rem;
+      padding: 1rem;
+      display: flex;
+      align-items: flex-start;
+      gap: .75rem;
+      border: .0625rem solid var(--line);
+      border-radius: var(--radius-md);
+      background: var(--surface);
+      cursor: pointer;
+      transition: background var(--ease), border-color var(--ease), box-shadow var(--ease);
+    }
+
+    .status-label:hover {
+      background: var(--surface-soft);
+      border-color: var(--line-strong);
+    }
+
+    .status-input:checked + .status-label {
+      border-color: var(--accent-border);
+      background: #fbffe9;
+      box-shadow: inset 0 0 0 .0625rem var(--accent-border);
+    }
+
+    .status-input:focus-visible + .status-label {
+      outline: .125rem solid var(--text);
+      outline-offset: .1875rem;
+    }
+
+    .status-indicator {
+      width: 1rem;
+      height: 1rem;
+      margin-top: .0625rem;
+      flex: 0 0 auto;
+      border: .125rem solid var(--line-strong);
+      border-radius: 50%;
+      background: var(--surface);
+    }
+
+    .status-input:checked + .status-label .status-indicator {
+      border-color: var(--text);
+      box-shadow: inset 0 0 0 .1875rem var(--surface), inset 0 0 0 .4375rem var(--text);
+    }
+
+    .status-copy { min-width: 0; }
+
+    .status-title {
+      display: block;
+      font-size: .8125rem;
+      font-weight: 700;
+    }
+
+    .status-description {
+      display: block;
+      margin-top: .25rem;
+      color: var(--muted);
+      font-size: .6875rem;
+      line-height: 1.5;
+    }
+
+    .actions {
+      position: sticky;
+      bottom: 1rem;
+      z-index: 20;
+      padding: .875rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      border: .0625rem solid var(--line);
+      border-radius: var(--radius-md);
+      background: rgb(255 255 255 / .95);
+      backdrop-filter: blur(.875rem);
+      -webkit-backdrop-filter: blur(.875rem);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .actions-note {
+      margin: 0;
+      color: var(--muted);
+      font-size: .6875rem;
+      line-height: 1.5;
+    }
+
+    .action-buttons {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+
+    .action {
+      min-height: 3rem;
+      padding-inline: 1rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: .4375rem;
+      border-radius: var(--radius-sm);
+      font-size: .75rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background var(--ease), border-color var(--ease), color var(--ease), box-shadow var(--ease), opacity var(--ease);
+    }
+
+    .action:disabled {
+      opacity: .58;
+      cursor: not-allowed;
+    }
+
+    .action-secondary {
+      border: .0625rem solid var(--line);
+      background: var(--surface);
+      color: var(--muted);
+    }
+
+    .action-secondary:hover:not(:disabled) {
+      background: var(--surface-soft);
+      border-color: var(--line-strong);
+      color: var(--text);
+    }
+
+    .action-primary {
+      border: .0625rem solid var(--accent-border);
+      background: var(--accent);
+      color: var(--text);
+    }
+
+    .action-primary:hover:not(:disabled) {
+      background: var(--accent-hover);
+      box-shadow: 0 .4375rem 1.125rem rgb(23 23 23 / .08);
+    }
+
+    .action-icon {
+      width: 1rem;
+      height: 1rem;
+    }
+
+    .live {
+      position: fixed;
+      left: 1rem;
+      bottom: 1rem;
+      max-width: min(25rem, calc(100vw - 2rem));
+      padding: .75rem .875rem;
+      border: .0625rem solid var(--line);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      color: var(--text-soft);
+      box-shadow: var(--shadow-soft);
+      font-size: .75rem;
+      font-weight: 600;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(.375rem);
+      pointer-events: none;
+      transition: opacity var(--ease), transform var(--ease), visibility var(--ease);
+      z-index: 100;
+    }
+
+    .live.is-visible {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .live.is-success {
+      border-color: var(--success-line);
+      background: var(--success-surface);
+      color: var(--success);
+    }
+
+    @media (max-width: 880px) {
+      .sidebar {
+        position: static;
+        width: 100%;
+        height: auto;
+        border-right: 0;
+        border-bottom: .0625rem solid var(--line);
+      }
+
+      .shell { display: block; }
+      .brand { min-height: 3.75rem; }
+
+      .nav {
+        padding: .5rem var(--page-padding);
+        display: flex;
+        gap: .25rem;
+        overflow-x: auto;
+      }
+
+      .nav-label,
+      .account { display: none; }
+
+      .nav-item { flex: 0 0 auto; }
+
+      .main { margin-left: 0; }
+      .topbar { position: static; }
+    }
+
+    @media (max-width: 680px) {
+      .topbar { min-height: 4rem; }
+      .back-label,
+      .view-label { display: none; }
+      .content { padding-top: 2rem; }
+      .heading-title { font-size: 2.5rem; }
+
+      .field-grid,
+      .status-options {
+        grid-template-columns: 1fr;
+      }
+
+      .form-section { padding: 1.125rem; }
+
+      .actions {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .actions-note { max-width: 100%; }
+      .action-buttons { width: 100%; }
+      .action { flex: 1; }
+    }
+
+    @media (max-width: 480px) {
+      .brand { padding-inline: 1rem; }
+      .nav { padding-inline: .75rem; }
+
+      .cover-preview {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .cover-preview-copy {
+        width: 100%;
+        max-width: none;
+      }
+
+      .selected-file.is-visible {
+        align-items: flex-start;
+      }
+
+      .remove-file {
+        padding-inline: .625rem;
+      }
+
+      .action-buttons {
+        flex-direction: column;
+      }
+
+      .action { width: 100%; }
+    }
+
+    @media (pointer: coarse) {
+      .back,
+      .view-link,
+      .change-cover,
+      .remove-file,
+      .action {
+        min-height: 3.25rem;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition: none !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="shell">
+    <aside class="sidebar" aria-label="Admin navigation">
+      <a class="brand" href="/admin/posts" aria-label="Archive admin home">
+        <span class="brand-mark" aria-hidden="true">A</span>
+        <span class="brand-name">Archive</span>
+      </a>
+
+      <nav class="nav">
+        <p class="nav-label">Manage</p>
+
+        <a class="nav-item" href="/admin/posts">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M5 4h14v16H5z"></path>
+            <path d="M8 8h8M8 12h8M8 16h5"></path>
+          </svg>
+          <span>Posts</span>
+        </a>
+
+        <a class="nav-item" href="/admin/books" aria-current="page">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 0 4 22V5.5Z"></path>
+            <path d="M4 5.5V22M8 7h8M8 11h8"></path>
+          </svg>
+          <span>Books</span>
+        </a>
+
+        <a class="nav-item" href="/admin/accounts">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="8" r="3.2"></circle>
+            <path d="M5.5 20a6.5 6.5 0 0 1 13 0M18 7.5h3M19.5 6v3"></path>
+          </svg>
+          <span>Accounts</span>
+        </a>
+      </nav>
+
+      <div class="account">
+        <a class="account-link" href="/admin/accounts" aria-label="Open administrator account">
+          <span class="avatar">AD</span>
+          <span class="account-copy">
+            <span class="account-name">Admin</span>
+            <span class="account-role">Administrator</span>
+          </span>
+        </a>
+      </div>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <a class="back" href="/admin/books" aria-label="Back to books">
+          <svg class="back-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="m15 18-6-6 6-6"></path>
+          </svg>
+          <span class="back-label">Back to books</span>
+        </a>
+
+        <div class="top-title">
+          <p class="eyebrow">Admin</p>
+          <p class="top-title-text">Create book</p>
+        </div>
+
+        <a class="view-link" href="/books" aria-label="View public library">
+          <svg class="view-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 3v12M7 10l5 5 5-5M5 21h14"></path>
+          </svg>
+          <span class="view-label">View library</span>
+        </a>
+      </header>
+
+      <main class="content">
+        <section class="heading">
+          <p class="heading-label">Library management</p>
+          <h1 class="heading-title">Create book</h1>
+          <p class="heading-copy">
+            Add the publication details, optional cover image, and the PDF
+            visitors will download from the public library.
+          </p>
+          <p class="heading-note">
+            Fields marked <span class="required">*</span> are required.
+            The PDF file is required for every book.
+          </p>
+        </section>
+
+        <section
+          class="error-summary"
+          id="error-summary"
+          role="alert"
+          aria-labelledby="error-title"
+        >
+          <h2 class="error-title" id="error-title">Please check the highlighted fields.</h2>
+          <ul class="error-list" id="error-list"></ul>
+        </section>
+
+        <form
+          class="book-form"
+          id="book-form"
+          action="/admin/books/create"
+          method="post"
+          enctype="multipart/form-data"
+        >
+          <section class="form-section" aria-labelledby="basic-title">
+            <div class="section-header">
+              <h2 class="section-title" id="basic-title">Basic information</h2>
+              <p class="section-copy">
+                Add the information visitors will see on the book detail page
+                and throughout the library.
+              </p>
+            </div>
+
+            <div class="field">
+              <label class="field-label" for="book-title">
+                <span>Title <span class="required" aria-hidden="true">*</span></span>
+              </label>
+              <input
+                class="control"
+                id="book-title"
+                name="title"
+                type="text"
+                maxlength="200"
+                placeholder="e.g. The Small Digital Archive"
+                required
+                aria-describedby="title-help"
+                aria-errormessage="title-error"
+              >
+              <p class="help" id="title-help">
+                Use the title that should appear in the public library.
+              </p>
+              <p class="input-error" id="title-error">Title is required.</p>
+            </div>
+
+            <div class="field-grid field">
+              <div class="field">
+                <label class="field-label" for="book-author">
+                  <span>Author</span>
+                  <span class="optional">Optional</span>
+                </label>
+                <input
+                  class="control"
+                  id="book-author"
+                  name="author"
+                  type="text"
+                  maxlength="160"
+                  placeholder="e.g. Archive Studio"
+                >
+              </div>
+
+              <div class="field">
+                <label class="field-label" for="book-category">
+                  <span>Category</span>
+                  <span class="optional">Optional</span>
+                </label>
+                <input
+                  class="control"
+                  id="book-category"
+                  name="category"
+                  type="text"
+                  maxlength="100"
+                  placeholder="e.g. Digital Culture"
+                >
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="field-label" for="book-description">
+                <span>Description</span>
+                <span class="optional">Optional</span>
+              </label>
+              <textarea
+                class="textarea"
+                id="book-description"
+                name="description"
+                maxlength="4000"
+                placeholder="Write a short description of the book."
+                aria-describedby="description-help"
+              ></textarea>
+              <p class="help" id="description-help">
+                A concise description gives visitors context before they open
+                the book detail page.
+              </p>
+            </div>
+          </section>
+
+          <section class="form-section" aria-labelledby="cover-title">
+            <div class="section-header">
+              <h2 class="section-title" id="cover-title">Cover image</h2>
+              <p class="section-copy">
+                Optional. Use a clear image representing the publication.
+              </p>
+            </div>
+
+            <div class="cover-grid" id="cover-uploader">
+              <input
+                class="upload-input"
+                id="book-cover"
+                name="cover"
+                type="file"
+                accept="image/jpeg,image/png,.jpg,.jpeg,.png"
+                aria-describedby="cover-help"
+              >
+
+              <label class="dropzone" for="book-cover">
+                <span class="upload-content">
+                  <span class="upload-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+                      <circle cx="8.5" cy="9" r="1.4"></circle>
+                      <path d="m4.5 17 4.5-4 3.5 3 2.5-2 4 3"></path>
+                    </svg>
+                  </span>
+                  <span class="upload-title">Add cover image</span>
+                  <span class="upload-copy">
+                    Choose a JPG or PNG image from your device.
+                    A portrait-oriented cover works well.
+                  </span>
+                </span>
+              </label>
+
+              <div class="cover-preview" id="cover-preview" aria-live="polite">
+                <img id="cover-preview-image" src="" alt="">
+                <div class="cover-preview-copy">
+                  <p class="cover-preview-label">Selected cover</p>
+                  <p class="cover-name" id="cover-name">cover.png</p>
+                  <p class="cover-meta" id="cover-meta">Ready</p>
+                  <button class="change-cover" type="button" id="change-cover">Change image</button>
+                </div>
+              </div>
+
+              <p class="help" id="cover-help">
+                Cover image is optional and can be added or changed later.
+              </p>
+            </div>
+          </section>
+
+          <section class="form-section" aria-labelledby="pdf-title">
+            <div class="section-header">
+              <h2 class="section-title" id="pdf-title">
+                Book PDF <span class="required" aria-hidden="true">*</span>
+              </h2>
+              <p class="section-copy">
+                Upload the PDF visitors will download from the public book
+                detail page.
+              </p>
+            </div>
+
+            <div class="pdf-zone" id="pdf-zone">
+              <input
+                class="upload-input"
+                id="book-pdf"
+                name="pdf"
+                type="file"
+                accept="application/pdf,.pdf"
+                required
+                aria-describedby="pdf-help"
+                aria-errormessage="pdf-error"
+              >
+
+              <label class="dropzone" for="book-pdf">
+                <span class="upload-content">
+                  <span class="upload-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"></path>
+                      <path d="M14 2v6h6"></path>
+                      <path d="M8 13h8M8 17h6"></path>
+                    </svg>
+                  </span>
+                  <span class="upload-title">Upload PDF</span>
+                  <span class="upload-copy">
+                    Drag and drop a PDF here, or choose a file from your device.
+                  </span>
+                </span>
+              </label>
+
+              <div class="selected-file" id="selected-file" aria-live="polite">
+                <span class="file-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"></path>
+                    <path d="M14 2v6h6M8 13h8M8 17h6"></path>
+                  </svg>
+                </span>
+
+                <div class="file-copy">
+                  <p class="file-name" id="file-name">document.pdf</p>
+                  <p class="file-meta" id="file-meta">Ready to upload</p>
+                </div>
+
+                <button
+                  class="remove-file"
+                  type="button"
+                  id="remove-pdf"
+                  aria-label="Remove selected PDF"
+                >
+                  Remove
+                </button>
+              </div>
+
+              <p class="help" id="pdf-help" style="margin-top: .625rem;">
+                PDF only. The browser's file filter is a convenience;
+                the server must validate the uploaded file independently.
+              </p>
+
+              <p class="input-error" id="pdf-error">Please choose a PDF file.</p>
+            </div>
+          </section>
+
+          <section class="form-section" aria-labelledby="publishing-title">
+            <div class="section-header">
+              <h2 class="section-title" id="publishing-title">Publishing</h2>
+              <p class="section-copy">
+                Choose whether the new book should be visible to visitors
+                after it is created.
+              </p>
+            </div>
+
+            <fieldset class="status-group">
+              <legend class="sr-only">Publishing status</legend>
+
+              <div class="status-options">
+                <div>
+                  <input
+                    class="status-input"
+                    id="status-draft"
+                    name="status"
+                    type="radio"
+                    value="draft"
+                    checked
+                  >
+                  <label class="status-label" for="status-draft">
+                    <span class="status-indicator" aria-hidden="true"></span>
+                    <span class="status-copy">
+                      <span class="status-title">Draft</span>
+                      <span class="status-description">
+                        Save the book without showing it in the public library.
+                      </span>
+                    </span>
+                  </label>
+                </div>
+
+                <div>
+                  <input
+                    class="status-input"
+                    id="status-published"
+                    name="status"
+                    type="radio"
+                    value="published"
+                  >
+                  <label class="status-label" for="status-published">
+                    <span class="status-indicator" aria-hidden="true"></span>
+                    <span class="status-copy">
+                      <span class="status-title">Published</span>
+                      <span class="status-description">
+                        Make the book available in the public library.
+                      </span>
+                    </span>
+                  </label>
+                </div>
+              </div>
+            </fieldset>
+          </section>
+
+          <div class="actions">
+            <p class="actions-note">
+              You can edit the book details, cover, PDF, and status later.
+            </p>
+
+            <div class="action-buttons">
+              <a class="action action-secondary" href="/admin/books">Cancel</a>
+
+              <button
+                class="action action-secondary"
+                type="submit"
+                data-submit-status="draft"
+              >
+                Save as draft
+              </button>
+
+              <button
+                class="action action-primary"
+                type="submit"
+                data-submit-status="published"
+              >
+                <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="m5 12 4 4L19 6"></path>
+                </svg>
+                Create book
+              </button>
+            </div>
+          </div>
+        </form>
+      </main>
+    </div>
+  </div>
+
+  <div
+    class="live"
+    id="live"
+    role="status"
+    aria-live="polite"
+    aria-atomic="true"
+  ></div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const form = document.querySelector("#book-form");
+      const title = document.querySelector("#book-title");
+
+      const coverInput = document.querySelector("#book-cover");
+      const coverDropzone = document.querySelector("#cover-uploader .dropzone");
+      const coverPreview = document.querySelector("#cover-preview");
+      const coverPreviewImage = document.querySelector("#cover-preview-image");
+      const coverName = document.querySelector("#cover-name");
+      const coverMeta = document.querySelector("#cover-meta");
+      const changeCover = document.querySelector("#change-cover");
+
+      const pdfZone = document.querySelector("#pdf-zone");
+      const pdfInput = document.querySelector("#book-pdf");
+      const selectedFile = document.querySelector("#selected-file");
+      const fileName = document.querySelector("#file-name");
+      const fileMeta = document.querySelector("#file-meta");
+      const removePdf = document.querySelector("#remove-pdf");
+
+      const draftStatus = document.querySelector("#status-draft");
+      const publishedStatus = document.querySelector("#status-published");
+
+      const errorSummary = document.querySelector("#error-summary");
+      const errorList = document.querySelector("#error-list");
+      const live = document.querySelector("#live");
+
+      let coverUrl = "";
+
+      function announce(message, success = false) {
+        live.textContent = message;
+        live.classList.toggle("is-success", success);
+        live.classList.add("is-visible");
+        clearTimeout(announce.timer);
+        announce.timer = setTimeout(() => live.classList.remove("is-visible"), 2800);
+      }
+
+      function formatSize(bytes) {
+        if (!bytes) return "0 B";
+        const units = ["B", "KB", "MB", "GB"];
+        let value = bytes;
+        let index = 0;
+
+        while (value >= 1024 && index < units.length - 1) {
+          value /= 1024;
+          index += 1;
+        }
+
+        const number = index === 0 || value >= 100
+          ? Math.round(value)
+          : value.toFixed(1);
+
+        return number + " " + units[index];
+      }
+
+      function isPdf(file) {
+        return !!file && (
+          file.type === "application/pdf" ||
+          file.name.toLowerCase().endsWith(".pdf")
+        );
+      }
+
+      function isImage(file) {
+        return !!file && (
+          file.type === "image/jpeg" ||
+          file.type === "image/png" ||
+          /.(jpe?g|png)$/i.test(file.name)
+        );
+      }
+
+      function setCustomValidity() {
+        pdfInput.setCustomValidity(
+          pdfInput.files.length && !isPdf(pdfInput.files[0])
+            ? "Please choose a PDF file."
+            : ""
+        );
+
+        coverInput.setCustomValidity(
+          coverInput.files.length && !isImage(coverInput.files[0])
+            ? "Please choose a JPG or PNG image."
+            : ""
+        );
+      }
+
+      function clearErrors() {
+        errorList.innerHTML = "";
+        errorSummary.classList.remove("is-visible");
+      }
+
+      function updateErrors() {
+        setCustomValidity();
+        const errors = [];
+
+        if (!title.checkValidity()) {
+          errors.push(["book-title", "Title is required."]);
+        }
+
+        if (!pdfInput.checkValidity()) {
+          errors.push(["book-pdf", pdfInput.validationMessage || "Please choose a PDF file."]);
+        }
+
+        if (!coverInput.checkValidity()) {
+          errors.push(["book-cover", coverInput.validationMessage || "Please choose a JPG or PNG image."]);
+        }
+
+        if (!errors.length) {
+          clearErrors();
+          return false;
+        }
+
+        errorList.innerHTML = "";
+
+        errors.forEach(([id, message]) => {
+          const item = document.createElement("li");
+          const link = document.createElement("a");
+          link.href = "#" + id;
+          link.textContent = message;
+          item.appendChild(link);
+          errorList.appendChild(item);
+        });
+
+        errorSummary.classList.add("is-visible");
+        return true;
+      }
+
+      function focusFirstInvalid() {
+        const invalid = [title, pdfInput, coverInput].find(
+          (field) => !field.checkValidity()
+        );
+
+        invalid?.focus();
+      }
+
+      function resetCover() {
+        if (coverUrl) {
+          URL.revokeObjectURL(coverUrl);
+          coverUrl = "";
+        }
+
+        coverInput.value = "";
+        coverPreview.classList.remove("is-visible");
+        coverPreviewImage.removeAttribute("src");
+        coverPreviewImage.alt = "";
+        coverDropzone.style.display = "grid";
+        setCustomValidity();
+      }
+
+      function updateCover(file) {
+        if (!file) {
+          resetCover();
+          return;
+        }
+
+        setCustomValidity();
+
+        if (!isImage(file)) {
+          resetCover();
+          announce("Please choose a JPG or PNG cover image.");
+          return;
+        }
+
+        if (coverUrl) URL.revokeObjectURL(coverUrl);
+
+        coverUrl = URL.createObjectURL(file);
+        coverPreviewImage.src = coverUrl;
+        coverPreviewImage.alt =
+          "Preview of " + (title.value.trim() || "book") + " cover";
+
+        coverName.textContent = file.name;
+        coverMeta.textContent = formatSize(file.size) + " · Ready";
+        coverDropzone.style.display = "none";
+        coverPreview.classList.add("is-visible");
+
+        clearErrors();
+        announce("Selected cover image " + file.name + ".");
+      }
+
+      function resetPdf() {
+        pdfInput.value = "";
+        selectedFile.classList.remove("is-visible");
+        fileName.textContent = "";
+        fileMeta.textContent = "";
+        setCustomValidity();
+      }
+
+      function updatePdf(file) {
+        if (!file) {
+          resetPdf();
+          return;
+        }
+
+        setCustomValidity();
+
+        if (!isPdf(file)) {
+          resetPdf();
+          announce("Please choose a PDF file.");
+          return;
+        }
+
+        fileName.textContent = file.name;
+        fileMeta.textContent = formatSize(file.size) + " · Ready to upload";
+        selectedFile.classList.add("is-visible");
+
+        clearErrors();
+        announce("Selected " + file.name + ".");
+      }
+
+      function assignFile(input, file) {
+        try {
+          const transfer = new DataTransfer();
+          transfer.items.add(file);
+          input.files = transfer.files;
+          return true;
+        } catch {
+          return false;
+        }
+      }
+
+      coverInput.addEventListener("change", () => updateCover(coverInput.files[0]));
+      pdfInput.addEventListener("change", () => updatePdf(pdfInput.files[0]));
+
+      changeCover.addEventListener("click", () => coverInput.click());
+      removePdf.addEventListener("click", () => {
+        resetPdf();
+        announce("PDF selection removed.");
+        pdfInput.focus();
+      });
+
+      ["dragenter", "dragover"].forEach((eventName) => {
+        pdfZone.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          pdfZone.classList.add("is-dragging");
+        });
+      });
+
+      pdfZone.addEventListener("dragleave", (event) => {
+        if (!pdfZone.contains(event.relatedTarget)) {
+          pdfZone.classList.remove("is-dragging");
+        }
+      });
+
+      pdfZone.addEventListener("drop", (event) => {
+        event.preventDefault();
+        pdfZone.classList.remove("is-dragging");
+
+        const file = event.dataTransfer.files[0];
+
+        if (!file) return;
+
+        if (!isPdf(file)) {
+          announce("Please drop a PDF file.");
+          return;
+        }
+
+        if (assignFile(pdfInput, file)) {
+          updatePdf(file);
+        } else {
+          announce("Please choose the PDF using the file picker.");
+        }
+      });
+
+      title.addEventListener("input", () => {
+        if (coverInput.files[0] && coverPreviewImage.src) {
+          coverPreviewImage.alt =
+            "Preview of " + (title.value.trim() || "book") + " cover";
+        }
+
+        setCustomValidity();
+
+        if (title.checkValidity()) {
+          title.removeAttribute("aria-invalid");
+        }
+      });
+
+      form.addEventListener("invalid", (event) => {
+        const field = event.target;
+
+        if (
+          field instanceof HTMLInputElement ||
+          field instanceof HTMLTextAreaElement
+        ) {
+          field.setAttribute("aria-invalid", "true");
+        }
+
+        requestAnimationFrame(updateErrors);
+      }, true);
+
+      form.addEventListener("input", (event) => {
+        const field = event.target;
+
+        if (
+          field instanceof HTMLInputElement ||
+          field instanceof HTMLTextAreaElement
+        ) {
+          if (field.checkValidity()) {
+            field.removeAttribute("aria-invalid");
+          }
+        }
+
+        setCustomValidity();
+      });
+
+      form.addEventListener("submit", (event) => {
+        setCustomValidity();
+
+        if (!form.checkValidity()) {
+          event.preventDefault();
+          updateErrors();
+          focusFirstInvalid();
+          return;
+        }
+
+        const submitter = event.submitter;
+        const status = submitter?.dataset.submitStatus || "draft";
+
+        if (status === "published") {
+          publishedStatus.checked = true;
+        } else {
+          draftStatus.checked = true;
+        }
+
+        event.preventDefault();
+
+        form.querySelectorAll("button[type='submit']").forEach((button) => {
+          button.disabled = true;
+        });
+
+        announce(
+          status === "published"
+            ? "Book created and published. PDF processing started."
+            : "Book saved as draft. PDF processing started.",
+          true
+        );
+
+        setTimeout(() => {
+          form.querySelectorAll("button[type='submit']").forEach((button) => {
+            button.disabled = false;
+          });
+        }, 1800);
+      });
+
+      window.addEventListener("beforeunload", () => {
+        if (coverUrl) URL.revokeObjectURL(coverUrl);
+      });
+    });
+  </script>
+</body>
+</html>
