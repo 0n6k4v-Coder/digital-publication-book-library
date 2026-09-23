@@ -8,6 +8,7 @@
    * [1.2 Account Credentials](#12-account-credentials)
    * [1.3 Account Lifecycle](#13-account-lifecycle)
    * [1.4 Non-Functional Requirements](#14-non-functional-requirements)
+
 2. [Security](#2-security)
 
    * [2.1 Security Requirements](#21-security-requirements)
@@ -18,15 +19,49 @@
 
      * [2.2.1 Email](#221-email)
      * [2.2.2 Password](#222-password)
+
 3. [Design Decisions](#3-design-decisions)
 
    * [3.1 Account](#31-account)
    * [3.2 Account Credentials](#32-account-credentials)
    * [3.3 Account Lifecycle](#33-account-lifecycle)
+
 4. [Data Model](#4-data-model)
 
    * [4.1 `account`](#41-account)
    * [4.2 `account_credentials`](#42-account_credentials)
+
+5. [Use Cases](#5-use-cases)
+
+   * [5.1 Create Account](#51-create-account)
+   * [5.2 View Accounts](#52-view-accounts)
+   * [5.3 View Account](#53-view-account)
+   * [5.4 Update Account](#54-update-account)
+   * [5.5 Deactivate Account](#55-deactivate-account)
+   * [5.6 Activate Account](#56-activate-account)
+   * [5.7 Soft Delete Account](#57-soft-delete-account)
+   * [5.8 Restore Account](#58-restore-account)
+   * [5.9 Hard Delete Account](#59-hard-delete-account)
+   * [5.10 Change Email](#510-change-email)
+   * [5.11 Change Password](#511-change-password)
+
+6. [API Contract](#6-api-contract)
+
+   * [6.1 API Rules](#61-api-rules)
+   * [6.2 Account Endpoints](#62-account-endpoints)
+   * [6.3 Create Account](#63-create-account)
+   * [6.4 View Accounts](#64-view-accounts)
+   * [6.5 View Account](#65-view-account)
+   * [6.6 Deactivate Account](#66-deactivate-account)
+   * [6.7 Activate Account](#67-activate-account)
+   * [6.8 Soft Delete Account](#68-soft-delete-account)
+   * [6.9 Restore Account](#69-restore-account)
+   * [6.10 Hard Delete Account](#610-hard-delete-account)
+   * [6.11 Change Email](#611-change-email)
+   * [6.12 Change Password](#612-change-password)
+   * [6.13 Account Response](#613-account-response)
+   * [6.14 Error Response](#614-error-response)
+   * [6.15 HTTP Status Codes](#615-http-status-codes)
 
 ---
 
@@ -76,6 +111,8 @@
 | `AC_REQ_NON_FC_03` | Account lifecycle data must remain separate from credential data.      |
 | `AC_REQ_NON_FC_04` | Soft-deleted accounts must be excluded from normal Account operations. |
 | `AC_REQ_NON_FC_05` | Hard deletion must be an explicit operation.                           |
+
+---
 
 # 2. Security
 
@@ -128,6 +165,8 @@
 | `AC_SEC_DEC_PASSWORD_06` | Composition      | Do not require uppercase, lowercase, number, or symbol combinations. |
 | `AC_SEC_DEC_PASSWORD_07` | Blocklist        | Reject commonly used or compromised passwords.                       |
 | `AC_SEC_DEC_PASSWORD_08` | Plaintext        | Never persist plaintext passwords.                                   |
+
+---
 
 # 3. Design Decisions
 
@@ -215,6 +254,8 @@ SOFT DELETED
 | Change email          |                   No |                              Yes |
 | Change password       |                   No |                              Yes |
 
+---
+
 # 4. Data Model
 
 ## 4.1 `account`
@@ -260,3 +301,651 @@ account_credentials
 `account_credentials.account_id` is both the primary key and foreign key.
 
 **One Account → Exactly One Credential Set**
+
+---
+
+# 5. Use Cases
+
+## 5.1 Create Account
+
+**ID:** `AC_UC_01`
+
+| Item           | Definition                             |
+| -------------- | -------------------------------------- |
+| Actor          | Authorized Administrator               |
+| Input          | Email, Password                        |
+| Result         | Account and credential set are created |
+| Initial Status | `active`                               |
+
+```mermaid
+flowchart LR
+    Admin["Authorized Administrator"]
+    UC["Create Account"]
+    Account["Account"]
+    Credentials["Account Credentials"]
+
+    Admin --> UC
+    UC --> Account
+    UC --> Credentials
+```
+
+## 5.2 View Accounts
+
+**ID:** `AC_UC_02`
+
+| Item   | Definition                   |
+| ------ | ---------------------------- |
+| Actor  | Authorized Administrator     |
+| Input  | Account list request         |
+| Result | List of non-deleted accounts |
+
+```mermaid
+flowchart LR
+    Admin["Authorized Administrator"]
+    UC["View Accounts"]
+    Account["Account"]
+
+    Admin --> UC
+    UC --> Account
+```
+
+## 5.3 View Account
+
+**ID:** `AC_UC_03`
+
+| Item   | Definition               |
+| ------ | ------------------------ |
+| Actor  | Authorized Administrator |
+| Input  | Account ID               |
+| Result | Account details          |
+
+```mermaid
+flowchart LR
+    Admin["Authorized Administrator"]
+    UC["View Account"]
+    Account["Account"]
+
+    Admin --> UC
+    UC --> Account
+```
+
+## 5.4 Update Account
+
+**ID:** `AC_UC_04`
+
+| Item   | Definition                 |
+| ------ | -------------------------- |
+| Actor  | Authorized Administrator   |
+| Input  | Account ID, Account fields |
+| Result | Account updated            |
+
+```mermaid
+flowchart LR
+    Admin["Authorized Administrator"]
+    UC["Update Account"]
+    Account["Account"]
+
+    Admin --> UC
+    UC --> Account
+```
+
+## 5.5 Deactivate Account
+
+**ID:** `AC_UC_05`
+
+| Item   | Definition                                      |
+| ------ | ----------------------------------------------- |
+| Actor  | Authorized Administrator                        |
+| Input  | Account ID                                      |
+| Result | Account becomes `inactive`                      |
+| Rule   | Cannot deactivate the last active administrator |
+
+```mermaid
+flowchart LR
+    Admin["Authorized Administrator"]
+    UC["Deactivate Account"]
+    Account["Account"]
+
+    Admin --> UC
+    UC --> Account
+```
+
+## 5.6 Activate Account
+
+**ID:** `AC_UC_06`
+
+| Item   | Definition                       |
+| ------ | -------------------------------- |
+| Actor  | Authorized Administrator         |
+| Input  | Account ID                       |
+| Result | Account becomes `active`         |
+| Rule   | Account must not be soft-deleted |
+
+```mermaid
+flowchart LR
+    Admin["Authorized Administrator"]
+    UC["Activate Account"]
+    Account["Account"]
+
+    Admin --> UC
+    UC --> Account
+```
+
+## 5.7 Soft Delete Account
+
+**ID:** `AC_UC_07`
+
+| Item   | Definition                   |
+| ------ | ---------------------------- |
+| Actor  | Authorized Administrator     |
+| Input  | Account ID                   |
+| Result | Account becomes soft-deleted |
+
+```mermaid
+flowchart LR
+    Admin["Authorized Administrator"]
+    UC["Soft Delete Account"]
+    Account["Account"]
+
+    Admin --> UC
+    UC --> Account
+```
+
+## 5.8 Restore Account
+
+**ID:** `AC_UC_08`
+
+| Item   | Definition                        |
+| ------ | --------------------------------- |
+| Actor  | Authorized Administrator          |
+| Input  | Account ID                        |
+| Result | Account is restored as `inactive` |
+
+```mermaid
+flowchart LR
+    Admin["Authorized Administrator"]
+    UC["Restore Account"]
+    Account["Account"]
+
+    Admin --> UC
+    UC --> Account
+```
+
+## 5.9 Hard Delete Account
+
+**ID:** `AC_UC_09`
+
+| Item   | Definition                    |
+| ------ | ----------------------------- |
+| Actor  | Authorized Administrator      |
+| Input  | Account ID                    |
+| Result | Account is physically deleted |
+
+```mermaid
+flowchart LR
+    Admin["Authorized Administrator"]
+    UC["Hard Delete Account"]
+    Account["Account"]
+    Credentials["Account Credentials"]
+
+    Admin --> UC
+    UC --> Account
+    Account --> Credentials
+```
+
+## 5.10 Change Email
+
+**ID:** `AC_UC_10`
+
+| Item   | Definition                         |
+| ------ | ---------------------------------- |
+| Actor  | Authorized Administrator           |
+| Input  | Account ID, New Email              |
+| Result | Email is updated                   |
+| Rule   | Email uniqueness must be preserved |
+
+```mermaid
+flowchart LR
+    Admin["Authorized Administrator"]
+    UC["Change Email"]
+    Credentials["Account Credentials"]
+
+    Admin --> UC
+    UC --> Credentials
+```
+
+## 5.11 Change Password
+
+**ID:** `AC_UC_11`
+
+| Item   | Definition                             |
+| ------ | -------------------------------------- |
+| Actor  | Authorized Administrator               |
+| Input  | Account ID, New Password               |
+| Result | Password hash is updated               |
+| Rule   | Security requirements must be enforced |
+
+```mermaid
+flowchart LR
+    Admin["Authorized Administrator"]
+    UC["Change Password"]
+    Credentials["Account Credentials"]
+
+    Admin --> UC
+    UC --> Credentials
+```
+
+---
+
+# 6. API Contract
+
+## 6.1 API Rules
+
+| Rule                  | Definition                                                                           |
+| --------------------- | ------------------------------------------------------------------------------------ |
+| Base path             | `/admin/accounts`                                                                    |
+| Content type          | `application/json`                                                                   |
+| Authentication        | Request must be authenticated.                                                       |
+| Authorization         | Request must be authorized to manage administrator accounts.                         |
+| Response caching      | Account API responses must use `Cache-Control: no-store`.                            |
+| Account ID            | `{id}` must be a valid UUID.                                                         |
+| Sensitive data        | `password` and `password_hash` must never be returned.                               |
+| Soft-deleted accounts | Excluded from normal account operations unless explicitly requested for restoration. |
+
+## 6.2 Account Endpoints
+
+| ID          | Method   | Endpoint                          | Use Case                       |
+| ----------- | -------- | --------------------------------- | ------------------------------ |
+| `AC_API_01` | `POST`   | `/admin/accounts`                 | `AC_UC_01` Create Account      |
+| `AC_API_02` | `GET`    | `/admin/accounts`                 | `AC_UC_02` View Accounts       |
+| `AC_API_03` | `GET`    | `/admin/accounts/{id}`            | `AC_UC_03` View Account        |
+| `AC_API_04` | `PATCH`  | `/admin/accounts/{id}`            | `AC_UC_04` Update Account      |
+| `AC_API_05` | `POST`   | `/admin/accounts/{id}/deactivate` | `AC_UC_05` Deactivate Account  |
+| `AC_API_06` | `POST`   | `/admin/accounts/{id}/activate`   | `AC_UC_06` Activate Account    |
+| `AC_API_07` | `DELETE` | `/admin/accounts/{id}`            | `AC_UC_07` Soft Delete Account |
+| `AC_API_08` | `POST`   | `/admin/accounts/{id}/restore`    | `AC_UC_08` Restore Account     |
+| `AC_API_09` | `DELETE` | `/admin/accounts/{id}/purge`      | `AC_UC_09` Hard Delete Account |
+| `AC_API_10` | `PATCH`  | `/admin/accounts/{id}/email`      | `AC_UC_10` Change Email        |
+| `AC_API_11` | `PATCH`  | `/admin/accounts/{id}/password`   | `AC_UC_11` Change Password     |
+
+## 6.3 Create Account
+
+### Request
+
+`POST /admin/accounts`
+
+```json
+{
+  "email": "admin@example.com",
+  "password": "example-secure-password"
+}
+```
+
+### Rules
+
+* Email must satisfy the defined email security rules.
+* Email must be unique.
+* Password must satisfy the defined password security rules.
+* Account is created with `status = active`.
+* Account is created with `deleted_at = NULL`.
+* Credential set is created together with the account.
+* `created_by` is the authenticated administrator.
+* `updated_by` is the authenticated administrator.
+
+### Success
+
+**`201 Created`**
+
+Response body: [Account Response](#68-account-response)
+
+Response header:
+
+```text
+Location: /admin/accounts/{id}
+```
+
+### Errors
+
+| Status | Code                   |
+| ------ | ---------------------- |
+| `400`  | `INVALID_REQUEST`      |
+| `409`  | `EMAIL_ALREADY_IN_USE` |
+| `422`  | `VALIDATION_ERROR`     |
+
+## 6.4 View Accounts
+
+### Request
+
+`GET /admin/accounts`
+
+### Query Parameters
+
+| Parameter         | Required | Definition                                                                           |
+| ----------------- | -------- | ------------------------------------------------------------------------------------ |
+| `page`            | No       | Page number. Default `1`.                                                            |
+| `page_size`       | No       | Number of records. Default `20`, maximum `100`.                                      |
+| `status`          | No       | `active` or `inactive`.                                                              |
+| `include_deleted` | No       | Default `false`. Set `true` only when deleted accounts are required for restoration. |
+
+Soft-deleted accounts are excluded when `include_deleted = false`.
+
+### Success
+
+**`200 OK`**
+
+```json
+{
+  "items": [
+    {
+      "id": "019...",
+      "email": "admin@example.com",
+      "status": "active",
+      "created_at": "2026-09-23T10:00:00Z",
+      "updated_at": "2026-09-23T10:00:00Z",
+      "deleted_at": null
+    }
+  ],
+  "page": 1,
+  "page_size": 20,
+  "total": 1
+}
+```
+
+## 6.5 View Account
+
+### Request
+
+`GET /admin/accounts/{id}`
+
+### Rules
+
+* Soft-deleted accounts are not returned by normal lookup.
+
+### Success
+
+**`200 OK`**
+
+Response body: [Account Response](#68-account-response)
+
+### Errors
+
+| Status | Code                 |
+| ------ | -------------------- |
+| `400`  | `INVALID_ACCOUNT_ID` |
+| `404`  | `ACCOUNT_NOT_FOUND`  |
+
+## 6.6 Update Account
+
+### Request
+
+`PATCH /admin/accounts/{id}`
+
+This endpoint is reserved for mutable Account fields that are not handled by dedicated lifecycle or credential operations.
+
+```json
+{}
+```
+
+No mutable Account field is currently defined beyond the dedicated operations in this contract.
+
+### Success
+
+**`200 OK`**
+
+Response body: [Account Response](#68-account-response)
+
+## 6.7 Deactivate Account
+
+### Request
+
+`POST /admin/accounts/{id}/deactivate`
+
+### Rules
+
+* Account must exist.
+* Account must not be soft-deleted.
+* Account must currently be `active`.
+* The operation must not deactivate the last active administrator.
+* Update `status` to `inactive`.
+* Update `updated_at` and `updated_by`.
+
+### Success
+
+**`200 OK`**
+
+Response body: [Account Response](#68-account-response)
+
+### Errors
+
+| Status | Code                        |
+| ------ | --------------------------- |
+| `404`  | `ACCOUNT_NOT_FOUND`         |
+| `409`  | `ACCOUNT_ALREADY_INACTIVE`  |
+| `409`  | `LAST_ACTIVE_ADMINISTRATOR` |
+
+## 6.8 Activate Account
+
+### Request
+
+`POST /admin/accounts/{id}/activate`
+
+### Rules
+
+* Account must exist.
+* Account must not be soft-deleted.
+* Account must currently be `inactive`.
+* Update `status` to `active`.
+* Update `updated_at` and `updated_by`.
+
+### Success
+
+**`200 OK`**
+
+Response body: [Account Response](#68-account-response)
+
+### Errors
+
+| Status | Code                     |
+| ------ | ------------------------ |
+| `404`  | `ACCOUNT_NOT_FOUND`      |
+| `409`  | `ACCOUNT_ALREADY_ACTIVE` |
+| `409`  | `ACCOUNT_SOFT_DELETED`   |
+
+## 6.9 Soft Delete Account
+
+### Request
+
+`DELETE /admin/accounts/{id}`
+
+### Rules
+
+* Account must exist.
+* Account must not already be soft-deleted.
+* Set `status = inactive`.
+* Set `deleted_at = now()`.
+* Set `deleted_by` to the authenticated administrator.
+* Update `updated_at` and `updated_by`.
+
+### Success
+
+**`204 No Content`**
+
+### Errors
+
+| Status | Code                        |
+| ------ | --------------------------- |
+| `404`  | `ACCOUNT_NOT_FOUND`         |
+| `409`  | `ACCOUNT_ALREADY_DELETED`   |
+| `409`  | `LAST_ACTIVE_ADMINISTRATOR` |
+
+## 6.10 Restore Account
+
+### Request
+
+`POST /admin/accounts/{id}/restore`
+
+### Rules
+
+* Account must exist.
+* Account must be soft-deleted.
+* Set `status = inactive`.
+* Set `deleted_at = NULL`.
+* Set `deleted_by = NULL`.
+* Update `updated_at` and `updated_by`.
+
+### Success
+
+**`200 OK`**
+
+Response body: [Account Response](#68-account-response)
+
+### Errors
+
+| Status | Code                  |
+| ------ | --------------------- |
+| `404`  | `ACCOUNT_NOT_FOUND`   |
+| `409`  | `ACCOUNT_NOT_DELETED` |
+
+## 6.11 Hard Delete Account
+
+### Request
+
+`DELETE /admin/accounts/{id}/purge`
+
+### Rules
+
+* Account must exist.
+* The Account row is physically deleted.
+* The related `account_credentials` row is deleted by `ON DELETE CASCADE`.
+
+### Success
+
+**`204 No Content`**
+
+### Errors
+
+| Status | Code                |
+| ------ | ------------------- |
+| `404`  | `ACCOUNT_NOT_FOUND` |
+
+## 6.12 Change Email
+
+### Request
+
+`PATCH /admin/accounts/{id}/email`
+
+```json
+{
+  "email": "new-admin@example.com"
+}
+```
+
+### Rules
+
+* Account must exist.
+* Account must not be soft-deleted.
+* Email must satisfy the defined email security rules.
+* Email identity must remain unique.
+* Update `account_credentials.email`.
+* Update `account_credentials.email_normalized`.
+* Update `account_credentials.updated_at`.
+* Do not update `account.updated_at`.
+
+### Success
+
+**`200 OK`**
+
+Response body: [Account Response](#68-account-response)
+
+### Errors
+
+| Status | Code                   |
+| ------ | ---------------------- |
+| `404`  | `ACCOUNT_NOT_FOUND`    |
+| `409`  | `EMAIL_ALREADY_IN_USE` |
+| `422`  | `VALIDATION_ERROR`     |
+
+## 6.13 Change Password
+
+### Request
+
+`PATCH /admin/accounts/{id}/password`
+
+```json
+{
+  "password": "new-secure-password"
+}
+```
+
+### Rules
+
+* Account must exist.
+* Account must not be soft-deleted.
+* Password must satisfy all password security requirements.
+* Password must be hashed before storage.
+* Update `account_credentials.password_hash`.
+* Update `account_credentials.updated_at`.
+* Do not update `account.updated_at`.
+
+### Success
+
+**`204 No Content`**
+
+### Errors
+
+| Status | Code                        |
+| ------ | --------------------------- |
+| `404`  | `ACCOUNT_NOT_FOUND`         |
+| `422`  | `PASSWORD_POLICY_VIOLATION` |
+
+## 6.14 Account Response
+
+The API uses the following Account representation:
+
+```json
+{
+  "id": "019...",
+  "email": "admin@example.com",
+  "status": "active",
+  "created_at": "2026-09-23T10:00:00Z",
+  "updated_at": "2026-09-23T10:00:00Z",
+  "deleted_at": null
+}
+```
+
+The following fields must never be returned:
+
+```text
+password
+password_hash
+```
+
+`deleted_at` is `null` for non-deleted accounts.
+
+## 6.15 Error Response
+
+Errors use RFC 9457 Problem Details with `application/problem+json`.
+
+```json
+{
+  "type": "https://example.com/problems/account-not-found",
+  "title": "Account not found",
+  "status": 404,
+  "detail": "The requested account was not found.",
+  "code": "ACCOUNT_NOT_FOUND"
+}
+```
+
+### Standard HTTP Statuses
+
+| Status | Usage                                                     |
+| ------ | --------------------------------------------------------- |
+| `400`  | Malformed or invalid request syntax                       |
+| `401`  | Authentication is required or invalid                     |
+| `403`  | Authenticated caller is not authorized                    |
+| `404`  | Account does not exist or is unavailable                  |
+| `409`  | Request conflicts with current Account state or invariant |
+| `422`  | Request is syntactically valid but fails validation       |
+| `500`  | Unexpected server error                                   |
+
+The status-code meanings follow HTTP Semantics defined by RFC 9110.
