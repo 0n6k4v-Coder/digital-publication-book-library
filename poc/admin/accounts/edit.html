@@ -1,0 +1,1097 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Edit an administrator account in the Archive administration area.">
+  <title>Archive — Edit Account</title>
+
+  <style>
+    :root {
+      --page: #f4f4f1;
+      --surface: #fff;
+      --surface-soft: #f7f7f4;
+      --text: #171717;
+      --text-soft: #44443f;
+      --muted: #85857f;
+      --line: #e5e5df;
+      --line-strong: #d2d2cb;
+      --accent: #d9ff4f;
+      --accent-hover: #d0f447;
+      --accent-border: #bedf3c;
+      --success: #2f6b2f;
+      --success-bg: #f2f8ed;
+      --success-line: #cbdcbe;
+      --danger: #b42318;
+      --danger-bg: #fff4f2;
+      --danger-line: #efb2aa;
+      --warning: #7a5a00;
+      --warning-bg: #fff9df;
+      --warning-line: #ead99a;
+      --sidebar: 248px;
+      --topbar: 68px;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --ease: 160ms ease;
+    }
+
+    *,
+    *::before,
+    *::after { box-sizing: border-box; }
+    html { min-width: 320px; background: var(--page); color-scheme: light; scroll-behavior: smooth; }
+    body { min-width: 320px; min-height: 100vh; margin: 0; background: var(--surface); color: var(--text); font-family: Arial, sans-serif; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+    button, input { font: inherit; }
+    button { border: 0; }
+    a { color: inherit; text-decoration: none; }
+    svg { display: block; }
+    [hidden] { display: none !important; }
+    :where(button, a, input):focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
+    .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0; }
+
+    .shell { min-height: 100vh; display: grid; grid-template-columns: var(--sidebar) minmax(0, 1fr); }
+    .sidebar { position: sticky; top: 0; height: 100vh; padding: 18px; display: flex; flex-direction: column; border-right: 1px solid var(--line); background: var(--surface); }
+    .brand { margin-bottom: 38px; display: flex; align-items: center; gap: 9px; }
+    .brand-mark { width: 13px; height: 13px; flex: 0 0 auto; border: 1px solid var(--text); background: var(--accent); }
+    .brand-copy { display: flex; flex-direction: column; gap: 2px; }
+    .brand-name { font-size: 10px; line-height: 1; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+    .brand-sub { color: var(--muted); font-size: 10px; line-height: 1.25; }
+    .nav-label { margin: 0 0 9px; padding-left: 4px; color: var(--muted); font-size: 9px; line-height: 1; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+    .nav { display: flex; flex-direction: column; gap: 3px; }
+    .nav-link { min-height: 42px; padding: 0 12px; display: flex; align-items: center; gap: 11px; border-radius: var(--radius-sm); color: #65655f; font-size: 12px; font-weight: 600; transition: background var(--ease), color var(--ease); }
+    .nav-link:hover { background: var(--surface-soft); color: var(--text); }
+    .nav-link.active { background: #181818; color: #fff; }
+    .nav-icon { width: 16px; height: 16px; flex: 0 0 auto; }
+    .sidebar-footer { margin-top: auto; display: flex; flex-direction: column; gap: 3px; }
+
+    .main { min-width: 0; min-height: 100vh; }
+    .topbar { position: sticky; top: 0; z-index: 20; min-height: var(--topbar); padding: 0 clamp(20px, 4vw, 40px); display: flex; align-items: center; gap: 16px; border-bottom: 1px solid var(--line); background: rgb(255 255 255 / .96); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+    .back-link { min-height: 40px; padding: 0 11px; display: inline-flex; align-items: center; gap: 7px; border-radius: var(--radius-sm); color: var(--muted); font-size: 11px; font-weight: 700; transition: background var(--ease), color var(--ease); }
+    .back-link:hover { background: var(--surface-soft); color: var(--text); }
+    .back-icon { width: 15px; height: 15px; }
+
+    .content { width: min(100%, 880px); margin: 0 auto; padding: clamp(28px, 5vw, 48px) clamp(20px, 4vw, 40px) 64px; }
+    .heading { margin-bottom: 28px; }
+    .heading-label { margin: 0 0 8px; color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+    .heading-title { margin: 0; font-family: Georgia, serif; font-size: clamp(36px, 6vw, 50px); line-height: 1; letter-spacing: -.045em; }
+    .heading-copy { max-width: 650px; margin: 12px 0 0; color: var(--muted); font-size: 13px; line-height: 1.65; }
+    .account-summary { margin-top: 20px; padding: 14px 15px; display: flex; align-items: center; gap: 12px; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface-soft); }
+    .avatar { width: 42px; height: 42px; flex: 0 0 auto; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 50%; background: #f0f0eb; color: #34342f; font-size: 11px; font-weight: 800; }
+    .account-copy { min-width: 0; }
+    .account-name { margin: 0; font-size: 12px; font-weight: 800; }
+    .account-email { margin: 3px 0 0; color: var(--muted); font-size: 10px; overflow-wrap: anywhere; }
+    .account-status { margin-left: auto; min-height: 26px; padding: 0 9px; display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto; border-radius: 999px; font-size: 9px; font-weight: 800; }
+    .account-status.active { border: 1px solid var(--success-line); background: var(--success-bg); color: var(--success); }
+    .account-status.inactive { border: 1px solid var(--line); background: #ededeb; color: var(--muted); }
+    .status-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+    .slug-line { margin: 10px 0 0 57px; color: var(--muted); font-size: 9px; }
+    .slug-line strong { color: var(--text-soft); font-weight: 800; }
+    .required { color: var(--danger); font-weight: 800; }
+
+    .error-summary { margin-bottom: 20px; padding: 15px 16px; border: 1px solid var(--danger-line); border-radius: var(--radius-md); background: var(--danger-bg); }
+    .error-title { margin: 0; color: var(--danger); font-size: 12px; font-weight: 800; }
+    .error-list { margin: 7px 0 0; padding-left: 18px; color: var(--danger); font-size: 10px; line-height: 1.65; }
+    .error-list a { text-decoration: underline; text-underline-offset: 2px; }
+
+    .form { display: grid; gap: 16px; }
+    .section { padding: 22px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--surface); }
+    .section-header { margin-bottom: 22px; }
+    .section-title { margin: 0; font-size: 14px; font-weight: 800; letter-spacing: -.01em; }
+    .section-copy { max-width: 600px; margin: 6px 0 0; color: var(--muted); font-size: 10px; line-height: 1.6; }
+
+    .field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .field { min-width: 0; display: grid; gap: 7px; }
+    .field.single { margin-top: 16px; }
+    .field-label { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; color: var(--text); font-size: 11px; font-weight: 800; }
+    .field-hint { color: var(--muted); font-size: 9px; font-weight: 600; }
+    .input-wrap { position: relative; }
+    .control { width: 100%; min-height: 42px; padding: 0 12px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); font-size: 12px; transition: border-color var(--ease), box-shadow var(--ease), background var(--ease); }
+    .control:hover { border-color: #b8b7af; }
+    .control:focus { border-color: var(--text); box-shadow: 0 0 0 3px rgb(23 23 23 / .05); outline: 2px solid transparent; }
+    .control[aria-invalid="true"] { border-color: var(--danger); background: var(--danger-bg); }
+    .control::placeholder { color: #a2a19a; }
+    .password-control { padding-right: 74px; }
+    .password-toggle { position: absolute; top: 50%; right: 7px; min-height: 30px; padding: 0 8px; border-radius: 6px; background: transparent; color: var(--muted); font-size: 9px; font-weight: 800; cursor: pointer; transform: translateY(-50%); }
+    .password-toggle:hover { background: var(--surface-soft); color: var(--text); }
+    .help { margin: 0; color: var(--muted); font-size: 9px; line-height: 1.55; }
+    .field-error { display: none; margin: 0; color: var(--danger); font-size: 9px; line-height: 1.5; font-weight: 700; }
+    .field.is-invalid .field-error { display: block; }
+
+    .security-note, .status-note { margin-top: 16px; padding: 12px 13px; display: flex; align-items: flex-start; gap: 10px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-soft); }
+    .note-icon { width: 16px; height: 16px; flex: 0 0 auto; margin-top: 1px; color: var(--text-soft); }
+    .note-title { margin: 0 0 3px; color: var(--text); font-size: 10px; font-weight: 800; }
+    .note-copy { margin: 0; color: var(--muted); font-size: 9px; line-height: 1.6; }
+    .status-note.warning { border-color: var(--warning-line); background: var(--warning-bg); }
+    .status-note.warning .note-icon, .status-note.warning .note-title { color: var(--warning); }
+
+    .status-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .status-input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+    .status-label { min-height: 86px; padding: 13px; display: flex; align-items: flex-start; gap: 10px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); cursor: pointer; transition: border-color var(--ease), background var(--ease), box-shadow var(--ease), opacity var(--ease); }
+    .status-label:hover { border-color: var(--line-strong); background: var(--surface-soft); }
+    .status-input:focus-visible + .status-label { outline: 2px solid var(--text); outline-offset: 3px; }
+    .status-input:checked + .status-label { border-color: var(--text); background: #fafaf8; box-shadow: inset 0 0 0 1px var(--text); }
+    .status-input:disabled + .status-label { cursor: not-allowed; opacity: .54; }
+    .status-indicator { width: 16px; height: 16px; flex: 0 0 auto; margin-top: 1px; display: grid; place-items: center; border: 1px solid var(--line-strong); border-radius: 50%; background: var(--surface); }
+    .status-indicator::after { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--text); transform: scale(0); transition: transform var(--ease); }
+    .status-input:checked + .status-label .status-indicator { border-color: var(--text); }
+    .status-input:checked + .status-label .status-indicator::after { transform: scale(1); }
+    .status-copy { min-width: 0; }
+    .status-title { display: block; margin-bottom: 4px; font-size: 10px; font-weight: 800; }
+    .status-description { display: block; color: var(--muted); font-size: 9px; line-height: 1.55; }
+
+    .actions { padding: 4px 2px 0; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .actions-note { max-width: 430px; margin: 0; color: var(--muted); font-size: 9px; line-height: 1.55; }
+    .action-buttons { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+    .button { min-height: 40px; padding: 0 14px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; border: 1px solid transparent; border-radius: var(--radius-sm); font-size: 10px; font-weight: 800; cursor: pointer; transition: background var(--ease), border-color var(--ease), color var(--ease), opacity var(--ease); }
+    .button:disabled { cursor: wait; opacity: .62; }
+    .button.secondary { border-color: var(--line); background: var(--surface); color: #666660; }
+    .button.secondary:hover { border-color: var(--line-strong); background: var(--surface-soft); color: var(--text); }
+    .button.primary { border-color: var(--accent-border); background: var(--accent); color: #181818; }
+    .button.primary:hover { background: var(--accent-hover); }
+    .button-icon { width: 14px; height: 14px; }
+    .live { position: fixed; left: 20px; bottom: 20px; z-index: 100; max-width: min(420px, calc(100vw - 40px)); padding: 11px 14px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); color: var(--text-soft); box-shadow: 0 18px 48px rgb(23 23 23 / .08); font-size: 10px; font-weight: 700; opacity: 0; visibility: hidden; transform: translateY(7px); transition: opacity var(--ease), transform var(--ease); }
+    .live.show { opacity: 1; visibility: visible; transform: translateY(0); }
+    .live.success { border-color: var(--success-line); background: var(--success-bg); color: var(--success); }
+
+    .mobile-bar, .drawer, .drawer-overlay { display: none; }
+
+    @media (max-width: 900px) {
+      .shell { display: block; }
+      .sidebar { display: none; }
+      .mobile-bar { position: fixed; inset: 0 0 auto; z-index: 40; height: 56px; padding: 0 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--line); background: rgb(255 255 255 / .98); }
+      .mobile-brand { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+      .mobile-mark { width: 12px; height: 12px; border: 1px solid var(--text); background: var(--accent); }
+      .menu-button { width: 36px; height: 36px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); }
+      .drawer { position: fixed; inset: 0 auto 0 0; z-index: 60; width: min(290px, 88vw); padding: 18px; display: none; flex-direction: column; background: var(--surface); box-shadow: 20px 0 50px rgb(23 23 23 / .12); }
+      .drawer.open { display: flex; }
+      .drawer-head { margin-bottom: 32px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+      .drawer-close { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); }
+      .drawer-footer { margin-top: auto; }
+      .drawer-overlay { position: fixed; inset: 0; z-index: 50; display: none; background: rgb(23 23 23 / .3); }
+      .drawer-overlay.open { display: block; }
+      .main { padding-top: 56px; }
+      .topbar { position: static; }
+    }
+
+    @media (max-width: 720px) {
+      .field-grid, .status-options { grid-template-columns: 1fr; }
+      .account-summary { align-items: flex-start; }
+      .account-status { margin-left: auto; }
+      .slug-line { margin-left: 0; }
+      .actions { align-items: flex-start; flex-direction: column; }
+      .action-buttons { width: 100%; }
+      .action-buttons .button { flex: 1; }
+    }
+
+    @media (max-width: 560px) {
+      .topbar { padding-inline: 16px; }
+      .content { padding: 28px 16px 48px; }
+      .heading-title { font-size: 38px; }
+      .section { padding: 18px; }
+      .action-buttons { flex-direction: column-reverse; }
+      .action-buttons .button { width: 100%; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="mobile-bar">
+    <a class="mobile-brand" href="/admin/accounts" aria-label="Back to administrator accounts">
+      <span class="mobile-mark" aria-hidden="true"></span>
+      Archive
+    </a>
+
+    <button class="menu-button" id="menu-button" type="button" aria-label="Open admin navigation" aria-controls="mobile-drawer" aria-expanded="false">
+      <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M4 12h16M4 17h16"></path></svg>
+    </button>
+  </header>
+
+  <aside class="drawer" id="mobile-drawer" aria-label="Admin navigation" aria-hidden="true">
+    <div class="drawer-head">
+      <div class="mobile-brand"><span class="mobile-mark" aria-hidden="true"></span>Archive</div>
+      <button class="drawer-close" id="drawer-close" type="button" aria-label="Close admin navigation">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+      </button>
+    </div>
+
+    <p class="nav-label">Manage</p>
+    <nav class="nav">
+      <a class="nav-link" href="/admin/posts"><span>▤</span>Posts</a>
+      <a class="nav-link" href="/admin/books"><span>▥</span>Books</a>
+      <a class="nav-link active" href="/admin/accounts" aria-current="page"><span>◎</span>Accounts</a>
+    </nav>
+
+    <div class="drawer-footer">
+      <nav class="nav">
+        <a class="nav-link" href="/"><span>⌂</span>View website</a>
+        <a class="nav-link" href="/login"><span>↪</span>Sign out</a>
+      </nav>
+    </div>
+  </aside>
+
+  <div class="drawer-overlay" id="drawer-overlay"></div>
+
+  <div class="shell">
+    <aside class="sidebar" aria-label="Admin navigation">
+      <a class="brand" href="/admin/posts" aria-label="Archive admin home">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-copy"><span class="brand-name">Archive</span><span class="brand-sub">Administration</span></span>
+      </a>
+
+      <p class="nav-label">Manage</p>
+      <nav class="nav">
+        <a class="nav-link" href="/admin/posts"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M5 4h14v16H5z"></path><path d="M8 8h8M8 12h8M8 16h5"></path></svg><span>Posts</span></a>
+        <a class="nav-link" href="/admin/books"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 0 4 22V5.5Z"></path><path d="M4 5.5V22M8 7h8M8 11h8"></path></svg><span>Books</span></a>
+        <a class="nav-link active" href="/admin/accounts" aria-current="page"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.2"></circle><path d="M5.5 20a6.5 6.5 0 0 1 13 0"></path><path d="M18 7.5h3M19.5 6v3"></path></svg><span>Accounts</span></a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <a class="nav-link" href="/"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"></path><path d="M5.5 10v9h13v-9"></path><path d="M9.5 19v-5h5"></path></svg><span>View website</span></a>
+        <a class="nav-link" href="/login"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 5H5v14h5"></path><path d="m14 8 4 4-4 4"></path><path d="M18 12H9"></path></svg><span>Sign out</span></a>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <a class="back-link" href="/admin/accounts" aria-label="Back to administrator accounts">
+          <svg class="back-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"></path><path d="m11 18-6-6 6-6"></path></svg>
+          <span>Accounts</span>
+        </a>
+
+        <div>
+          <p class="heading-label" style="margin:0 0 2px;">Admin</p>
+          <p style="margin:0;font-size:15px;font-weight:700;">Edit account</p>
+        </div>
+      </header>
+
+      <div class="content">
+        <section class="heading" aria-labelledby="page-title">
+          <p class="heading-label">Administrator accounts</p>
+          <h1 class="heading-title" id="page-title">Edit account</h1>
+          <p class="heading-copy">Update this administrator's account details, password credential, or access status.</p>
+
+          <div class="account-summary" aria-label="Administrator summary">
+            <span class="avatar" id="avatar" aria-hidden="true">JD</span>
+
+            <div class="account-copy">
+              <p class="account-name" id="summary-name">Jane Doe</p>
+              <p class="account-email" id="summary-email">jane@example.com</p>
+            </div>
+
+            <span class="account-status active" id="summary-status" role="status">
+              <span class="status-dot" aria-hidden="true"></span>
+              <span id="summary-status-text">Active</span>
+            </span>
+          </div>
+
+          <p class="slug-line">
+            Account slug:
+            <strong id="account-slug">jane-doe</strong>
+          </p>
+        </section>
+
+        <section class="error-summary" id="error-summary" tabindex="-1" role="alert" aria-labelledby="error-title" hidden>
+          <h2 class="error-title" id="error-title">Check the highlighted fields</h2>
+          <ul class="error-list" id="error-list"></ul>
+        </section>
+
+        <form class="form" id="account-form" action="/admin/accounts/jane-doe/edit" method="post" novalidate data-active-admin-count="3" data-account-status="active">
+          <section class="section" aria-labelledby="details-title">
+            <div class="section-header">
+              <h2 class="section-title" id="details-title">Account details</h2>
+              <p class="section-copy">Edit the administrator's name and sign-in email address.</p>
+            </div>
+
+            <div class="field-grid">
+              <div class="field" id="name-field">
+                <label class="field-label" for="account-name">
+                  <span>Name <span class="required" aria-hidden="true">*</span></span>
+                </label>
+                <input class="control" id="account-name" name="name" type="text" autocomplete="name" maxlength="120" value="Jane Doe" required aria-describedby="name-help name-error" aria-errormessage="name-error">
+                <p class="help" id="name-help">Use the name the administrator will recognize in the admin area.</p>
+                <p class="field-error" id="name-error">Enter the administrator's name.</p>
+              </div>
+
+              <div class="field" id="email-field">
+                <label class="field-label" for="account-email">
+                  <span>Email <span class="required" aria-hidden="true">*</span></span>
+                </label>
+                <input class="control" id="account-email" name="email" type="email" autocomplete="username" inputmode="email" maxlength="254" value="jane@example.com" required aria-describedby="email-help email-error" aria-errormessage="email-error">
+                <p class="help" id="email-help">Changing this address changes the administrator's sign-in identifier.</p>
+                <p class="field-error" id="email-error">Enter a valid email address.</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="section" aria-labelledby="password-title">
+            <div class="section-header">
+              <h2 class="section-title" id="password-title">Password credential</h2>
+              <p class="section-copy">Leave both fields empty to keep the current password. Enter a new password only when the credential needs to be replaced.</p>
+            </div>
+
+            <div class="field" id="password-field">
+              <label class="field-label" for="account-password">
+                <span>New password</span>
+                <span class="field-hint">15+ characters</span>
+              </label>
+
+              <div class="input-wrap">
+                <input class="control password-control" id="account-password" name="password" type="password" autocomplete="new-password" minlength="15" maxlength="256" aria-describedby="password-help password-error" aria-errormessage="password-error" placeholder="Leave blank to keep current password">
+                <button class="password-toggle" type="button" data-password-toggle="account-password" aria-controls="account-password" aria-pressed="false" aria-label="Show password">Show</button>
+              </div>
+
+              <p class="help" id="password-help">Use a long passphrase or a randomly generated password. Password managers may be used to generate and save it.</p>
+              <p class="field-error" id="password-error">Enter a password with at least 15 characters.</p>
+            </div>
+
+            <div class="field single" id="confirm-password-field">
+              <label class="field-label" for="confirm-password">
+                <span>Confirm new password</span>
+              </label>
+
+              <div class="input-wrap">
+                <input class="control password-control" id="confirm-password" name="password_confirmation" type="password" autocomplete="new-password" minlength="15" maxlength="256" aria-describedby="confirm-password-help confirm-password-error" aria-errormessage="confirm-password-error" placeholder="Leave blank to keep current password">
+                <button class="password-toggle" type="button" data-password-toggle="confirm-password" aria-controls="confirm-password" aria-pressed="false" aria-label="Show password">Show</button>
+              </div>
+
+              <p class="help" id="confirm-password-help">Both fields must contain the same new password.</p>
+              <p class="field-error" id="confirm-password-error">The passwords do not match.</p>
+            </div>
+
+            <aside class="security-note" aria-label="Password security note">
+              <svg class="note-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path><path d="M12 14v3"></path></svg>
+              <div>
+                <p class="note-title">Credential handling</p>
+                <p class="note-copy">This POC only demonstrates the account-management interface. Production code must use HTTPS and store only a secure password hash on the server.</p>
+              </div>
+            </aside>
+          </section>
+
+          <section class="section" aria-labelledby="status-title">
+            <div class="section-header">
+              <h2 class="section-title" id="status-title">Account status</h2>
+              <p class="section-copy">Active administrators can sign in to the protected admin area. Inactive administrators remain in the system but cannot sign in.</p>
+            </div>
+
+            <fieldset style="margin:0;padding:0;border:0;" id="status-fieldset">
+              <legend class="visually-hidden">Account status</legend>
+
+              <div class="status-options">
+                <div>
+                  <input class="status-input" id="status-active" name="status" type="radio" value="active" checked>
+                  <label class="status-label" for="status-active">
+                    <span class="status-indicator" aria-hidden="true"></span>
+                    <span class="status-copy"><span class="status-title">Active</span><span class="status-description">The administrator can sign in to the protected admin area.</span></span>
+                  </label>
+                </div>
+
+                <div>
+                  <input class="status-input" id="status-inactive" name="status" type="radio" value="inactive">
+                  <label class="status-label" for="status-inactive">
+                    <span class="status-indicator" aria-hidden="true"></span>
+                    <span class="status-copy"><span class="status-title">Inactive</span><span class="status-description">Disable sign-in access while retaining the administrator account.</span></span>
+                  </label>
+                </div>
+              </div>
+            </fieldset>
+
+            <aside class="status-note" id="status-note" aria-live="polite">
+              <svg class="note-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 10v6"></path><path d="M12 7.5h.01"></path></svg>
+              <div>
+                <p class="note-title" id="status-note-title">Status changes</p>
+                <p class="note-copy" id="status-note-copy">Deactivating this account removes its ability to sign in. The final active administrator account cannot be deactivated.</p>
+              </div>
+            </aside>
+          </section>
+
+          <div class="actions">
+            <p class="actions-note">Account access is restricted to authorized administrators. The last active administrator must remain active.</p>
+
+            <div class="action-buttons">
+              <a class="button secondary" id="cancel-link" href="/admin/accounts/jane-doe">Cancel</a>
+
+              <button class="button primary" id="submit-button" type="submit">
+                <svg class="button-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg>
+                Save changes
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </main>
+  </div>
+
+  <div class="live" id="live" role="status" aria-live="polite" aria-atomic="true"></div>
+
+  <script>
+    (() => {
+      const form = document.getElementById("account-form");
+      const nameInput = document.getElementById("account-name");
+      const emailInput = document.getElementById("account-email");
+      const passwordInput = document.getElementById("account-password");
+      const confirmPasswordInput = document.getElementById("confirm-password");
+      const activeStatus = document.getElementById("status-active");
+      const inactiveStatus = document.getElementById("status-inactive");
+      const errorSummary = document.getElementById("error-summary");
+      const errorList = document.getElementById("error-list");
+      const submitButton = document.getElementById("submit-button");
+      const live = document.getElementById("live");
+      const statusNote = document.getElementById("status-note");
+      const statusNoteTitle = document.getElementById("status-note-title");
+      const statusNoteCopy = document.getElementById("status-note-copy");
+
+      const elements = {
+        summaryName: document.getElementById("summary-name"),
+        summaryEmail: document.getElementById("summary-email"),
+        summaryStatus: document.getElementById("summary-status"),
+        summaryStatusText: document.getElementById("summary-status-text"),
+        avatar: document.getElementById("avatar"),
+        accountSlug: document.getElementById("account-slug"),
+        cancelLink: document.getElementById("cancel-link")
+      };
+
+      const fields = [
+        {
+          input: nameInput,
+          container: document.getElementById("name-field"),
+          message: "Enter the administrator's name."
+        },
+        {
+          input: emailInput,
+          container: document.getElementById("email-field"),
+          message: "Enter a valid email address."
+        },
+        {
+          input: passwordInput,
+          container: document.getElementById("password-field"),
+          message: "Enter a password with at least 15 characters."
+        },
+        {
+          input: confirmPasswordInput,
+          container: document.getElementById("confirm-password-field"),
+          message: "The passwords do not match."
+        }
+      ];
+
+      let liveTimer = null;
+
+      function getPageSlug() {
+        const segments = window.location.pathname.split("/").filter(Boolean);
+        const accountsIndex = segments.indexOf("accounts");
+
+        if (accountsIndex === -1) {
+          return "jane-doe";
+        }
+
+        const slug = segments[accountsIndex + 1];
+        return slug || "jane-doe";
+      }
+
+      function getInitials(name) {
+        return name
+          .trim()
+          .split(/\s+/)
+          .filter(Boolean)
+          .map((part) => part[0])
+          .slice(0, 2)
+          .join("")
+          .toUpperCase() || "AD";
+      }
+
+      function announce(message, type = "") {
+        window.clearTimeout(liveTimer);
+        live.className = "live";
+
+        if (type) {
+          live.classList.add(type);
+        }
+
+        live.textContent = message;
+        live.classList.add("show");
+
+        liveTimer = window.setTimeout(
+          () => live.classList.remove("show"),
+          3200
+        );
+      }
+
+      function updatePasswordValidity() {
+        passwordInput.setCustomValidity("");
+        confirmPasswordInput.setCustomValidity("");
+
+        const password = passwordInput.value;
+        const confirmation = confirmPasswordInput.value;
+
+        if (!password && !confirmation) {
+          return;
+        }
+
+        if (password && !confirmation) {
+          confirmPasswordInput.setCustomValidity(
+            "Confirm the new password."
+          );
+          return;
+        }
+
+        if (!password && confirmation) {
+          passwordInput.setCustomValidity(
+            "Enter the new password or clear the confirmation."
+          );
+          return;
+        }
+
+        if (password !== confirmation) {
+          confirmPasswordInput.setCustomValidity(
+            "The passwords do not match."
+          );
+        }
+      }
+
+      function validateField(field) {
+        field.container.classList.remove("is-invalid");
+
+        if (!field.input.checkValidity()) {
+          field.container.classList.add("is-invalid");
+          field.input.setAttribute(
+            "aria-invalid",
+            "true"
+          );
+          return false;
+        }
+
+        field.input.removeAttribute(
+          "aria-invalid"
+        );
+
+        return true;
+      }
+
+      function validateForm() {
+        updatePasswordValidity();
+
+        const invalidFields = fields.filter(
+          (field) => !validateField(field)
+        );
+
+        errorList.innerHTML = "";
+
+        if (!invalidFields.length) {
+          errorSummary.hidden = true;
+          return true;
+        }
+
+        invalidFields.forEach((field) => {
+          const item = document.createElement("li");
+          const link = document.createElement("a");
+
+          link.href = `#${field.input.id}`;
+
+          let message = field.message;
+
+          if (
+            field.input === passwordInput &&
+            passwordInput.validity.customError
+          ) {
+            message =
+              "Enter the new password or clear the confirmation.";
+          }
+
+          if (
+            field.input === confirmPasswordInput &&
+            confirmPasswordInput.validity.valueMissing
+          ) {
+            message = "Confirm the new password.";
+          }
+
+          link.textContent = message;
+          item.appendChild(link);
+          errorList.appendChild(item);
+        });
+
+        errorSummary.hidden = false;
+        return false;
+      }
+
+      function updateStatusUI() {
+        const active = activeStatus.checked;
+
+        elements.summaryStatus.className =
+          `account-status ${active ? "active" : "inactive"}`;
+
+        elements.summaryStatusText.textContent =
+          active ? "Active" : "Inactive";
+
+        if (inactiveStatus.disabled) {
+          statusNote.classList.add("warning");
+          statusNoteTitle.textContent =
+            "This account must stay active";
+          statusNoteCopy.textContent =
+            "This administrator is currently the last active administrator account. Create or activate another administrator before deactivating this account.";
+          return;
+        }
+
+        statusNote.classList.toggle(
+          "warning",
+          !active
+        );
+
+        statusNoteTitle.textContent =
+          active
+            ? "Status changes"
+            : "This account will be inactive";
+
+        statusNoteCopy.textContent = active
+          ? "Deactivating this account removes its ability to sign in. The final active administrator account cannot be deactivated."
+          : "After saving, this administrator will no longer be able to sign in to the protected admin area. The account and its existing content will remain.";
+      }
+
+      function applyLastActiveRule() {
+        const activeCount =
+          Number(form.dataset.activeAdminCount);
+
+        const currentStatus =
+          form.dataset.accountStatus;
+
+        const lastActive =
+          activeCount <= 1 &&
+          currentStatus === "active";
+
+        inactiveStatus.disabled =
+          lastActive;
+
+        if (lastActive) {
+          activeStatus.checked = true;
+          inactiveStatus.checked = false;
+        }
+
+        updateStatusUI();
+      }
+
+      function updateRoute() {
+        const slug = getPageSlug();
+        const accountPath =
+          `/admin/accounts/${encodeURIComponent(slug)}`;
+
+        form.action = `${accountPath}/edit`;
+        elements.cancelLink.href = accountPath;
+        elements.accountSlug.textContent = slug;
+      }
+
+      document
+        .querySelectorAll("[data-password-toggle]")
+        .forEach((button) => {
+          const input = document.getElementById(
+            button.dataset.passwordToggle
+          );
+
+          function updateToggle() {
+            const visible =
+              input.type === "text";
+
+            button.textContent =
+              visible ? "Hide" : "Show";
+
+            button.setAttribute(
+              "aria-pressed",
+              String(visible)
+            );
+
+            button.setAttribute(
+              "aria-label",
+              visible
+                ? "Hide password"
+                : "Show password"
+            );
+          }
+
+          updateToggle();
+
+          button.addEventListener(
+            "click",
+            () => {
+              input.type =
+                input.type === "password"
+                  ? "text"
+                  : "password";
+
+              updateToggle();
+              input.focus();
+            }
+          );
+        });
+
+      nameInput.addEventListener(
+        "input",
+        () => {
+          elements.summaryName.textContent =
+            nameInput.value.trim() ||
+            "Administrator";
+
+          elements.avatar.textContent =
+            getInitials(nameInput.value);
+        }
+      );
+
+      emailInput.addEventListener(
+        "input",
+        () => {
+          elements.summaryEmail.textContent =
+            emailInput.value.trim() ||
+            "No email address";
+        }
+      );
+
+      [
+        passwordInput,
+        confirmPasswordInput
+      ].forEach((input) => {
+        input.addEventListener(
+          "input",
+          () => {
+            updatePasswordValidity();
+
+            if (input.checkValidity()) {
+              input.removeAttribute(
+                "aria-invalid"
+              );
+
+              input.closest(".field")
+                ?.classList.remove(
+                  "is-invalid"
+                );
+            }
+          }
+        );
+      });
+
+      [nameInput, emailInput].forEach(
+        (input) => {
+          input.addEventListener(
+            "input",
+            () => {
+              if (input.checkValidity()) {
+                input.removeAttribute(
+                  "aria-invalid"
+                );
+
+                input.closest(".field")
+                  ?.classList.remove(
+                    "is-invalid"
+                  );
+              }
+            }
+          );
+        }
+      );
+
+      activeStatus.addEventListener(
+        "change",
+        updateStatusUI
+      );
+
+      inactiveStatus.addEventListener(
+        "change",
+        () => {
+          if (inactiveStatus.disabled) {
+            activeStatus.checked = true;
+            inactiveStatus.checked = false;
+
+            announce(
+              "The last active administrator account must remain active.",
+              "warning"
+            );
+
+            updateStatusUI();
+            return;
+          }
+
+          updateStatusUI();
+        }
+      );
+
+      form.addEventListener(
+        "invalid",
+        (event) => {
+          const input = event.target;
+
+          if (
+            input instanceof HTMLInputElement &&
+            input.type !== "radio"
+          ) {
+            input.setAttribute(
+              "aria-invalid",
+              "true"
+            );
+
+            input.closest(".field")
+              ?.classList.add(
+                "is-invalid"
+              );
+          }
+        },
+        true
+      );
+
+      form.addEventListener(
+        "submit",
+        (event) => {
+          event.preventDefault();
+
+          updatePasswordValidity();
+
+          if (!validateForm()) {
+            errorSummary.focus();
+            fields.find(
+              (field) =>
+                !field.input.checkValidity()
+            )?.input.focus();
+            return;
+          }
+
+          submitButton.disabled = true;
+
+          elements.summaryName.textContent =
+            nameInput.value.trim();
+
+          elements.summaryEmail.textContent =
+            emailInput.value.trim();
+
+          elements.avatar.textContent =
+            getInitials(nameInput.value);
+
+          form.dataset.accountStatus =
+            activeStatus.checked
+              ? "active"
+              : "inactive";
+
+          elements.summaryStatus.className =
+            `account-status ${
+              activeStatus.checked
+                ? "active"
+                : "inactive"
+            }`;
+
+          elements.summaryStatusText.textContent =
+            activeStatus.checked
+              ? "Active"
+              : "Inactive";
+
+          announce(
+            activeStatus.checked
+              ? "Administrator account changes saved and the account remains active."
+              : "Administrator account changes saved and the account is now inactive.",
+            "success"
+          );
+
+          window.setTimeout(
+            () => {
+              passwordInput.value = "";
+              confirmPasswordInput.value = "";
+
+              document
+                .querySelectorAll(
+                  "[data-password-toggle]"
+                )
+                .forEach((button) => {
+                  const input =
+                    document.getElementById(
+                      button.dataset.passwordToggle
+                    );
+
+                  input.type = "password";
+                  button.textContent = "Show";
+                  button.setAttribute(
+                    "aria-pressed",
+                    "false"
+                  );
+                  button.setAttribute(
+                    "aria-label",
+                    "Show password"
+                  );
+                });
+
+              fields.forEach((field) => {
+                field.container.classList.remove(
+                  "is-invalid"
+                );
+
+                field.input.removeAttribute(
+                  "aria-invalid"
+                );
+              });
+
+              updatePasswordValidity();
+
+              errorSummary.hidden = true;
+              submitButton.disabled = false;
+
+              nameInput.focus();
+            },
+            1200
+          );
+        }
+      );
+
+      errorList.addEventListener(
+        "click",
+        (event) => {
+          const link =
+            event.target.closest("a");
+
+          if (!link) {
+            return;
+          }
+
+          event.preventDefault();
+
+          const input =
+            document.querySelector(
+              link.getAttribute("href")
+            );
+
+          if (!input) {
+            return;
+          }
+
+          input.focus();
+
+          input.scrollIntoView({
+            behavior:
+              window.matchMedia(
+                "(prefers-reduced-motion: reduce)"
+              ).matches
+                ? "auto"
+                : "smooth",
+            block: "center"
+          });
+        }
+      );
+
+      const menuButton =
+        document.getElementById("menu-button");
+
+      const drawer =
+        document.getElementById(
+          "mobile-drawer"
+        );
+
+      const drawerClose =
+        document.getElementById(
+          "drawer-close"
+        );
+
+      const drawerOverlay =
+        document.getElementById(
+          "drawer-overlay"
+        );
+
+      let drawerPreviousFocus = null;
+
+      function closeDrawer() {
+        drawer.classList.remove(
+          "open"
+        );
+
+        drawerOverlay.classList.remove(
+          "open"
+        );
+
+        drawer.setAttribute(
+          "aria-hidden",
+          "true"
+        );
+
+        menuButton.setAttribute(
+          "aria-expanded",
+          "false"
+        );
+
+        drawerPreviousFocus?.focus();
+        drawerPreviousFocus = null;
+      }
+
+      function openDrawer() {
+        drawerPreviousFocus =
+          document.activeElement;
+
+        drawer.classList.add("open");
+        drawerOverlay.classList.add(
+          "open"
+        );
+
+        drawer.setAttribute(
+          "aria-hidden",
+          "false"
+        );
+
+        menuButton.setAttribute(
+          "aria-expanded",
+          "true"
+        );
+
+        drawer.querySelector(
+          "a"
+        )?.focus();
+      }
+
+      menuButton.addEventListener(
+        "click",
+        openDrawer
+      );
+
+      drawerClose.addEventListener(
+        "click",
+        closeDrawer
+      );
+
+      drawerOverlay.addEventListener(
+        "click",
+        closeDrawer
+      );
+
+      drawer.addEventListener(
+        "click",
+        (event) => {
+          if (
+            event.target.closest("a")
+          ) {
+            closeDrawer();
+          }
+        }
+      );
+
+      document.addEventListener(
+        "keydown",
+        (event) => {
+          if (
+            event.key === "Escape" &&
+            drawer.classList.contains(
+              "open"
+            )
+          ) {
+            closeDrawer();
+          }
+        }
+      );
+
+      updateRoute();
+
+      elements.summaryName.textContent =
+        nameInput.value;
+
+      elements.summaryEmail.textContent =
+        emailInput.value;
+
+      elements.avatar.textContent =
+        getInitials(nameInput.value);
+
+      applyLastActiveRule();
+    })();
+  </script>
+</body>
+</html>
