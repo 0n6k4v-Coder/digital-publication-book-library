@@ -22,3 +22,10 @@ Thumbs.db
 
 # Logs and test artifacts
 *.log
+tests/unit.rs
+tests/integration.rs
+tests/e2e.rs
+
+# Temporary files and directories
+tmp/
+scratch/

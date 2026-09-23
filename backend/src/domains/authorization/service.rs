@@ -5,6 +5,8 @@ use crate::{
 
 use super::repository::AuthorizationRepository;
 
+pub const ACCOUNT_VIEW_PERMISSION: &str = "account:view";
+pub const ACCOUNT_VIEW_DELETED_PERMISSION: &str = "account:view_deleted";
 pub const ACCOUNT_CREATE_PERMISSION: &str = "account:create";
 
 pub async fn authorize(

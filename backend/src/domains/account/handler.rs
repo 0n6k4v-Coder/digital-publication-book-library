@@ -11,7 +11,13 @@ use uuid::Uuid;
 
 use crate::{
     app::state::AppState,
-    domains::authorization::extractor::AuthorizedAccountCreate,
+    domains::{
+        authentication::model::AuthenticatedPrincipal,
+        authorization::{
+            repository::AuthorizationRepository,
+            service::{authorize, ACCOUNT_VIEW_DELETED_PERMISSION, ACCOUNT_VIEW_PERMISSION},
+        },
+    },
     shared::{auth::AuthenticatedAdmin, error::AppError, response::add_no_store},
 };
 
@@ -22,7 +28,7 @@ use super::{
 };
 
 pub async fn create_account(
-    authorized: AuthorizedAccountCreate,
+    authorized: crate::domains::authorization::extractor::AuthorizedAccountCreate,
     State(state): State<AppState>,
     request: Result<Json<CreateAccountRequest>, JsonRejection>,
 ) -> Result<Response, AppError> {
@@ -55,12 +61,30 @@ pub async fn create_account(
 }
 
 pub async fn view_accounts(
-    _auth: AuthenticatedAdmin,
+    principal: AuthenticatedPrincipal,
     State(state): State<AppState>,
     query: Result<Query<ListAccountsQuery>, QueryRejection>,
 ) -> Result<Response, AppError> {
     let Query(query) = query
         .map_err(|_| AppError::InvalidRequest("The query parameters are malformed or invalid."))?;
+
+    let authorization_repository = AuthorizationRepository::new(state.pool.clone());
+
+    authorize(
+        &authorization_repository,
+        &principal,
+        ACCOUNT_VIEW_PERMISSION,
+    )
+    .await?;
+
+    if query.include_deleted {
+        authorize(
+            &authorization_repository,
+            &principal,
+            ACCOUNT_VIEW_DELETED_PERMISSION,
+        )
+        .await?;
+    }
 
     let service = AccountService::new(
         AccountRepository::new(state.pool.clone()),
@@ -94,6 +118,7 @@ pub async fn view_account(
     let response_body = AccountResponse::from(account);
 
     let mut response = (StatusCode::OK, Json(response_body)).into_response();
+
     add_no_store(response.headers_mut());
 
     Ok(response)

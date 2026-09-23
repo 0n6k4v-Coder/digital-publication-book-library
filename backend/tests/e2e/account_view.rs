@@ -1,6 +1,6 @@
 use std::{env, net::SocketAddr, sync::Arc};
 
-use axum::{extract::Request, middleware, Router};
+use axum::Router;
 use reqwest::Client;
 use serde_json::Value;
 use sha1::{Digest, Sha1};
@@ -9,14 +9,9 @@ use tokio::{net::TcpListener, sync::Mutex};
 use uuid::Uuid;
 
 use digital_publication_backend::{
-    app::{
-        router::build_router,
-        state::AppState,
-    },
-    shared::{
-        auth::AuthenticatedAdmin,
-        validation::PasswordBlocklist,
-    },
+    app::{router::build_router, state::AppState},
+    domains::authentication::extractor::sha256_token_verifier,
+    shared::validation::PasswordBlocklist,
 };
 
 static TEST_DATABASE_LOCK: Mutex<()> = Mutex::const_new(());
@@ -28,8 +23,7 @@ fn sha1_hash(password: &str) -> [u8; 20] {
 }
 
 async fn connect_database() -> PgPool {
-    let database_url =
-        env::var("TEST_DATABASE_URL").expect("TEST_DATABASE_URL must be set");
+    let database_url = env::var("TEST_DATABASE_URL").expect("TEST_DATABASE_URL must be set");
 
     PgPool::connect(&database_url)
         .await
@@ -37,6 +31,16 @@ async fn connect_database() -> PgPool {
 }
 
 async fn reset_test_database(pool: &PgPool) {
+    sqlx::query("DELETE FROM authorization_account_role")
+        .execute(pool)
+        .await
+        .expect("reset authorization account roles");
+
+    sqlx::query("DELETE FROM authentication_session")
+        .execute(pool)
+        .await
+        .expect("reset authentication sessions");
+
     sqlx::query("DELETE FROM account")
         .execute(pool)
         .await
@@ -83,6 +87,73 @@ async fn seed_account(
     account_id
 }
 
+async fn seed_access_token(pool: &PgPool, account_id: Uuid, role_name: &str) -> String {
+    let session_id = sqlx::query_scalar::<_, Uuid>(
+        r#"
+        INSERT INTO authentication_session (
+            account_id,
+            expires_at,
+            last_authenticated_at
+        )
+        VALUES ($1, CURRENT_TIMESTAMP + INTERVAL '1 hour', CURRENT_TIMESTAMP)
+        RETURNING id
+        "#,
+    )
+    .bind(account_id)
+    .fetch_one(pool)
+    .await
+    .expect("seed authentication session");
+
+    let token = format!(
+        "test-view-{}-{}-{}",
+        Uuid::new_v4(),
+        Uuid::new_v4(),
+        Uuid::new_v4()
+    );
+
+    sqlx::query(
+        r#"
+        INSERT INTO authentication_access_token (
+            session_id,
+            token_hash,
+            expires_at
+        )
+        VALUES ($1, $2, CURRENT_TIMESTAMP + INTERVAL '1 hour')
+        "#,
+    )
+    .bind(session_id)
+    .bind(sha256_token_verifier(&token))
+    .execute(pool)
+    .await
+    .expect("seed access token");
+
+    let role_id = sqlx::query_scalar::<_, Uuid>(
+        "SELECT id FROM authorization_role WHERE name = $1",
+    )
+    .bind(role_name)
+    .fetch_one(pool)
+    .await
+    .expect("find authorization role");
+
+    sqlx::query(
+        r#"
+        INSERT INTO authorization_account_role (
+            account_id,
+            role_id,
+            created_by
+        )
+        VALUES ($1, $2, $1)
+        "#,
+    )
+    .bind(account_id)
+    .bind(role_id)
+    .execute(pool)
+    .await
+    .expect("seed authorization role");
+
+    token
+}
+
 async fn seed_accounts(pool: &PgPool) -> Vec<Uuid> {
     let active_one = seed_account(
         pool,
@@ -120,48 +191,21 @@ async fn seed_accounts(pool: &PgPool) -> Vec<Uuid> {
 }
 
 fn test_router(pool: PgPool) -> Router {
-    let blocklist = PasswordBlocklist::from_hashes(
-        "test",
-        [sha1_hash("password-password")],
-    );
+    let blocklist = PasswordBlocklist::from_hashes("test", [sha1_hash("password-password")]);
 
-    let state = AppState::new(
+    build_router(AppState::new(
         pool,
         Arc::new(blocklist),
         std::num::NonZeroUsize::new(2).unwrap(),
-    );
-
-    let application = build_router(state);
-
-    application.layer(middleware::from_fn(
-        |mut request: Request, next: middleware::Next| async move {
-            let admin_id = request
-                .headers()
-                .get("x-test-admin-id")
-                .and_then(|value| value.to_str().ok())
-                .and_then(|value| Uuid::parse_str(value).ok());
-
-            if let Some(admin_id) = admin_id {
-                request
-                    .extensions_mut()
-                    .insert(AuthenticatedAdmin::from_verified_account(admin_id));
-            }
-
-            next.run(request).await
-        },
     ))
 }
 
-async fn start_server(
-    app: Router,
-) -> (SocketAddr, tokio::task::JoinHandle<()>) {
+async fn start_server(app: Router) -> (SocketAddr, tokio::task::JoinHandle<()>) {
     let listener = TcpListener::bind("127.0.0.1:0")
         .await
         .expect("bind e2e server");
 
-    let address = listener
-        .local_addr()
-        .expect("read e2e server address");
+    let address = listener.local_addr().expect("read e2e server address");
 
     let task = tokio::spawn(async move {
         axum::serve(listener, app)
@@ -170,6 +214,26 @@ async fn start_server(
     });
 
     (address, task)
+}
+
+async fn cleanup_accounts(pool: &PgPool, account_ids: &[Uuid]) {
+    sqlx::query("DELETE FROM authorization_account_role WHERE account_id = ANY($1)")
+        .bind(account_ids)
+        .execute(pool)
+        .await
+        .expect("cleanup authorization roles");
+
+    sqlx::query("DELETE FROM authentication_session WHERE account_id = ANY($1)")
+        .bind(account_ids)
+        .execute(pool)
+        .await
+        .expect("cleanup authentication sessions");
+
+    sqlx::query("DELETE FROM account WHERE id = ANY($1)")
+        .bind(account_ids)
+        .execute(pool)
+        .await
+        .expect("cleanup seeded accounts");
 }
 
 #[tokio::test]
@@ -187,23 +251,19 @@ async fn view_accounts_end_to_end() {
     reset_test_database(&pool).await;
 
     let seeded = seed_accounts(&pool).await;
-
-    let admin_id = seeded[0];
+    let token = seed_access_token(&pool, seeded[0], "account_viewer").await;
 
     let app = test_router(pool.clone());
     let (address, server) = start_server(app).await;
 
-    let client = Client::new();
-
-    let response = client
+    let response = Client::new()
         .get(format!("http://{address}/admin/accounts"))
-        .header("x-test-admin-id", admin_id.to_string())
+        .bearer_auth(&token)
         .send()
         .await
         .expect("send view-accounts request");
 
     assert_eq!(response.status(), reqwest::StatusCode::OK);
-
     assert_eq!(
         response
             .headers()
@@ -211,7 +271,6 @@ async fn view_accounts_end_to_end() {
             .and_then(|value| value.to_str().ok()),
         Some("no-store")
     );
-
     assert_eq!(
         response
             .headers()
@@ -225,67 +284,39 @@ async fn view_accounts_end_to_end() {
         .await
         .expect("decode account-list response");
 
-    assert_eq!(
-        response_body
-            .get("page")
-            .and_then(Value::as_u64),
-        Some(1)
-    );
+    assert_eq!(response_body["page"], 1);
+    assert_eq!(response_body["page_size"], 20);
+    assert_eq!(response_body["total"], 3);
 
-    assert_eq!(
-        response_body
-            .get("page_size")
-            .and_then(Value::as_u64),
-        Some(20)
-    );
-
-    assert_eq!(
-        response_body
-            .get("total")
-            .and_then(Value::as_i64),
-        Some(3)
-    );
-
-    let items = response_body
-        .get("items")
-        .and_then(Value::as_array)
-        .expect("items array");
-
+    let items = response_body["items"].as_array().expect("items array");
     assert_eq!(items.len(), 3);
 
-    for item in items {
-        assert!(item.get("id").and_then(Value::as_str).is_some());
-        assert!(item.get("email").and_then(Value::as_str).is_some());
-        assert!(item.get("status").and_then(Value::as_str).is_some());
-        assert!(item.get("created_at").and_then(Value::as_str).is_some());
-        assert!(item.get("updated_at").and_then(Value::as_str).is_some());
-        assert!(item.get("deleted_at").is_some());
+    let ids: Vec<&str> = items
+        .iter()
+        .map(|item| item["id"].as_str().expect("account id"))
+        .collect();
+    assert!(ids.windows(2).all(|pair| pair[0] < pair[1]));
 
+    for item in items {
+        assert!(item["id"].as_str().is_some());
+        assert!(item["email"].as_str().is_some());
+        assert!(item["status"].as_str().is_some());
+        assert!(item["created_at"].as_str().is_some());
+        assert!(item["updated_at"].as_str().is_some());
+        assert!(item.get("deleted_at").is_some());
         assert!(item.get("password").is_none());
         assert!(item.get("password_hash").is_none());
-
-        assert_eq!(
-            item.get("deleted_at")
-                .expect("deleted_at field for non-deleted account"),
-            &Value::Null
-        );
+        assert_eq!(item["deleted_at"], Value::Null);
     }
 
-    assert!(
-        !items.iter().any(|item| {
-            item.get("id")
-                .and_then(Value::as_str)
-                .is_some_and(|id| id == seeded[3].to_string())
-        })
-    );
+    assert!(!items.iter().any(|item| {
+        item["id"]
+            .as_str()
+            .is_some_and(|id| id == seeded[3].to_string())
+    }));
 
     server.abort();
-
-    sqlx::query("DELETE FROM account WHERE id = ANY($1)")
-        .bind(&seeded)
-        .execute(&pool)
-        .await
-        .expect("cleanup seeded accounts");
+    cleanup_accounts(&pool, &seeded).await;
 }
 
 #[tokio::test]
@@ -303,28 +334,20 @@ async fn view_accounts_supports_filters_and_pagination_end_to_end() {
     reset_test_database(&pool).await;
 
     let seeded = seed_accounts(&pool).await;
-
-    let admin_id = seeded[0];
+    let token = seed_access_token(&pool, seeded[0], "account_viewer").await;
 
     let app = test_router(pool.clone());
     let (address, server) = start_server(app).await;
-
     let client = Client::new();
 
     let active_response = client
-        .get(format!(
-            "http://{address}/admin/accounts?status=active"
-        ))
-        .header("x-test-admin-id", admin_id.to_string())
+        .get(format!("http://{address}/admin/accounts?status=active"))
+        .bearer_auth(&token)
         .send()
         .await
         .expect("send active filter request");
 
-    assert_eq!(
-        active_response.status(),
-        reqwest::StatusCode::OK
-    );
-
+    assert_eq!(active_response.status(), reqwest::StatusCode::OK);
     assert_eq!(
         active_response
             .headers()
@@ -338,13 +361,7 @@ async fn view_accounts_supports_filters_and_pagination_end_to_end() {
         .await
         .expect("decode active filter response");
 
-    assert_eq!(
-        active_body
-            .get("total")
-            .and_then(Value::as_i64),
-        Some(2)
-    );
-
+    assert_eq!(active_body["total"], 2);
     assert!(active_body["items"]
         .as_array()
         .expect("active items")
@@ -355,125 +372,77 @@ async fn view_accounts_supports_filters_and_pagination_end_to_end() {
         .get(format!(
             "http://{address}/admin/accounts?page=1&page_size=2"
         ))
-        .header("x-test-admin-id", admin_id.to_string())
+        .bearer_auth(&token)
         .send()
         .await
         .expect("send page-one request");
 
-    assert_eq!(
-        page_one_response.status(),
-        reqwest::StatusCode::OK
-    );
+    assert_eq!(page_one_response.status(), reqwest::StatusCode::OK);
 
     let page_one_body: Value = page_one_response
         .json()
         .await
         .expect("decode page-one response");
 
-    assert_eq!(
-        page_one_body
-            .get("page")
-            .and_then(Value::as_u64),
-        Some(1)
-    );
-
-    assert_eq!(
-        page_one_body
-            .get("page_size")
-            .and_then(Value::as_u64),
-        Some(2)
-    );
-
-    assert_eq!(
-        page_one_body
-            .get("total")
-            .and_then(Value::as_i64),
-        Some(3)
-    );
-
-    assert_eq!(
-        page_one_body["items"]
-            .as_array()
-            .expect("page-one items")
-            .len(),
-        2
-    );
+    assert_eq!(page_one_body["page"], 1);
+    assert_eq!(page_one_body["page_size"], 2);
+    assert_eq!(page_one_body["total"], 3);
+    assert_eq!(page_one_body["items"].as_array().unwrap().len(), 2);
 
     let page_two_response = client
         .get(format!(
             "http://{address}/admin/accounts?page=2&page_size=2"
         ))
-        .header("x-test-admin-id", admin_id.to_string())
+        .bearer_auth(&token)
         .send()
         .await
         .expect("send page-two request");
 
-    assert_eq!(
-        page_two_response.status(),
-        reqwest::StatusCode::OK
-    );
+    assert_eq!(page_two_response.status(), reqwest::StatusCode::OK);
 
     let page_two_body: Value = page_two_response
         .json()
         .await
         .expect("decode page-two response");
 
-    assert_eq!(
-        page_two_body["items"]
-            .as_array()
-            .expect("page-two items")
-            .len(),
-        1
-    );
+    assert_eq!(page_two_body["items"].as_array().unwrap().len(), 1);
 
     let deleted_response = client
         .get(format!(
             "http://{address}/admin/accounts?include_deleted=true"
         ))
-        .header("x-test-admin-id", admin_id.to_string())
+        .bearer_auth(&token)
         .send()
         .await
         .expect("send include-deleted request");
 
-    assert_eq!(
-        deleted_response.status(),
-        reqwest::StatusCode::OK
-    );
+    assert_eq!(deleted_response.status(), reqwest::StatusCode::OK);
 
     let deleted_body: Value = deleted_response
         .json()
         .await
         .expect("decode include-deleted response");
 
-    assert_eq!(
-        deleted_body
-            .get("total")
-            .and_then(Value::as_i64),
-        Some(4)
-    );
-
+    assert_eq!(deleted_body["total"], 4);
     assert!(deleted_body["items"]
         .as_array()
         .expect("include-deleted items")
         .iter()
         .any(|item| {
-            item.get("id")
-                .and_then(Value::as_str)
+            item["id"]
+                .as_str()
                 .is_some_and(|id| id == seeded[3].to_string())
         }));
 
     server.abort();
-
-    sqlx::query("DELETE FROM account WHERE id = ANY($1)")
-        .bind(&seeded)
-        .execute(&pool)
-        .await
-        .expect("cleanup seeded accounts");
+    cleanup_accounts(&pool, &seeded).await;
 }
 
 #[tokio::test]
 #[ignore = "requires PostgreSQL and a built backend"]
 async fn unauthenticated_view_accounts_end_to_end_returns_401() {
+    let _database_guard = TEST_DATABASE_LOCK.lock().await;
+
     let pool = connect_database().await;
 
     sqlx::migrate!()
@@ -481,7 +450,7 @@ async fn unauthenticated_view_accounts_end_to_end_returns_401() {
         .await
         .expect("run migrations");
 
-    let app = test_router(pool);
+    let app = test_router(pool.clone());
     let (address, server) = start_server(app).await;
 
     let response = Client::new()
@@ -490,11 +459,14 @@ async fn unauthenticated_view_accounts_end_to_end_returns_401() {
         .await
         .expect("send unauthenticated view request");
 
+    assert_eq!(response.status(), reqwest::StatusCode::UNAUTHORIZED);
     assert_eq!(
-        response.status(),
-        reqwest::StatusCode::UNAUTHORIZED
+        response
+            .headers()
+            .get("www-authenticate")
+            .and_then(|value| value.to_str().ok()),
+        Some(r#"Bearer realm="admin-api""#)
     );
-
     assert_eq!(
         response
             .headers()
@@ -502,7 +474,6 @@ async fn unauthenticated_view_accounts_end_to_end_returns_401() {
             .and_then(|value| value.to_str().ok()),
         Some("application/problem+json")
     );
-
     assert_eq!(
         response
             .headers()
@@ -516,7 +487,9 @@ async fn unauthenticated_view_accounts_end_to_end_returns_401() {
 
 #[tokio::test]
 #[ignore = "requires PostgreSQL and a built backend"]
-async fn invalid_view_accounts_query_end_to_end_returns_appropriate_status() {
+async fn invalid_bearer_view_accounts_end_to_end_returns_401() {
+    let _database_guard = TEST_DATABASE_LOCK.lock().await;
+
     let pool = connect_database().await;
 
     sqlx::migrate!()
@@ -524,9 +497,64 @@ async fn invalid_view_accounts_query_end_to_end_returns_appropriate_status() {
         .await
         .expect("run migrations");
 
-    let admin_id = Uuid::new_v4();
+    reset_test_database(&pool).await;
+    let seeded = seed_accounts(&pool).await;
 
-    let app = test_router(pool);
+    let app = test_router(pool.clone());
+    let (address, server) = start_server(app).await;
+
+    let response = Client::new()
+        .get(format!("http://{address}/admin/accounts"))
+        .bearer_auth("unknown-view-token")
+        .send()
+        .await
+        .expect("send invalid bearer request");
+
+    assert_eq!(response.status(), reqwest::StatusCode::UNAUTHORIZED);
+    assert_eq!(
+        response
+            .headers()
+            .get("www-authenticate")
+            .and_then(|value| value.to_str().ok()),
+        Some(r#"Bearer realm="admin-api", error="invalid_token""#)
+    );
+    assert_eq!(
+        response
+            .headers()
+            .get("content-type")
+            .and_then(|value| value.to_str().ok()),
+        Some("application/problem+json")
+    );
+    assert_eq!(
+        response
+            .headers()
+            .get("cache-control")
+            .and_then(|value| value.to_str().ok()),
+        Some("no-store")
+    );
+
+    server.abort();
+    cleanup_accounts(&pool, &seeded).await;
+}
+
+#[tokio::test]
+#[ignore = "requires PostgreSQL and a built backend"]
+async fn invalid_view_accounts_query_end_to_end_returns_appropriate_status() {
+    let _database_guard = TEST_DATABASE_LOCK.lock().await;
+
+    let pool = connect_database().await;
+
+    sqlx::migrate!()
+        .run(&pool)
+        .await
+        .expect("run migrations");
+
+    reset_test_database(&pool).await;
+
+    let seeded = seed_accounts(&pool).await;
+    let token = seed_access_token(&pool, seeded[0], "account_viewer").await;
+
+    let app = test_router(pool.clone());
     let (address, server) = start_server(app).await;
 
     for (query, expected_status) in [
@@ -534,24 +562,16 @@ async fn invalid_view_accounts_query_end_to_end_returns_appropriate_status() {
         ("page=0", reqwest::StatusCode::UNPROCESSABLE_ENTITY),
         ("page_size=0", reqwest::StatusCode::UNPROCESSABLE_ENTITY),
         ("page_size=101", reqwest::StatusCode::UNPROCESSABLE_ENTITY),
-        (
-            "status=unknown",
-            reqwest::StatusCode::UNPROCESSABLE_ENTITY,
-        ),
+        ("status=unknown", reqwest::StatusCode::UNPROCESSABLE_ENTITY),
     ] {
         let response = Client::new()
             .get(format!("http://{address}/admin/accounts?{query}"))
-            .header("x-test-admin-id", admin_id.to_string())
+            .bearer_auth(&token)
             .send()
             .await
             .expect("send invalid query request");
 
-        assert_eq!(
-            response.status(),
-            expected_status,
-            "query={query}"
-        );
-
+        assert_eq!(response.status(), expected_status, "query={query}");
         assert_eq!(
             response
                 .headers()
@@ -559,7 +579,6 @@ async fn invalid_view_accounts_query_end_to_end_returns_appropriate_status() {
                 .and_then(|value| value.to_str().ok()),
             Some("application/problem+json")
         );
-
         assert_eq!(
             response
                 .headers()
@@ -570,4 +589,5 @@ async fn invalid_view_accounts_query_end_to_end_returns_appropriate_status() {
     }
 
     server.abort();
+    cleanup_accounts(&pool, &seeded).await;
 }

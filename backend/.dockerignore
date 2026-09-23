@@ -14,9 +14,8 @@ target/
 .env.*
 !.env.example
 
-# Documentation & tests
+# Documentation
 docs/
-tests/
 README.md
 *.md
 
@@ -28,3 +27,5 @@ docker/
 *.log
 .DS_Store
 Thumbs.db
+tmp/
+scratch/
