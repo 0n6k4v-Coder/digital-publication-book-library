@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Sign in to the Archive administration area.">
+  <meta name="theme-color" content="#ffffff">
+  <title>Archive — Admin Sign In</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{--surface:#fff;--surface-soft:#f7f7f4;--text:#171717;--text-soft:#44443f;--muted:#85857f;--muted-strong:#666660;--line:#e5e5df;--line-strong:#d2d2cb;--accent:#d9ff4f;--accent-border:#bedf3c;--accent-hover:#d0f447;--error:#b42318;--error-surface:#fff4f2;--error-line:#efb2aa;--focus:#171717;--page-padding:clamp(20px,5vw,48px);--form-width:420px;--field-height:48px;--button-height:50px;--radius-sm:8px;--radius-lg:18px;--shadow-card:0 26px 70px rgb(23 23 23 / .08),0 4px 16px rgb(23 23 23 / .04);--transition-fast:160ms ease}
+    *,*::before,*::after{box-sizing:border-box}
+    html{min-width:320px;min-height:100%;background:var(--surface);color-scheme:light}
+    body{min-width:320px;min-height:100vh;min-height:100svh;min-height:100dvh;margin:0;background:var(--surface);color:var(--text);font-family:"DM Sans",sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;overflow-x:hidden}
+    button,input{font:inherit}button{border:0}a{color:inherit;text-decoration:none}svg{display:block}
+    button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
+    .login-page{position:relative;min-height:100vh;min-height:100svh;min-height:100dvh;display:grid;place-items:center;padding:calc(var(--page-padding) + env(safe-area-inset-top,0px)) max(var(--page-padding),env(safe-area-inset-right,0px)) calc(var(--page-padding) + env(safe-area-inset-bottom,0px)) max(var(--page-padding),env(safe-area-inset-left,0px));overflow:hidden}
+    .login-page::before,.login-page::after{content:"";position:fixed;z-index:-1;pointer-events:none}
+    .login-page::before{width:min(620px,72vw);height:min(620px,72vw);left:-280px;bottom:-300px;border-radius:50%;background:radial-gradient(circle,rgb(217 255 79 / .20) 0%,rgb(217 255 79 / .08) 38%,transparent 72%)}
+    .login-page::after{width:min(700px,76vw);height:min(700px,76vw);right:-330px;top:-340px;border-radius:50%;background:radial-gradient(circle,rgb(23 23 23 / .035) 0%,transparent 68%)}
+    .login-card{width:min(100%,500px);padding:clamp(32px,7vw,56px) clamp(24px,6vw,48px);border:1px solid var(--line);border-radius:var(--radius-lg);background:rgb(255 255 255 / .96);box-shadow:var(--shadow-card);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+    .brand{display:flex;flex-direction:column;align-items:center;margin-bottom:34px;text-align:center}
+    .brand__mark{width:40px;height:40px;margin-bottom:14px;display:grid;place-items:center;border-radius:50%;background:var(--text);color:var(--accent);font-family:"Playfair Display",Georgia,serif;font-size:17px;font-weight:700;letter-spacing:-.04em}
+    .brand__name{margin:0;color:var(--text);font-family:"Playfair Display",Georgia,serif;font-size:25px;line-height:1.1;font-weight:700;letter-spacing:-.035em}
+    .brand__context{margin:8px 0 0;color:var(--muted);font-size:10px;line-height:1.3;font-weight:700;letter-spacing:.13em;text-transform:uppercase}
+    .login-heading{margin:0;color:var(--text);font-family:"Playfair Display",Georgia,serif;font-size:clamp(30px,7vw,38px);line-height:1.08;font-weight:700;letter-spacing:-.035em;text-align:center}
+    .login-description{max-width:340px;margin:14px auto 34px;color:var(--muted-strong);font-size:14px;line-height:1.65;text-align:center}
+    .login-form{width:min(100%,var(--form-width));margin-inline:auto}.form-field{margin:0 0 22px}
+    .form-label{display:inline-block;margin-bottom:8px;color:var(--text-soft);font-size:12px;line-height:1.3;font-weight:700;letter-spacing:.01em}.form-label__required{color:var(--muted);font-weight:500}
+    .input-wrap{position:relative}.form-input{width:100%;height:var(--field-height);padding:0 14px;border:1px solid var(--line-strong);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font-size:14px;line-height:1;transition:border-color var(--transition-fast),box-shadow var(--transition-fast),background var(--transition-fast)}
+    .form-input::placeholder{color:#aaa9a2}.form-input:hover{border-color:#bcbcb5}.form-input:focus{border-color:var(--text);background:var(--surface);box-shadow:0 0 0 3px rgb(23 23 23 / .08);outline:none}.password-input{padding-right:52px}
+    .password-toggle{position:absolute;top:50%;right:7px;width:36px;height:36px;transform:translateY(-50%);display:grid;place-items:center;border-radius:6px;background:transparent;color:var(--muted);cursor:pointer;transition:background var(--transition-fast),color var(--transition-fast)}
+    .password-toggle:hover{background:var(--surface-soft);color:var(--text)}.password-toggle:focus-visible{outline:2px solid var(--focus);outline-offset:1px}.password-toggle__icon{width:18px;height:18px}
+    .login-error{margin:0 0 18px;padding:11px 13px;border:1px solid var(--error-line);border-radius:var(--radius-sm);background:var(--error-surface);color:var(--error);font-size:12px;line-height:1.5;font-weight:600}.login-error[hidden]{display:none}
+    .submit-button{width:100%;min-height:var(--button-height);display:inline-flex;align-items:center;justify-content:center;gap:9px;padding-inline:18px;border:1px solid var(--accent-border);border-radius:var(--radius-sm);background:var(--accent);color:#181818;font-size:12px;line-height:1;font-weight:700;cursor:pointer;transition:background var(--transition-fast),border-color var(--transition-fast),transform var(--transition-fast),box-shadow var(--transition-fast)}
+    .submit-button:hover{border-color:#aed12f;background:var(--accent-hover);box-shadow:0 8px 22px rgb(23 23 23 / .08)}.submit-button:active{transform:translateY(1px)}.submit-button:disabled{cursor:wait;opacity:.65;box-shadow:none}.submit-button__icon{width:16px;height:16px}.submit-button__spinner{display:none;width:15px;height:15px;border:2px solid rgb(24 24 24 / .22);border-top-color:#181818;border-radius:50%;animation:spin .7s linear infinite}.submit-button.is-loading .submit-button__icon{display:none}.submit-button.is-loading .submit-button__spinner{display:block}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .login-footer{margin-top:28px;padding-top:24px;border-top:1px solid var(--line);text-align:center}.back-link{display:inline-flex;align-items:center;justify-content:center;gap:7px;color:var(--muted-strong);font-size:12px;line-height:1.3;font-weight:600;transition:color var(--transition-fast),opacity var(--transition-fast)}.back-link:hover{color:var(--text)}.back-link__icon{width:15px;height:15px}
+    @media (max-width:560px){.login-page{place-items:start center;padding-top:calc(32px + env(safe-area-inset-top,0px));padding-bottom:calc(32px + env(safe-area-inset-bottom,0px))}.login-card{border:0;padding-inline:0;padding-top:24px;padding-bottom:24px;background:transparent;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}.brand{margin-bottom:30px}.login-heading{font-size:32px}.login-description{margin-bottom:30px}}
+    @media (prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+  </style>
+</head>
+<body>
+  <main class="login-page">
+    <section class="login-card" aria-labelledby="login-heading">
+      <header class="brand">
+        <div class="brand__mark" aria-hidden="true">A</div>
+        <p class="brand__name">Archive</p>
+        <p class="brand__context">Administration</p>
+      </header>
+
+      <h1 class="login-heading" id="login-heading">Sign in</h1>
+      <p class="login-description">Sign in to manage your publication and digital book library.</p>
+
+      <form class="login-form" action="/login" method="post" autocomplete="on">
+        <p class="login-error" id="login-error" role="alert" hidden>Invalid email or password.</p>
+
+        <div class="form-field">
+          <label class="form-label" for="email">Email address <span class="form-label__required" aria-hidden="true">*</span></label>
+          <input class="form-input" id="email" name="email" type="email" inputmode="email" autocomplete="username" autocapitalize="none" spellcheck="false" required placeholder="admin@example.com">
+        </div>
+
+        <div class="form-field">
+          <label class="form-label" for="password">Password <span class="form-label__required" aria-hidden="true">*</span></label>
+          <div class="input-wrap">
+            <input class="form-input password-input" id="password" name="password" type="password" autocomplete="current-password" required aria-describedby="password-help">
+            <button class="password-toggle" type="button" id="password-toggle" aria-label="Show password" aria-controls="password" aria-pressed="false">
+              <svg class="password-toggle__icon" id="password-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M2.5 12s3.5-5 9.5-5 9.5 5 9.5 5-3.5 5-9.5 5-9.5-5-9.5-5Z"></path><circle cx="12" cy="12" r="2.5"></circle>
+              </svg>
+            </button>
+          </div>
+          <span id="password-help" hidden>Enter your existing administrator password.</span>
+        </div>
+
+        <button class="submit-button" id="submit-button" type="submit">
+          <svg class="submit-button__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><path d="M10 17l5-5-5-5"></path><path d="M15 12H3"></path></svg>
+          <span class="submit-button__spinner" aria-hidden="true"></span>
+          <span class="submit-button__label" id="submit-label">Sign in</span>
+        </button>
+      </form>
+
+      <footer class="login-footer">
+        <a class="back-link" href="/">
+          <svg class="back-link__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg>
+          <span>Back to site</span>
+        </a>
+      </footer>
+    </section>
+  </main>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const form = document.querySelector(".login-form");
+      const password = document.querySelector("#password");
+      const passwordToggle = document.querySelector("#password-toggle");
+      const passwordIcon = document.querySelector("#password-toggle-icon");
+      const submitButton = document.querySelector("#submit-button");
+      const submitLabel = document.querySelector("#submit-label");
+
+      if (!form || !password || !passwordToggle || !submitButton) return;
+
+      passwordToggle.addEventListener("click", () => {
+        const isVisible = password.type === "text";
+        password.type = isVisible ? "password" : "text";
+        passwordToggle.setAttribute("aria-pressed", String(!isVisible));
+        passwordToggle.setAttribute("aria-label", isVisible ? "Show password" : "Hide password");
+
+        passwordIcon.innerHTML = isVisible
+          ? '<path d="M2.5 12s3.5-5 9.5-5 9.5 5 9.5 5-3.5 5-9.5 5-9.5-5-9.5-5Z"></path><circle cx="12" cy="12" r="2.5"></circle>'
+          : '<path d="M3 3l18 18"></path><path d="M10.6 6.2A9.6 9.6 0 0 1 12 6c6 0 9.5 6 9.5 6a16.7 16.7 0 0 1-3.1 3.8"></path><path d="M6.8 6.8C3.9 8.3 2.5 12 2.5 12s3.5 6 9.5 6c1.6 0 3-.4 4.2-1"></path><path d="M9.9 9.9a2.5 2.5 0 0 0 3.5 3.5"></path>';
+      });
+
+      form.addEventListener("submit", () => {
+        if (!form.checkValidity()) return;
+        submitButton.disabled = true;
+        submitButton.classList.add("is-loading");
+        submitLabel.textContent = "Signing in…";
+      });
+    });
+  </script>
+</body>
+</html>
