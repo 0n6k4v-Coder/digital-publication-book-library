@@ -19,7 +19,7 @@ services:
       start_period: 5s
 
     volumes:
-      - postgres-test-data:/var/lib/postgresql/data
+      - postgres-test-data:/var/lib/postgresql
 
   test:
     build:
