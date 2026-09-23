@@ -2,10 +2,10 @@ use std::{env, net::SocketAddr, sync::Arc};
 
 use axum::{extract::Request, middleware, Router};
 use reqwest::Client;
-use serde_json::{json, Value};
+use serde_json::Value;
 use sha1::{Digest, Sha1};
 use sqlx::PgPool;
-use tokio::net::TcpListener;
+use tokio::{net::TcpListener, sync::Mutex};
 use uuid::Uuid;
 
 use digital_publication_backend::{
@@ -18,6 +18,8 @@ use digital_publication_backend::{
         validation::PasswordBlocklist,
     },
 };
+
+static TEST_DATABASE_LOCK: Mutex<()> = Mutex::const_new(());
 
 fn sha1_hash(password: &str) -> [u8; 20] {
     let mut hasher = Sha1::new();
@@ -166,6 +168,8 @@ async fn start_server(
 #[tokio::test]
 #[ignore = "requires PostgreSQL and a built backend"]
 async fn view_accounts_end_to_end() {
+    let _database_guard = TEST_DATABASE_LOCK.lock().await;
+
     let pool = connect_database().await;
 
     sqlx::migrate!()
@@ -278,6 +282,8 @@ async fn view_accounts_end_to_end() {
 #[tokio::test]
 #[ignore = "requires PostgreSQL and a built backend"]
 async fn view_accounts_supports_filters_and_pagination_end_to_end() {
+    let _database_guard = TEST_DATABASE_LOCK.lock().await;
+
     let pool = connect_database().await;
 
     sqlx::migrate!()
@@ -457,6 +463,8 @@ async fn view_accounts_supports_filters_and_pagination_end_to_end() {
 #[tokio::test]
 #[ignore = "requires PostgreSQL and a built backend"]
 async fn unauthenticated_view_accounts_end_to_end_returns_401() {
+    let _database_guard = TEST_DATABASE_LOCK.lock().await;
+
     let pool = connect_database().await;
 
     sqlx::migrate!()
@@ -500,6 +508,8 @@ async fn unauthenticated_view_accounts_end_to_end_returns_401() {
 #[tokio::test]
 #[ignore = "requires PostgreSQL and a built backend"]
 async fn invalid_view_accounts_query_end_to_end_returns_appropriate_status() {
+    let _database_guard = TEST_DATABASE_LOCK.lock().await;
+
     let pool = connect_database().await;
 
     sqlx::migrate!()
@@ -522,7 +532,7 @@ async fn invalid_view_accounts_query_end_to_end_returns_appropriate_status() {
             reqwest::StatusCode::UNPROCESSABLE_ENTITY,
         ),
     ] {
-        let response = client_for_test()
+        let response = Client::new()
             .get(format!("http://{address}/admin/accounts?{query}"))
             .header("x-test-admin-id", admin_id.to_string())
             .send()
@@ -553,8 +563,4 @@ async fn invalid_view_accounts_query_end_to_end_returns_appropriate_status() {
     }
 
     server.abort();
-}
-
-fn client_for_test() -> Client {
-    Client::new()
 }
