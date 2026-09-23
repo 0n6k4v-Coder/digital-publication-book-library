@@ -98,7 +98,10 @@ async fn creates_account_and_credentials_atomically() {
 
     let admin_id = seed_admin(&pool).await;
 
-    let email = format!("AC_UC_01-{Uuid::new_v4()}@example.com");
+    let email = format!(
+        "AC_UC_01-{}@example.com",
+        Uuid::new_v4()
+    );
     let password = "a secure password with enough length";
 
     let request = Request::builder()
@@ -202,8 +205,11 @@ async fn rejects_duplicate_email_using_database_uniqueness() {
         .expect("run migrations");
 
     let admin_id = seed_admin(&pool).await;
-    let email =
-        format!("duplicate-{Uuid::new_v4()}@example.com");
+
+    let email = format!(
+        "duplicate-{}@example.com",
+        Uuid::new_v4()
+    );
 
     let seed_request = Request::builder()
         .method("POST")
