@@ -127,9 +127,19 @@ docker compose -f backend/compose/docker-compose.test.yml run --rm test sh -c 'c
 
 ```bash
 docker compose -f backend/compose/docker-compose.test.yml run --rm test sh -c '
+set -e
 trap "rm -f tests/unit.rs" EXIT
-ln -s unit/account_create.rs tests/unit.rs
-cargo test --test unit --no-fail-fast
+
+for test_file in tests/unit/*.rs; do
+    echo "========================================"
+    echo "Running unit test: $test_file"
+    echo "========================================"
+
+    rm -f tests/unit.rs
+    ln -s "$test_file" tests/unit.rs
+
+    cargo test --test unit --no-fail-fast
+done
 '
 ```
 
@@ -137,9 +147,23 @@ cargo test --test unit --no-fail-fast
 
 ```bash
 docker compose -f backend/compose/docker-compose.test.yml run --rm test sh -c '
+status=0
 trap "rm -f tests/integration.rs" EXIT
-ln -s integration/create_account.rs tests/integration.rs
-cargo test --test integration --no-fail-fast -- --include-ignored
+
+for test_file in tests/integration/*.rs; do
+    echo "========================================"
+    echo "Running integration test: $test_file"
+    echo "========================================"
+
+    rm -f tests/integration.rs
+    ln -s "$test_file" tests/integration.rs
+
+    if ! cargo test --test integration --no-fail-fast -- --include-ignored; then
+        status=1
+    fi
+done
+
+exit $status
 '
 ```
 
@@ -147,9 +171,23 @@ cargo test --test integration --no-fail-fast -- --include-ignored
 
 ```bash
 docker compose -f backend/compose/docker-compose.test.yml run --rm test sh -c '
+status=0
 trap "rm -f tests/e2e.rs" EXIT
-ln -s e2e/account_create.rs tests/e2e.rs
-cargo test --test e2e --no-fail-fast -- --include-ignored
+
+for test_file in tests/e2e/*.rs; do
+    echo "========================================"
+    echo "Running E2E test: $test_file"
+    echo "========================================"
+
+    rm -f tests/e2e.rs
+    ln -s "$test_file" tests/e2e.rs
+
+    if ! cargo test --test e2e --no-fail-fast -- --include-ignored; then
+        status=1
+    fi
+done
+
+exit $status
 '
 ```
 
@@ -157,13 +195,48 @@ cargo test --test e2e --no-fail-fast -- --include-ignored
 
 ```bash
 docker compose -f backend/compose/docker-compose.test.yml run --rm test sh -c '
-set -e
+status=0
 trap "rm -f tests/unit.rs tests/integration.rs tests/e2e.rs" EXIT
 
-ln -s unit/account_create.rs tests/unit.rs
-ln -s integration/create_account.rs tests/integration.rs
-ln -s e2e/account_create.rs tests/e2e.rs
+for test_file in tests/unit/*.rs; do
+    echo "========================================"
+    echo "Running unit test: $test_file"
+    echo "========================================"
 
-cargo test --tests --no-fail-fast -- --include-ignored
+    rm -f tests/unit.rs
+    ln -s "$test_file" tests/unit.rs
+
+    if ! cargo test --test unit --no-fail-fast; then
+        status=1
+    fi
+done
+
+for test_file in tests/integration/*.rs; do
+    echo "========================================"
+    echo "Running integration test: $test_file"
+    echo "========================================"
+
+    rm -f tests/integration.rs
+    ln -s "$test_file" tests/integration.rs
+
+    if ! cargo test --test integration --no-fail-fast -- --include-ignored; then
+        status=1
+    fi
+done
+
+for test_file in tests/e2e/*.rs; do
+    echo "========================================"
+    echo "Running E2E test: $test_file"
+    echo "========================================"
+
+    rm -f tests/e2e.rs
+    ln -s "$test_file" tests/e2e.rs
+
+    if ! cargo test --test e2e --no-fail-fast -- --include-ignored; then
+        status=1
+    fi
+done
+
+exit $status
 '
 ```

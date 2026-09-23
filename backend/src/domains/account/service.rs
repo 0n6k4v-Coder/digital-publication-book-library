@@ -13,8 +13,11 @@ use crate::shared::{
 };
 
 use super::{
-    model::{CreateAccountRequest, CreatedAccount},
-    repository::{AccountRepository, CreateAccountRepositoryError},
+    model::{
+        CreateAccountRequest, CreatedAccount, ListAccountsQuery, ListAccountsQueryValidationError,
+        ListedAccounts,
+    },
+    repository::{AccountRepository, CreateAccountRepositoryError, ListAccountsRepositoryError},
 };
 
 pub struct AccountService {
@@ -65,6 +68,29 @@ impl AccountService {
             })
     }
 
+    pub async fn list_accounts(
+        &self,
+        request: ListAccountsQuery,
+    ) -> Result<ListedAccounts, AppError> {
+        request
+            .validate()
+            .map_err(map_list_accounts_query_validation)?;
+
+        self.repository
+            .list(
+                request.page,
+                request.page_size,
+                request.status.as_deref(),
+                request.include_deleted,
+            )
+            .await
+            .map_err(|error| match error {
+                ListAccountsRepositoryError::Database(error) => {
+                    crate::shared::error::internal_error(error)
+                }
+            })
+    }
+
     async fn hash_password(&self, password: SecretString) -> Result<String, AppError> {
         let permit = self
             .password_hash_semaphore
@@ -102,6 +128,20 @@ fn map_password_validation(error: PasswordValidationError) -> AppError {
         }
         PasswordValidationError::Blocklisted => {
             AppError::Validation("Password is commonly used or compromised and cannot be used.")
+        }
+    }
+}
+
+fn map_list_accounts_query_validation(error: ListAccountsQueryValidationError) -> AppError {
+    match error {
+        ListAccountsQueryValidationError::PageMustBePositive => {
+            AppError::Validation("Page must be at least 1.")
+        }
+        ListAccountsQueryValidationError::PageSizeOutOfRange => {
+            AppError::Validation("Page size must be between 1 and 100.")
+        }
+        ListAccountsQueryValidationError::InvalidStatus => {
+            AppError::Validation("Status must be active or inactive.")
         }
     }
 }

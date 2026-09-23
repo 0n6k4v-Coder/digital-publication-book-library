@@ -2,7 +2,7 @@ use sqlx::PgPool;
 use time::OffsetDateTime;
 use uuid::Uuid;
 
-use super::model::CreatedAccount;
+use super::model::{CreatedAccount, ListedAccount, ListedAccounts};
 
 const EMAIL_UNIQUE_CONSTRAINT: &str = "account_credentials_email_normalized_key";
 
@@ -80,6 +80,67 @@ impl AccountRepository {
             deleted_at: account.deleted_at,
         })
     }
+
+    pub async fn list(
+        &self,
+        page: u32,
+        page_size: u32,
+        status: Option<&str>,
+        include_deleted: bool,
+    ) -> Result<ListedAccounts, ListAccountsRepositoryError> {
+        let total = sqlx::query_scalar::<_, i64>(
+            r#"
+            SELECT COUNT(*)
+            FROM account AS a
+            INNER JOIN account_credentials AS ac
+                ON ac.account_id = a.id
+            WHERE ($1::text IS NULL OR a.status = $1)
+              AND ($2 OR a.deleted_at IS NULL)
+            "#,
+        )
+        .bind(status)
+        .bind(include_deleted)
+        .fetch_one(&self.pool)
+        .await
+        .map_err(ListAccountsRepositoryError::Database)?;
+
+        let limit = i64::from(page_size);
+        let offset = (i64::from(page) - 1) * limit;
+
+        let rows = sqlx::query_as::<_, ListedAccountRow>(
+            r#"
+            SELECT
+                a.id,
+                ac.email,
+                a.status,
+                a.created_at,
+                a.updated_at,
+                a.deleted_at
+            FROM account AS a
+            INNER JOIN account_credentials AS ac
+                ON ac.account_id = a.id
+            WHERE ($1::text IS NULL OR a.status = $1)
+              AND ($2 OR a.deleted_at IS NULL)
+            ORDER BY a.id ASC
+            LIMIT $3
+            OFFSET $4
+            "#,
+        )
+        .bind(status)
+        .bind(include_deleted)
+        .bind(limit)
+        .bind(offset)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(ListAccountsRepositoryError::Database)?;
+
+        Ok(ListedAccounts {
+            items: rows.into_iter().map(ListedAccount::from).collect(),
+            page,
+            page_size,
+            total,
+        })
+    }
 }
 
 #[derive(Debug, sqlx::FromRow)]
@@ -89,6 +150,29 @@ struct AccountRow {
     updated_at: OffsetDateTime,
     status: String,
     deleted_at: Option<OffsetDateTime>,
+}
+
+#[derive(Debug, sqlx::FromRow)]
+struct ListedAccountRow {
+    id: Uuid,
+    email: String,
+    status: String,
+    created_at: OffsetDateTime,
+    updated_at: OffsetDateTime,
+    deleted_at: Option<OffsetDateTime>,
+}
+
+impl From<ListedAccountRow> for ListedAccount {
+    fn from(row: ListedAccountRow) -> Self {
+        Self {
+            id: row.id,
+            email: row.email,
+            status: row.status,
+            created_at: row.created_at,
+            updated_at: row.updated_at,
+            deleted_at: row.deleted_at,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -107,3 +191,18 @@ impl std::fmt::Display for CreateAccountRepositoryError {
 }
 
 impl std::error::Error for CreateAccountRepositoryError {}
+
+#[derive(Debug)]
+pub enum ListAccountsRepositoryError {
+    Database(sqlx::Error),
+}
+
+impl std::fmt::Display for ListAccountsRepositoryError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Database(error) => write!(f, "{error}"),
+        }
+    }
+}
+
+impl std::error::Error for ListAccountsRepositoryError {}
