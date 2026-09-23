@@ -5,7 +5,7 @@ Simple, Clear, Direct, Explicit and Concise
 ```
 
 ```text
-Please ensure the document is simple, clear, direct, concise, well-organized, implementation-ready, and easy to trace as a single source of truth.
+Please ensure the document is clear, concise, well-organized, and implementation-ready—serving as a reliable source of truth without unnecessary over-explanation.
 ```
 
 ```text
