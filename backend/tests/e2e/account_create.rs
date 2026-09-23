@@ -5,12 +5,12 @@ use std::{
 };
 
 use axum::{
+    extract::Request,
     middleware,
-    http::{Request, StatusCode},
     Router,
 };
 use reqwest::Client;
-use secrecy::SecretString;
+use secrecy::{ExposeSecret, SecretString};
 use serde_json::{json, Value};
 use sha1::{Digest, Sha1};
 use sqlx::PgPool;
@@ -57,9 +57,7 @@ async fn seed_admin(pool: &PgPool) -> Uuid {
     .expect("seed administrator")
 }
 
-fn test_router(
-    pool: PgPool,
-) -> Router {
+fn test_router(pool: PgPool) -> Router {
     let blocklist = PasswordBlocklist::from_hashes(
         "test",
         [sha1_hash("password-password")],
@@ -74,33 +72,18 @@ fn test_router(
     let application = build_router(state);
 
     application.layer(middleware::from_fn(
-        |request: Request<_>, next: middleware::Next<_>| async move {
-            let admin_id_header =
-                request.headers().get("x-test-admin-id");
+        |mut request: Request, next: middleware::Next| async move {
+            let admin_id = request
+                .headers()
+                .get("x-test-admin-id")
+                .and_then(|value| value.to_str().ok())
+                .and_then(|value| Uuid::parse_str(value).ok());
 
-            let Some(admin_id_header) = admin_id_header else {
-                return next.run(request).await;
-            };
-
-            let Ok(admin_id_text) =
-                admin_id_header.to_str()
-            else {
-                return next.run(request).await;
-            };
-
-            let Ok(admin_id) =
-                Uuid::parse_str(admin_id_text)
-            else {
-                return next.run(request).await;
-            };
-
-            let mut request = request;
-
-            request.extensions_mut().insert(
-                AuthenticatedAdmin::from_verified_account(
-                    admin_id,
-                ),
-            );
+            if let Some(admin_id) = admin_id {
+                request.extensions_mut().insert(
+                    AuthenticatedAdmin::from_verified_account(admin_id),
+                );
+            }
 
             next.run(request).await
         },
@@ -110,14 +93,13 @@ fn test_router(
 async fn start_server(
     app: Router,
 ) -> (SocketAddr, tokio::task::JoinHandle<()>) {
-    let listener = TcpListener::bind(
-        "127.0.0.1:0",
-    )
-    .await
-    .expect("bind e2e server");
+    let listener = TcpListener::bind("127.0.0.1:0")
+        .await
+        .expect("bind e2e server");
 
-    let address =
-        listener.local_addr().unwrap();
+    let address = listener
+        .local_addr()
+        .expect("read e2e server address");
 
     let task = tokio::spawn(async move {
         axum::serve(listener, app)
@@ -138,26 +120,20 @@ async fn create_account_end_to_end() {
         .await
         .expect("run migrations");
 
-    let admin_id =
-        seed_admin(&pool).await;
+    let admin_id = seed_admin(&pool).await;
 
-    let app =
-        test_router(pool.clone());
+    let app = test_router(pool.clone());
 
-    let (address, server) =
-        start_server(app).await;
+    let (address, server) = start_server(app).await;
 
-    let client =
-        Client::new();
+    let client = Client::new();
 
-    let email =
-        format!(
-            "e2e-{}@example.com",
-            Uuid::new_v4()
-        );
+    let email = format!(
+        "e2e-{}@example.com",
+        Uuid::new_v4()
+    );
 
-    let password =
-        "an extremely secure password";
+    let password = "an extremely secure password";
 
     let response = client
         .post(format!(
@@ -178,7 +154,7 @@ async fn create_account_end_to_end() {
 
     assert_eq!(
         response.status(),
-        StatusCode::CREATED
+        reqwest::StatusCode::CREATED
     );
 
     assert_eq!(
@@ -189,20 +165,16 @@ async fn create_account_end_to_end() {
         Some("no-store")
     );
 
-    assert_eq!(
+    assert!(
         response
             .headers()
-            .get("location")
-            .and_then(|value| value.to_str().ok())
-            .is_some(),
-        true
+            .contains_key("location")
     );
 
-    let response_body: Value =
-        response
-            .json()
-            .await
-            .expect("decode account response");
+    let response_body: Value = response
+        .json()
+        .await
+        .expect("decode account response");
 
     assert!(
         response_body
@@ -232,7 +204,9 @@ async fn create_account_end_to_end() {
     );
 
     assert!(
-        response_body.get("password").is_none()
+        response_body
+            .get("password")
+            .is_none()
     );
 
     assert!(
@@ -303,28 +277,12 @@ async fn unauthenticated_create_account_end_to_end_returns_401() {
         .await
         .expect("run migrations");
 
-    let app =
-        test_router(pool).into_make_service();
+    let app = test_router(pool);
 
-    let listener = TcpListener::bind(
-        "127.0.0.1:0",
-    )
-    .await
-    .expect("bind e2e server");
+    let (address, server) =
+        start_server(app).await;
 
-    let address =
-        listener.local_addr().unwrap();
-
-    let server = tokio::spawn(async move {
-        axum::serve(listener, app)
-            .await
-            .expect("serve e2e application");
-    });
-
-    let client =
-        Client::new();
-
-    let response = client
+    let response = Client::new()
         .post(format!(
             "http://{address}/admin/accounts"
         ))
@@ -339,7 +297,7 @@ async fn unauthenticated_create_account_end_to_end_returns_401() {
 
     assert_eq!(
         response.status(),
-        StatusCode::UNAUTHORIZED
+        reqwest::StatusCode::UNAUTHORIZED
     );
 
     assert_eq!(
@@ -371,16 +329,14 @@ async fn blocklisted_password_is_rejected_end_to_end() {
         .await
         .expect("run migrations");
 
-    let admin_id =
-        seed_admin(&pool).await;
+    let admin_id = seed_admin(&pool).await;
 
     let blocklisted_password =
         SecretString::from(
             "password-password".to_owned(),
         );
 
-    let app =
-        test_router(pool.clone());
+    let app = test_router(pool.clone());
 
     let (address, server) =
         start_server(app).await;
@@ -408,7 +364,7 @@ async fn blocklisted_password_is_rejected_end_to_end() {
 
     assert_eq!(
         response.status(),
-        StatusCode::UNPROCESSABLE_ENTITY
+        reqwest::StatusCode::UNPROCESSABLE_ENTITY
     );
 
     server.abort();

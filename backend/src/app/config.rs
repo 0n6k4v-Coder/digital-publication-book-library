@@ -29,7 +29,8 @@ impl Config {
             return Err(ConfigError::Invalid("DATABASE_MAX_CONNECTIONS"));
         }
 
-        let password_blocklist_path = PathBuf::from(required("PASSWORD_BLOCKLIST_PATH")?);
+        let password_blocklist_path =
+            PathBuf::from(required("PASSWORD_BLOCKLIST_PATH")?);
 
         let password_hash_concurrency = optional("PASSWORD_HASH_CONCURRENCY")
             .unwrap_or_else(|| "4".to_owned())
@@ -58,6 +59,7 @@ fn optional(name: &str) -> Option<String> {
 pub enum ConfigError {
     #[error("missing required environment variable {0}")]
     Missing(&'static str),
+
     #[error("invalid value for environment variable {0}")]
     Invalid(&'static str),
 }
