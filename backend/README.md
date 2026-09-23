@@ -96,3 +96,49 @@ backend/
         /                              \
        /________________________________\
 ```
+
+# Docker Command
+
+## Test Profile Command
+
+### Build Command
+
+```bash
+docker compose -f backend/compose/docker-compose.test.yml build test
+```
+
+### Clean Test Profile Command
+
+```bash
+docker compose -f backend/compose/docker-compose.test.yml down --volumes --remove-orphans
+```
+
+### Static Code Test Command
+
+```bash
+docker compose -f backend/compose/docker-compose.test.yml run --rm test sh -c 'cargo fmt --all -- --check && cargo check --tests && cargo clippy --all-targets --all-features -- -D warnings'
+```
+
+### Unit Test Command
+
+```bash
+docker compose -f backend/compose/docker-compose.test.yml run --rm test cargo test --test unit --no-fail-fast
+```
+
+### Integration Test Command
+
+```bash
+docker compose -f backend/compose/docker-compose.test.yml run --rm test cargo test --test integration --no-fail-fast -- --include-ignored
+```
+
+### E2E Test Command
+
+```bash
+docker compose -f backend/compose/docker-compose.test.yml run --rm test cargo test --test e2e --no-fail-fast -- --include-ignored
+```
+
+### Full Test Command
+
+```bash
+docker compose -f backend/compose/docker-compose.test.yml run --rm test cargo test --tests --no-fail-fast -- --include-ignored
+```
