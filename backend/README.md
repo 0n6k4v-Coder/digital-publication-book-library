@@ -127,7 +127,7 @@ docker compose -f backend/compose/docker-compose.test.yml run --rm test sh -c 'c
 
 ```bash
 docker compose -f backend/compose/docker-compose.test.yml run --rm test sh -c '
-set -e
+status=0
 trap "rm -f tests/unit.rs" EXIT
 
 for test_file in tests/unit/*.rs; do
@@ -136,10 +136,14 @@ for test_file in tests/unit/*.rs; do
     echo "========================================"
 
     rm -f tests/unit.rs
-    ln -s "$test_file" tests/unit.rs
+    cp "$test_file" tests/unit.rs
 
-    cargo test --test unit --no-fail-fast
+    if ! cargo test --test unit --no-fail-fast; then
+        status=1
+    fi
 done
+
+exit $status
 '
 ```
 
@@ -156,7 +160,7 @@ for test_file in tests/integration/*.rs; do
     echo "========================================"
 
     rm -f tests/integration.rs
-    ln -s "$test_file" tests/integration.rs
+    cp "$test_file" tests/integration.rs
 
     if ! cargo test --test integration --no-fail-fast -- --include-ignored; then
         status=1
@@ -180,7 +184,7 @@ for test_file in tests/e2e/*.rs; do
     echo "========================================"
 
     rm -f tests/e2e.rs
-    ln -s "$test_file" tests/e2e.rs
+    cp "$test_file" tests/e2e.rs
 
     if ! cargo test --test e2e --no-fail-fast -- --include-ignored; then
         status=1
