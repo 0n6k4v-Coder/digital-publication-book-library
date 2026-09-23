@@ -251,33 +251,3 @@ password_hash
 The plaintext password must never be persisted.
 
 For a new implementation, Argon2id is the preferred password hashing approach.
-
-# Domain Boundary
-
-The Account domain contains exactly two tables:
-
-```
-Account Domain
-│
-├── AC_DM_01
-│   └── account
-│
-└── AC_DM_02
-    └── account_credentials
-```
-
-The architectural responsibilities are:
-
-```
-Authentication
-    → account_credentials
-    → authentication session
-
-Authorization
-    → separate policy/enforcement layer
-
-Protected Entity
-    → account
-```
-
-The current version intentionally does not introduce roles, permissions, multiple credential types, social login, or other authentication mechanisms.
