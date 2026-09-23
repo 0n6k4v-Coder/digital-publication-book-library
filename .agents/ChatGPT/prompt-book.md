@@ -63,12 +63,18 @@ Task 3. Conduct deep research using the latest official documentation for the re
 ```
 
 ```text
-Task 4: Create the implementation plan.
-- Define exactly what will be implemented.
-- Define the files to create or change.
-- Define the responsibility of each file.
+Task 4. Create the implementation plan.
+- Define exactly what will be implemented for the requested objective only.
+- Define the minimum necessary file change set.
+- For every file in the change set, define whether it is:
+  - new file
+  - shared existing file requiring an incremental extension
+  - objective-specific existing file requiring modification
+- Define the responsibility of each changed or newly created file.
+- Explicitly identify existing functionality that must remain unchanged.
 - Define the implementation sequence.
 - Define how the relevant design IDs will be satisfied.
+- Do not include unrelated files or Use Case implementations in the plan.
 - Output: Simple, clear, direct, explicit, and concise.
 ```
 
@@ -82,55 +88,71 @@ Task 6. Implement the plan and generate the required code.
 ```
 
 ```text
-### Task 7: Review, Validate, and Correct the Generated Code.
+### Task 7: Review, Validate, and Correct the Generated Code
 
-Before final output, perform these checks on the actual repository:
+Before final output, review the actual repository and correct all issues found.
 
-1. **Scope**
+1. Scope
+- Inspect the actual changed files.
+- Keep only files required by the objective.
+- Remove unnecessary code, dependencies, files, configuration, migrations, refactors, and formatting-only changes.
+- Preserve existing Use Case behavior.
+- Modify another Use Case only when strictly required by a direct dependency.
+- Prefer objective-specific test files.
 
-   * Inspect the changed files and verify they are relevant to the objective.
-   * Remove unnecessary changes, dependencies, files, or code.
+2. Design Compliance
+- Re-read the relevant `account.md`.
+- Verify Requirements, Security, Design Decisions, Data Model, Use Case, API Contract, and HTTP status rules.
+- Do not invent behavior not defined by the source of truth.
 
-2. **Design Compliance**
+3. Code Correctness
+- Verify logic, validation, pagination, filtering, ordering, database queries, transactions, errors, state handling, edge cases, and module integration.
+- Fix all correctness issues.
 
-   * Read the relevant `account.md`.
-   * Verify the implementation against the applicable Requirements, Security, Design Decisions, Data Model, Use Case, and API Contract.
+4. Configuration and Runtime
+- Verify `Cargo.toml`, `Cargo.lock`, Docker/Compose files, environment configuration, paths, migrations, and test targets.
+- Confirm all referenced files, commands, services, and dependencies exist.
+- Correct only issues required by the objective.
 
-3. **Code Correctness**
+5. Security
+- Verify authentication, authorization, input validation, resource limits, secret handling, sensitive-data handling, error exposure, logging, injection risks, and cache behavior.
+- Confirm credentials are never returned or logged.
 
-   * Review logic, state transitions, edge cases, error handling, transactions, database queries, and module integration.
+6. Code Quality
+- Verify Rust structure, module boundaries, naming, error handling, duplication, maintainability, and unnecessary complexity.
+- Do not perform unrelated refactoring.
 
-4. **Configuration and Runtime**
+7. Tests
+- Inspect relevant tests.
+- Verify success, failure, validation, boundary, empty-result, filtering, pagination, and security cases applicable to the objective.
+- Verify test discovery and configuration.
+- Run relevant tests when the required runtime is available.
 
-   * Inspect all related Dockerfiles, Compose files, manifests, environment configuration, paths, test targets, and dependencies.
-   * Verify that commands reference files, services, tools, and components that actually exist.
-   * Execute available format, check, lint, build, and test commands in the available runtime.
+8. Validation
+- Run available `cargo fmt`, `cargo check`, `cargo clippy`, unit, integration, E2E, and repository-defined Docker/Compose checks.
+- Do not fabricate unavailable results.
+- Report unavailable checks explicitly.
 
-5. **Security**
+9. Correction
+- Fix every issue found.
+- Re-run affected checks after each correction.
+- Re-check scope and design compliance after corrections.
 
-   * Verify authentication, authorization, input validation, password handling, secret handling, and sensitive-data handling.
+10. Final Check
+- Inspect the final change set.
+- Confirm every changed file is necessary for the objective.
+- Confirm unrelated Use Cases remain unchanged.
+- Confirm the implementation matches the plan and source of truth.
 
-6. **Code Quality**
-
-   * Review Rust structure, module boundaries, naming, duplication, maintainability, and unnecessary complexity.
-
-7. **Tests**
-
-   * Inspect the relevant test files.
-   * Verify success cases, failure cases, edge cases, test discovery, and test configuration.
-   * Execute the relevant tests when the required runtime and dependencies are available.
-
-8. **Correct Findings**
-
-   * Fix issues found during the review.
-   * Re-run the relevant checks after corrections.
-   * Do not commit, push, or modify Git history.
+Do not commit, push, or modify Git history.
 ```
 
 ```text
-Task 8: Generate the final output.
-- For every changed or newly created file, provide the exact repository file path.
-- Provide the complete final code for each file in a separate code block.
+Task 8. Generate the final output.
+- For every file that was actually and necessarily changed or newly created for this objective, provide the exact repository file path.
+- Provide the complete final code for each such file in a separate code block.
+- Do not provide regenerated versions of unrelated files.
+- Do not provide files that were not necessary for the objective.
 - Do not provide partial code, diffs, or omitted sections.
 ```
 
