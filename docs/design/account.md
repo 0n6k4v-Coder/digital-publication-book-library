@@ -154,27 +154,35 @@
 
 ### 2.2.1 Email
 
-| ID                    | Decision                        | Definition                                                          |
-| --------------------- | ------------------------------- | ------------------------------------------------------------------- |
-| `AC_SEC_DEC_EMAIL_01` | Email identity                  | Email identity is case-insensitive.                                 |
-| `AC_SEC_DEC_EMAIL_02` | Email storage                   | `email` stores the canonical application email value.               |
-| `AC_SEC_DEC_EMAIL_03` | Email normalization             | Trim surrounding whitespace and lowercase the domain.               |
-| `AC_SEC_DEC_EMAIL_04` | Local-part handling             | Preserve local-part case.                                           |
+| ID                    | Decision                        | Definition |
+| --------------------- | ------------------------------- | ---------- |
+| `AC_SEC_DEC_EMAIL_01` | Email identity                  | Email identity is case-insensitive. |
+| `AC_SEC_DEC_EMAIL_02` | Email storage                   | `email` stores the canonical application email value. |
+| `AC_SEC_DEC_EMAIL_03` | Email normalization             | Trim surrounding whitespace and normalize the domain using IDNA2008. |
+| `AC_SEC_DEC_EMAIL_04` | Local-part handling             | Preserve local-part case in the stored `email` value. |
 | `AC_SEC_DEC_EMAIL_05` | Provider-specific normalization | Do not remove `+` tags or modify provider-specific dot conventions. |
-| `AC_SEC_DEC_EMAIL_06` | Email uniqueness                | Enforce case-insensitive uniqueness in PostgreSQL.                  |
+| `AC_SEC_DEC_EMAIL_06` | Email uniqueness                | Enforce case-insensitive uniqueness using `email_normalized`. |
+| `AC_SEC_DEC_EMAIL_07` | Email syntax                    | Accept only a valid modern email `addr-spec`. Reject display names, comments, obsolete syntax, and domain literals. Use a standards-compliant email parser. |
+| `AC_SEC_DEC_EMAIL_08` | Email length                    | The complete email address must not exceed 254 characters. |
+| `AC_SEC_DEC_EMAIL_09` | Unicode and IDN                 | Support Unicode local-parts and IDN domains. Normalize the domain using IDNA2008 before generating `email_normalized`. |
+| `AC_SEC_DEC_EMAIL_10` | Comparison key | Generate `email_normalized` as `NFD(toCasefold(NFD(local-part))) + "@" + IDNA2008-normalized ASCII domain`. Use `email_normalized` as the unique case-insensitive identity key. |
 
 ### 2.2.2 Password
 
-| ID                       | Decision         | Definition                                                           |
-| ------------------------ | ---------------- | -------------------------------------------------------------------- |
-| `AC_SEC_DEC_PASSWORD_01` | Password storage | Store only the password hash.                                        |
-| `AC_SEC_DEC_PASSWORD_02` | Hashing          | Use Argon2id.                                                        |
-| `AC_SEC_DEC_PASSWORD_03` | Salt             | Use a unique salt for every password.                                |
-| `AC_SEC_DEC_PASSWORD_04` | Minimum length   | Passwords must contain at least 15 characters.                       |
-| `AC_SEC_DEC_PASSWORD_05` | Maximum length   | Support passwords of at least 64 characters.                         |
-| `AC_SEC_DEC_PASSWORD_06` | Composition      | Do not require uppercase, lowercase, number, or symbol combinations. |
-| `AC_SEC_DEC_PASSWORD_07` | Blocklist        | Reject commonly used or compromised passwords.                       |
-| `AC_SEC_DEC_PASSWORD_08` | Plaintext        | Never persist plaintext passwords.                                   |
+| ID                       | Decision              | Definition |
+| ------------------------ | --------------------- | ---------- |
+| `AC_SEC_DEC_PASSWORD_01` | Password storage      | Store only the password hash. |
+| `AC_SEC_DEC_PASSWORD_02` | Hashing               | Use Argon2id. |
+| `AC_SEC_DEC_PASSWORD_03` | Salt                  | Use a unique salt for every password. |
+| `AC_SEC_DEC_PASSWORD_04` | Minimum length        | Passwords must contain at least 15 characters. |
+| `AC_SEC_DEC_PASSWORD_05` | Maximum length        | Support passwords of at least 64 characters. |
+| `AC_SEC_DEC_PASSWORD_06` | Composition            | Do not require uppercase, lowercase, number, or symbol combinations. |
+| `AC_SEC_DEC_PASSWORD_07` | Blocklist              | Reject passwords found in the configured common, expected, or compromised password blocklist. |
+| `AC_SEC_DEC_PASSWORD_08` | Plaintext              | Never persist plaintext passwords. |
+| `AC_SEC_DEC_PASSWORD_09` | Blocklist source       | Use Have I Been Pwned Pwned Passwords as the compromised-password source and maintain a project-specific common/context-specific password list. |
+| `AC_SEC_DEC_PASSWORD_10` | Blocklist update       | Maintain the blocklist locally with a version and controlled refresh process. |
+| `AC_SEC_DEC_PASSWORD_11` | Blocklist comparison   | Compare the complete prospective password against the blocklist. Do not compare substrings. |
+| `AC_SEC_DEC_PASSWORD_12` | Blocklist failure      | Continue using the last known good local blocklist when a refresh fails. Do not bypass blocklist enforcement because a refresh is unavailable. |
 
 ---
 
@@ -290,11 +298,11 @@ SOFT DELETED
 | Column             | Type          | Null | Constraint                                  |
 | ------------------ | ------------- | ---: | ------------------------------------------- |
 | `account_id`       | `uuid`        |   No | PK + FK → `account.id`, `ON DELETE CASCADE` |
-| `email`            | `text`        |   No |                                             |
-| `email_normalized` | `text`        |   No | Unique                                      |
-| `password_hash`    | `text`        |   No | Argon2id hash                               |
-| `created_at`       | `timestamptz` |   No |                                             |
-| `updated_at`       | `timestamptz` |   No |                                             |
+| `email`            | `text`        |   No | Canonical application email value            |
+| `email_normalized` | `text`        |   No | Case-insensitive identity key, `UNIQUE`      |
+| `password_hash`    | `text`        |   No | Argon2id PHC password hash                   |
+| `created_at`       | `timestamptz` |   No |                                              |
+| `updated_at`       | `timestamptz` |   No |                                              |
 
 ### Relationship
 
@@ -551,16 +559,17 @@ flowchart LR
 
 ## 6.1 API Rules
 
-| Rule                  | Definition                                                                           |
-| --------------------- | ------------------------------------------------------------------------------------ |
-| Base path             | `/admin/accounts`                                                                    |
-| Content type          | `application/json`                                                                   |
-| Authentication        | Request must be authenticated.                                                       |
-| Authorization         | Request must be authorized to manage administrator accounts.                         |
-| Response caching      | Account API responses must use `Cache-Control: no-store`.                            |
-| Account ID            | `{id}` must be a valid UUID.                                                         |
-| Sensitive data        | `password` and `password_hash` must never be returned.                               |
-| Soft-deleted accounts | Excluded from normal account operations unless explicitly requested for restoration. |
+| Rule                  | Definition                                                                          |
+| --------------------- | ----------------------------------------------------------------------------------- |
+| Base path             | `/admin/accounts`                                                                   |
+| Content type          | `application/json`                                                                  |
+| Authentication        | Request must be authenticated.                                                      |
+| Authorization         | Request must be authorized to manage administrator accounts.                        |
+| Authenticated actor   | The authenticated administrator account ID is supplied by the authentication layer. |
+| Response caching      | Account API responses must use `Cache-Control: no-store`.                           |
+| Account ID            | `{id}` must be a valid UUID.                                                        |
+| Sensitive data        | `password` and `password_hash` must never be returned.                              |
+| Soft-deleted accounts | Excluded from normal account operations unless explicitly requested for restoration.|
 
 ## 6.2 Account Endpoints
 
@@ -593,20 +602,22 @@ flowchart LR
 
 ### Rules
 
-* Email must satisfy the defined email security rules.
-* Email must be unique.
-* Password must satisfy the defined password security rules.
+* The request must be authenticated and authorized.
+* The authenticated administrator account ID is used as the actor.
+* Email must satisfy `AC_SEC_DEC_EMAIL_01`–`10`.
+* Email identity must be unique through `email_normalized`.
+* Password must satisfy `AC_SEC_DEC_PASSWORD_01`–`12`.
 * Account is created with `status = active`.
 * Account is created with `deleted_at = NULL`.
-* Credential set is created together with the account.
-* `created_by` is the authenticated administrator.
-* `updated_by` is the authenticated administrator.
+* Account and its credential set must be created in the same transaction.
+* `created_by` is set to the authenticated administrator account ID.
+* `updated_by` is set to the authenticated administrator account ID.
 
 ### Success
 
 **`201 Created`**
 
-Response body: [Account Response](#68-account-response)
+Response body: [Account Response](#614-account-response)
 
 Response header:
 
@@ -675,7 +686,7 @@ Soft-deleted accounts are excluded when `include_deleted = false`.
 
 **`200 OK`**
 
-Response body: [Account Response](#68-account-response)
+Response body: [Account Response](#614-account-response)
 
 ### Errors
 
@@ -702,7 +713,7 @@ No mutable Account field is currently defined beyond the dedicated operations in
 
 **`200 OK`**
 
-Response body: [Account Response](#68-account-response)
+Response body: [Account Response](#614-account-response)
 
 ## 6.7 Deactivate Account
 
@@ -723,7 +734,7 @@ Response body: [Account Response](#68-account-response)
 
 **`200 OK`**
 
-Response body: [Account Response](#68-account-response)
+Response body: [Account Response](#614-account-response)
 
 ### Errors
 
@@ -751,7 +762,7 @@ Response body: [Account Response](#68-account-response)
 
 **`200 OK`**
 
-Response body: [Account Response](#68-account-response)
+Response body: [Account Response](#614-account-response)
 
 ### Errors
 
@@ -807,7 +818,7 @@ Response body: [Account Response](#68-account-response)
 
 **`200 OK`**
 
-Response body: [Account Response](#68-account-response)
+Response body: [Account Response](#614-account-response)
 
 ### Errors
 
@@ -865,7 +876,7 @@ Response body: [Account Response](#68-account-response)
 
 **`200 OK`**
 
-Response body: [Account Response](#68-account-response)
+Response body: [Account Response](#614-account-response)
 
 ### Errors
 
@@ -1014,10 +1025,14 @@ The status-code meanings follow HTTP Semantics defined by RFC 9110.
 | `AC_SEC_REQ_NON_FC_08`   | Do not expose credentials through responses, logs, or administrative views | 🔴 Not Implemented |        |
 | `AC_SEC_DEC_EMAIL_01`    | Email identity is case-insensitive                                         | 🔴 Not Implemented |        |
 | `AC_SEC_DEC_EMAIL_02`    | Store canonical application email value                                    | 🔴 Not Implemented |        |
-| `AC_SEC_DEC_EMAIL_03`    | Trim surrounding whitespace and lowercase the domain                       | 🔴 Not Implemented |        |
-| `AC_SEC_DEC_EMAIL_04`    | Preserve local-part case                                                   | 🔴 Not Implemented |        |
+| `AC_SEC_DEC_EMAIL_03`    | Trim surrounding whitespace and normalize the domain using IDNA             | 🔴 Not Implemented |        |
+| `AC_SEC_DEC_EMAIL_04`    | Preserve local-part case in the stored email value                         | 🔴 Not Implemented |        |
 | `AC_SEC_DEC_EMAIL_05`    | Do not apply provider-specific normalization                               | 🔴 Not Implemented |        |
-| `AC_SEC_DEC_EMAIL_06`    | Enforce case-insensitive email uniqueness in PostgreSQL                    | 🔴 Not Implemented |        |
+| `AC_SEC_DEC_EMAIL_06`    | Enforce case-insensitive email uniqueness using `email_normalized`         | 🔴 Not Implemented |        |
+| `AC_SEC_DEC_EMAIL_07`    | Accept only valid email addresses in `addr-spec` form                      | 🔴 Not Implemented |        |
+| `AC_SEC_DEC_EMAIL_08`    | Limit the complete email address to 254 characters                         | 🔴 Not Implemented |        |
+| `AC_SEC_DEC_EMAIL_09`    | Support Unicode email addresses and IDN domains                             | 🔴 Not Implemented |        |
+| `AC_SEC_DEC_EMAIL_10`    | Use `email_normalized` as the unique case-insensitive identity key         | 🔴 Not Implemented |        |
 | `AC_SEC_DEC_PASSWORD_01` | Store only the password hash                                               | 🔴 Not Implemented |        |
 | `AC_SEC_DEC_PASSWORD_02` | Use Argon2id                                                               | 🔴 Not Implemented |        |
 | `AC_SEC_DEC_PASSWORD_03` | Use a unique salt for every password                                       | 🔴 Not Implemented |        |
@@ -1026,6 +1041,10 @@ The status-code meanings follow HTTP Semantics defined by RFC 9110.
 | `AC_SEC_DEC_PASSWORD_06` | No mandatory character composition requirements                            | 🔴 Not Implemented |        |
 | `AC_SEC_DEC_PASSWORD_07` | Reject commonly used or compromised passwords                              | 🔴 Not Implemented |        |
 | `AC_SEC_DEC_PASSWORD_08` | Never persist plaintext passwords                                          | 🔴 Not Implemented |        |
+| `AC_SEC_DEC_PASSWORD_09` | Use a maintained common/compromised password blocklist                    | 🔴 Not Implemented |        |
+| `AC_SEC_DEC_PASSWORD_10` | Maintain a versioned local blocklist with controlled updates               | 🔴 Not Implemented |        |
+| `AC_SEC_DEC_PASSWORD_11` | Compare the complete prospective password against the blocklist            | 🔴 Not Implemented |        |
+| `AC_SEC_DEC_PASSWORD_12` | Continue using the last known good blocklist when an update fails          | 🔴 Not Implemented |        |
 
 ### 7.3 Design Decisions
 
