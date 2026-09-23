@@ -7,11 +7,7 @@ use axum::{
 
 use crate::{
     app::state::AppState,
-    shared::{
-        auth::AuthenticatedAdmin,
-        error::AppError,
-        response::add_no_store,
-    },
+    shared::{auth::AuthenticatedAdmin, error::AppError, response::add_no_store},
 };
 
 use super::{
@@ -25,8 +21,7 @@ pub async fn create_account(
     State(state): State<AppState>,
     request: Result<Json<CreateAccountRequest>, JsonRejection>,
 ) -> Result<Response, AppError> {
-    let Json(request) =
-        request.map_err(|_| crate::shared::error::invalid_json_response())?;
+    let Json(request) = request.map_err(|_| crate::shared::error::invalid_json_response())?;
 
     let service = AccountService::new(
         AccountRepository::new(state.pool.clone()),
@@ -34,15 +29,12 @@ pub async fn create_account(
         state.password_hash_semaphore.clone(),
     );
 
-    let account = service
-        .create_account(auth.account_id, request)
-        .await?;
+    let account = service.create_account(auth.account_id, request).await?;
 
     let account_id = account.id;
     let response_body = AccountResponse::from(account);
 
-    let mut response =
-        (StatusCode::CREATED, Json(response_body)).into_response();
+    let mut response = (StatusCode::CREATED, Json(response_body)).into_response();
 
     add_no_store(response.headers_mut());
 

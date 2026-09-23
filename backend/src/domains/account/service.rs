@@ -41,8 +41,7 @@ impl AccountService {
         actor_id: Uuid,
         request: CreateAccountRequest,
     ) -> Result<CreatedAccount, AppError> {
-        let email =
-            normalize_email(&request.email).map_err(map_email_validation)?;
+        let email = normalize_email(&request.email).map_err(map_email_validation)?;
 
         self.password_policy
             .validate(&request.password)
@@ -59,19 +58,14 @@ impl AccountService {
             )
             .await
             .map_err(|error| match error {
-                CreateAccountRepositoryError::EmailAlreadyInUse => {
-                    AppError::EmailAlreadyInUse
-                }
+                CreateAccountRepositoryError::EmailAlreadyInUse => AppError::EmailAlreadyInUse,
                 CreateAccountRepositoryError::Database(error) => {
                     crate::shared::error::internal_error(error)
                 }
             })
     }
 
-    async fn hash_password(
-        &self,
-        password: SecretString,
-    ) -> Result<String, AppError> {
+    async fn hash_password(&self, password: SecretString) -> Result<String, AppError> {
         let permit = self
             .password_hash_semaphore
             .clone()
@@ -79,8 +73,7 @@ impl AccountService {
             .await
             .map_err(|_| AppError::Internal)?;
 
-        let result =
-            tokio::task::spawn_blocking(move || hash_password(password)).await;
+        let result = tokio::task::spawn_blocking(move || hash_password(password)).await;
 
         drop(permit);
 
@@ -93,8 +86,7 @@ impl AccountService {
 
 fn map_email_validation(error: EmailValidationError) -> AppError {
     match error {
-        EmailValidationError::InvalidFormat
-        | EmailValidationError::InvalidDomain => {
+        EmailValidationError::InvalidFormat | EmailValidationError::InvalidDomain => {
             AppError::Validation("Email must be a valid modern addr-spec.")
         }
         EmailValidationError::TooLong => {
@@ -106,13 +98,11 @@ fn map_email_validation(error: EmailValidationError) -> AppError {
 fn map_password_validation(error: PasswordValidationError) -> AppError {
     match error {
         PasswordValidationError::TooShort => {
-            AppError::Validation(
-                "Password must contain at least 15 characters.",
-            )
+            AppError::Validation("Password must contain at least 15 characters.")
         }
-        PasswordValidationError::Blocklisted => AppError::Validation(
-            "Password is commonly used or compromised and cannot be used.",
-        ),
+        PasswordValidationError::Blocklisted => {
+            AppError::Validation("Password is commonly used or compromised and cannot be used.")
+        }
     }
 }
 
@@ -122,14 +112,11 @@ mod tests {
 
     #[test]
     fn validation_mapping_does_not_expose_input_values() {
-        let error =
-            map_password_validation(PasswordValidationError::Blocklisted);
+        let error = map_password_validation(PasswordValidationError::Blocklisted);
 
         assert!(matches!(
             error,
-            AppError::Validation(
-                "Password is commonly used or compromised and cannot be used."
-            )
+            AppError::Validation("Password is commonly used or compromised and cannot be used.")
         ));
     }
 }

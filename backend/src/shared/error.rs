@@ -111,7 +111,5 @@ where
 }
 
 pub fn invalid_json_response() -> AppError {
-    AppError::InvalidRequest(
-        "The request body is malformed or has an invalid content type.",
-    )
+    AppError::InvalidRequest("The request body is malformed or has an invalid content type.")
 }

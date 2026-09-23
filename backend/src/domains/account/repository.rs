@@ -4,8 +4,7 @@ use uuid::Uuid;
 
 use super::model::CreatedAccount;
 
-const EMAIL_UNIQUE_CONSTRAINT: &str =
-    "account_credentials_email_normalized_key";
+const EMAIL_UNIQUE_CONSTRAINT: &str = "account_credentials_email_normalized_key";
 
 pub struct AccountRepository {
     pool: PgPool,

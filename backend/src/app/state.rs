@@ -21,9 +21,7 @@ impl AppState {
         Self {
             pool,
             password_policy: PasswordPolicy::new(blocklist),
-            password_hash_semaphore: Arc::new(Semaphore::new(
-                password_hash_concurrency.get(),
-            )),
+            password_hash_semaphore: Arc::new(Semaphore::new(password_hash_concurrency.get())),
         }
     }
 }

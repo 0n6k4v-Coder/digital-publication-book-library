@@ -25,11 +25,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     )?);
     info!(version = %blocklist.version(), "password blocklist loaded");
 
-    let state = AppState::new(
-        pool,
-        blocklist,
-        config.password_hash_concurrency,
-    );
+    let state = AppState::new(pool, blocklist, config.password_hash_concurrency);
 
     let router = build_router(state);
     let listener = tokio::net::TcpListener::bind(config.bind_addr).await?;
