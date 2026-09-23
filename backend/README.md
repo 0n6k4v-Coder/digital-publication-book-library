@@ -208,7 +208,7 @@ for test_file in tests/unit/*.rs; do
     echo "========================================"
 
     rm -f tests/unit.rs
-    ln -s "$test_file" tests/unit.rs
+    cp "$test_file" tests/unit.rs
 
     if ! cargo test --test unit --no-fail-fast; then
         status=1
@@ -221,7 +221,7 @@ for test_file in tests/integration/*.rs; do
     echo "========================================"
 
     rm -f tests/integration.rs
-    ln -s "$test_file" tests/integration.rs
+    cp "$test_file" tests/integration.rs
 
     if ! cargo test --test integration --no-fail-fast -- --include-ignored; then
         status=1
@@ -234,7 +234,7 @@ for test_file in tests/e2e/*.rs; do
     echo "========================================"
 
     rm -f tests/e2e.rs
-    ln -s "$test_file" tests/e2e.rs
+    cp "$test_file" tests/e2e.rs
 
     if ! cargo test --test e2e --no-fail-fast -- --include-ignored; then
         status=1

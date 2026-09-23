@@ -36,6 +36,13 @@ async fn connect_database() -> PgPool {
         .expect("connect to test database")
 }
 
+async fn reset_test_database(pool: &PgPool) {
+    sqlx::query("DELETE FROM account")
+        .execute(pool)
+        .await
+        .expect("reset test database");
+}
+
 async fn seed_account(
     pool: &PgPool,
     email: &str,
@@ -177,6 +184,8 @@ async fn view_accounts_end_to_end() {
         .await
         .expect("run migrations");
 
+    reset_test_database(&pool).await;
+
     let seeded = seed_accounts(&pool).await;
 
     let admin_id = seeded[0];
@@ -290,6 +299,8 @@ async fn view_accounts_supports_filters_and_pagination_end_to_end() {
         .run(&pool)
         .await
         .expect("run migrations");
+
+    reset_test_database(&pool).await;
 
     let seeded = seed_accounts(&pool).await;
 
@@ -463,8 +474,6 @@ async fn view_accounts_supports_filters_and_pagination_end_to_end() {
 #[tokio::test]
 #[ignore = "requires PostgreSQL and a built backend"]
 async fn unauthenticated_view_accounts_end_to_end_returns_401() {
-    let _database_guard = TEST_DATABASE_LOCK.lock().await;
-
     let pool = connect_database().await;
 
     sqlx::migrate!()
@@ -508,8 +517,6 @@ async fn unauthenticated_view_accounts_end_to_end_returns_401() {
 #[tokio::test]
 #[ignore = "requires PostgreSQL and a built backend"]
 async fn invalid_view_accounts_query_end_to_end_returns_appropriate_status() {
-    let _database_guard = TEST_DATABASE_LOCK.lock().await;
-
     let pool = connect_database().await;
 
     sqlx::migrate!()
