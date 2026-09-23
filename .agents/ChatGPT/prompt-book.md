@@ -42,18 +42,28 @@ Task 1: Read and analyze the given context and relevant documents.
 ```
 
 ```text
-2. Verify design readiness for the objective.
-   - Review the existing design documents for blockers specific to the objective.
-   - Identify any missing, ambiguous, contradictory, or technically insufficient design decisions.
-   - Do not treat missing implementation, code, infrastructure, or unrelated domains as blockers.
-   - If there are no design blockers, output only: `Ready`
-   - If design blockers exist, output only the following table:
+Task 2: Verify design readiness for the objective.
+
+- Read the relevant design documents.
+- Treat the specified source-of-truth design document as authoritative for requirements, security, data model, use case, API contract, and HTTP behavior.
+- Identify only design blockers specific to this objective.
+- Do not treat missing code, tests, infrastructure, deployment, unrelated domains, or unrelated Use Cases as blockers unless the source of truth requires them for this objective.
+- A design blocker exists when the objective cannot be implemented correctly without inventing or guessing a business rule, API behavior, security rule, or data rule.
+- Do not invent missing business or API behavior.
+- Do not treat an implementation technique as a blocker when multiple compliant techniques are possible.
+- If an industry standard requires a new business or API decision not defined by the source of truth, report it as a design blocker.
+
+If no design blockers exist, output only:
+
+Ready
+
+If design blockers exist, output only:
 
 | ID | Details | Solutions |
 |---|---|---|
-| <Design ID or blocker ID> | <Specific design blocker> | <Exact action required to resolve it> |
+| <Design ID or blocker ID> | <Specific blocker> | <Exact action required> |
 
-   - Output must be simple, clear, direct, explicit, and concise.
+Output must be simple, clear, direct, explicit, and concise.
 ```
 
 ```text
@@ -63,19 +73,30 @@ Task 3. Conduct deep research using the latest official documentation for the re
 ```
 
 ```text
-Task 4. Create the implementation plan.
-- Define exactly what will be implemented for the requested objective only.
-- Define the minimum necessary file change set.
-- For every file in the change set, define whether it is:
+Task 4: Create the implementation plan.
+
+- Implement only the requested objective.
+- Use the source-of-truth design and existing repository conventions.
+- Do not invent business, API, security, or data behavior.
+- Define the minimum necessary production and test file change set.
+- “Minimum necessary” means the fewest files required to implement the objective correctly and completely, not the fewest files possible.
+- For every file, state:
   - new file
-  - shared existing file requiring an incremental extension
+  - shared existing file requiring incremental extension
   - objective-specific existing file requiring modification
-- Define the responsibility of each changed or newly created file.
-- Explicitly identify existing functionality that must remain unchanged.
+- State the responsibility of every changed file.
+- Identify existing functionality that must remain unchanged.
+- For HTTP Use Cases, include every applicable repository test layer:
+  - unit
+  - integration
+  - E2E
+- Do not use one test layer as a substitute for another.
+- Use existing Use Case tests as the project convention.
+- Exclude unrelated files, refactors, migrations, dependencies, configuration, and Use Cases.
 - Define the implementation sequence.
-- Define how the relevant design IDs will be satisfied.
-- Do not include unrelated files or Use Case implementations in the plan.
-- Output: Simple, clear, direct, explicit, and concise.
+- Map each relevant design ID to its implementation or test coverage.
+
+Output must be simple, clear, direct, explicit, and concise.
 ```
 
 ```text
@@ -88,61 +109,70 @@ Task 6. Implement the plan and generate the required code.
 ```
 
 ```text
-### Task 7: Review, Validate, and Correct the Generated Code
+7. Review, Validate, and Correct the Generated Code.
 
-Before final output, review the actual repository and correct all issues found.
+Before final output, inspect the actual repository and correct all objective-related issues.
 
 1. Scope
-- Inspect the actual changed files.
-- Keep only files required by the objective.
-- Remove unnecessary code, dependencies, files, configuration, migrations, refactors, and formatting-only changes.
-- Preserve existing Use Case behavior.
-- Modify another Use Case only when strictly required by a direct dependency.
-- Prefer objective-specific test files.
+- Keep only files required for the objective.
+- Remove unnecessary code, files, dependencies, migrations, configuration, refactors, and formatting-only changes.
+- Do not change unrelated Use Cases.
 
 2. Design Compliance
-- Re-read the relevant `account.md`.
-- Verify Requirements, Security, Design Decisions, Data Model, Use Case, API Contract, and HTTP status rules.
-- Do not invent behavior not defined by the source of truth.
+- Re-read the source-of-truth design.
+- Verify requirements, security, design decisions, data model, use case, API contract, and HTTP status rules.
+- Verify every relevant design ID.
+- Do not invent undefined business or API behavior.
+- If required behavior is undefined, treat it as a design blocker.
 
 3. Code Correctness
-- Verify logic, validation, pagination, filtering, ordering, database queries, transactions, errors, state handling, edge cases, and module integration.
-- Fix all correctness issues.
+- Verify validation, filtering, pagination, ordering, queries, counts, transactions, errors, state, edge cases, and module integration.
+- Verify pagination behavior matches the design.
+- Do not invent an ordering rule when the design does not define one.
 
-4. Configuration and Runtime
-- Verify `Cargo.toml`, `Cargo.lock`, Docker/Compose files, environment configuration, paths, migrations, and test targets.
-- Confirm all referenced files, commands, services, and dependencies exist.
-- Correct only issues required by the objective.
+4. Configuration
+- Verify Cargo.toml, Cargo.lock, migrations, environment files, Docker/Compose files, paths, modules, and test targets.
+- Change only what the objective requires.
 
 5. Security
-- Verify authentication, authorization, input validation, resource limits, secret handling, sensitive-data handling, error exposure, logging, injection risks, and cache behavior.
-- Confirm credentials are never returned or logged.
+- Verify authentication, authorization, validation, resource limits, secret handling, error exposure, logging, injection risks, and cache behavior.
+- Never return or log passwords, password hashes, tokens, or other credentials.
 
-6. Code Quality
-- Verify Rust structure, module boundaries, naming, error handling, duplication, maintainability, and unnecessary complexity.
-- Do not perform unrelated refactoring.
-
-7. Tests
-- Inspect relevant tests.
-- Verify success, failure, validation, boundary, empty-result, filtering, pagination, and security cases applicable to the objective.
+6. Tests
+- For every HTTP Use Case, verify all applicable layers:
+  - Unit
+  - Integration
+  - E2E
+- Do not treat one layer as a substitute for another.
+- For AC_UC_02, verify:
+  - defaults
+  - page/page_size validation
+  - maximum page_size
+  - status filtering
+  - deleted-account handling
+  - total count
+  - pagination boundaries
+  - empty results
+  - authentication/authorization
+  - cache headers
+  - sensitive-field exclusion
 - Verify test discovery and configuration.
-- Run relevant tests when the required runtime is available.
 
-8. Validation
-- Run available `cargo fmt`, `cargo check`, `cargo clippy`, unit, integration, E2E, and repository-defined Docker/Compose checks.
-- Do not fabricate unavailable results.
+7. Validation
+- Run available cargo fmt, cargo check, cargo clippy, unit, integration, E2E, and repository Docker/Compose checks.
 - Report unavailable checks explicitly.
+- Do not fabricate results.
 
-9. Correction
-- Fix every issue found.
-- Re-run affected checks after each correction.
-- Re-check scope and design compliance after corrections.
+8. Correction
+- Fix every objective-related issue found.
+- Re-run affected checks after corrections.
+- Re-check scope and design compliance.
 
-10. Final Check
-- Inspect the final change set.
-- Confirm every changed file is necessary for the objective.
-- Confirm unrelated Use Cases remain unchanged.
-- Confirm the implementation matches the plan and source of truth.
+9. Final Check
+- Confirm every changed file is necessary.
+- Confirm all applicable test layers exist.
+- Confirm unrelated Use Cases are unchanged.
+- Confirm the implementation matches the source of truth and the plan.
 
 Do not commit, push, or modify Git history.
 ```
