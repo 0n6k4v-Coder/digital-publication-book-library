@@ -1,7 +1,7 @@
 use std::{env, net::SocketAddr, sync::Arc};
 
 use reqwest::Client;
-use secrecy::SecretString;
+use secrecy::{ExposeSecret, SecretString};
 use serde_json::{json, Value};
 use sha1::{Digest as Sha1Digest, Sha1};
 use sqlx::PgPool;

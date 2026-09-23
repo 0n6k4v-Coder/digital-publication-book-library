@@ -544,7 +544,8 @@ async fn expired_revoked_disabled_deleted_or_unknown_bearer_is_rejected() {
             "expired-token" => {
                 sqlx::query(
                     "UPDATE authentication_access_token \
-                     SET expires_at = CURRENT_TIMESTAMP - INTERVAL '1 second' \
+                     SET created_at = CURRENT_TIMESTAMP - INTERVAL '2 seconds',\
+                         expires_at = CURRENT_TIMESTAMP - INTERVAL '1 second' \
                      WHERE session_id = $1",
                 )
                 .bind(session_id)
