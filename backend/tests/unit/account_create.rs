@@ -4,7 +4,10 @@ use secrecy::SecretString;
 use sha1::{Digest, Sha1};
 
 use digital_publication_backend::shared::validation::{
-    hash_password, normalize_email, PasswordBlocklist, PasswordPolicy,
+    hash_password,
+    normalize_email,
+    PasswordBlocklist,
+    PasswordPolicy,
     PasswordValidationError,
 };
 
@@ -91,8 +94,10 @@ fn normalize_email_rejects_email_longer_than_254_characters() {
 
 #[test]
 fn password_policy_requires_15_characters() {
-    let blocklist =
-        PasswordBlocklist::from_hashes("test", std::iter::empty());
+    let blocklist = PasswordBlocklist::from_hashes(
+        "test",
+        Vec::<[u8; 20]>::new(),
+    );
 
     let policy =
         PasswordPolicy::new(Arc::new(blocklist));
@@ -107,8 +112,10 @@ fn password_policy_requires_15_characters() {
 
 #[test]
 fn password_policy_accepts_at_least_64_characters() {
-    let blocklist =
-        PasswordBlocklist::from_hashes("test", std::iter::empty());
+    let blocklist = PasswordBlocklist::from_hashes(
+        "test",
+        Vec::<[u8; 20]>::new(),
+    );
 
     let policy =
         PasswordPolicy::new(Arc::new(blocklist));
