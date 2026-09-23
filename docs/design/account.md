@@ -19,6 +19,7 @@
 
      * [2.2.1 Email](#221-email)
      * [2.2.2 Password](#222-password)
+     * [2.2.3 Admin API Authentication](#223-admin-api-authentication)
 
 3. [Design Decisions](#3-design-decisions)
 
@@ -183,6 +184,23 @@
 | `AC_SEC_DEC_PASSWORD_10` | Blocklist update       | Maintain the blocklist locally with a version and controlled refresh process. |
 | `AC_SEC_DEC_PASSWORD_11` | Blocklist comparison   | Compare the complete prospective password against the blocklist. Do not compare substrings. |
 | `AC_SEC_DEC_PASSWORD_12` | Blocklist failure      | Continue using the last known good local blocklist when a refresh fails. Do not bypass blocklist enforcement because a refresh is unavailable. |
+
+### 2.2.3 Admin API Authentication
+
+| ID                   | Decision                     | Definition                                                                                                                                                                                                                                      |
+| -------------------- | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AC_SEC_DEC_AUTH_01` | Authentication scheme        | The Admin API uses the HTTP `Bearer` authentication scheme defined by RFC 6750.                                                                                                                                                                 |
+| `AC_SEC_DEC_AUTH_02` | Request credentials          | Authenticated Admin API requests must provide credentials in the HTTP `Authorization` header using the `Bearer` scheme.                                                                                                                         |
+| `AC_SEC_DEC_AUTH_03` | Authorization header format  | `Authorization: Bearer <token>`                                                                                                                                                                                                                 |
+| `AC_SEC_DEC_AUTH_04` | Credential location          | Bearer credentials must not be provided in URI query parameters or request bodies.                                                                                                                                                              |
+| `AC_SEC_DEC_AUTH_05` | Protection realm             | The Admin API protection realm is `admin-api`.                                                                                                                                                                                                  |
+| `AC_SEC_DEC_AUTH_06` | Missing authentication       | A request without authentication credentials must return `401 Unauthorized` with `WWW-Authenticate: Bearer realm="admin-api"`.                                                                                                                  |
+| `AC_SEC_DEC_AUTH_07` | Invalid authentication       | A request with an invalid, expired, revoked, or otherwise unusable bearer token must return `401 Unauthorized` with `WWW-Authenticate: Bearer realm="admin-api", error="invalid_token"`.                                                        |
+| `AC_SEC_DEC_AUTH_08` | Missing-credential challenge | A missing-credential `WWW-Authenticate` challenge must not include a Bearer `error` parameter.                                                                                                                                                  |
+| `AC_SEC_DEC_AUTH_09` | Credential confidentiality   | Bearer credentials must never be returned in API responses or written to application logs.                                                                                                                                                      |
+| `AC_SEC_DEC_AUTH_10` | Transport security           | Bearer credentials must only be transmitted over HTTPS/TLS.                                                                                                                                                                                     |
+| `AC_SEC_DEC_AUTH_11` | Unsupported authentication   | The Admin API does not accept Basic authentication, API-key authentication, query-parameter tokens, or body-parameter tokens.                                                                                                                   |
+| `AC_SEC_DEC_AUTH_12` | Authentication scope         | Email and password authenticate the account. Bearer credentials authenticate subsequent Admin API requests. Bearer token issuance, validation, storage, expiration, refresh, rotation, and revocation are defined by the Authentication domain. |
 
 ---
 
@@ -559,17 +577,19 @@ flowchart LR
 
 ## 6.1 API Rules
 
-| Rule                  | Definition                                                                          |
-| --------------------- | ----------------------------------------------------------------------------------- |
-| Base path             | `/admin/accounts`                                                                   |
-| Content type          | `application/json`                                                                  |
-| Authentication        | Request must be authenticated.                                                      |
-| Authorization         | Request must be authorized to manage administrator accounts.                        |
-| Authenticated actor   | The authenticated administrator account ID is supplied by the authentication layer. |
-| Response caching      | Account API responses must use `Cache-Control: no-store`.                           |
-| Account ID            | `{id}` must be a valid UUID.                                                        |
-| Sensitive data        | `password` and `password_hash` must never be returned.                              |
-| Soft-deleted accounts | Excluded from normal account operations unless explicitly requested for restoration.|
+| Rule                  | Definition                                                                                                  |
+| --------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Base path             | `/admin/accounts`                                                                                           |
+| Response content type | Successful responses with a response body use `application/json`. Error responses use `application/problem+json`. `204 No Content` responses have no response body. |
+| Authentication        | Request must be authenticated using `Authorization: Bearer <token>`.                                        |
+| Authentication scheme | HTTP `Bearer` authentication as defined in [2.2.3 Admin API Authentication](#223-admin-api-authentication). |
+| Authorization         | Request must be authorized to manage administrator accounts.                                                |
+| Authenticated actor   | The authenticated administrator account ID is supplied by the authentication layer.                         |
+| Response caching      | Account API responses must use `Cache-Control: no-store`.                                                   |
+| Account ID            | `{id}` must be a valid UUID.                                                                                |
+| Sensitive data        | `password` and `password_hash` must never be returned.                                                      |
+| Soft-deleted accounts | Excluded from normal account operations unless explicitly requested for restoration.                        |
+
 
 ## 6.2 Account Endpoints
 
@@ -947,35 +967,51 @@ password_hash
 
 Errors use RFC 9457 Problem Details with `application/problem+json`.
 
-```json
-{
-  "type": "https://example.com/problems/account-not-found",
-  "title": "Account not found",
-  "status": 404,
-  "detail": "The requested account was not found.",
-  "code": "ACCOUNT_NOT_FOUND"
-}
-```
+Example:
 
-### Standard HTTP Statuses
+    {
+      "type": "https://example.com/problems/account-not-found",
+      "title": "Account not found",
+      "status": 404,
+      "detail": "The requested account was not found.",
+      "code": "ACCOUNT_NOT_FOUND"
+    }
 
-| Status | Usage                                                     |
-| ------ | --------------------------------------------------------- |
-| `400`  | Malformed or invalid request syntax                       |
-| `401`  | Authentication is required or invalid                     |
-| `403`  | Authenticated caller is not authorized                    |
-| `404`  | Account does not exist or is unavailable                  |
-| `409`  | Request conflicts with current Account state or invariant |
-| `422`  | Request is syntactically valid but fails validation       |
-| `500`  | Unexpected server error                                   |
+### Authentication Failure
+
+A request without authentication credentials must return `401 Unauthorized`.
+
+    HTTP/1.1 401 Unauthorized
+    WWW-Authenticate: Bearer realm="admin-api"
+    Content-Type: application/problem+json
+    Cache-Control: no-store
+
+A request with an invalid, expired, revoked, or otherwise unusable bearer token must return `401 Unauthorized`.
+
+    HTTP/1.1 401 Unauthorized
+    WWW-Authenticate: Bearer realm="admin-api", error="invalid_token"
+    Content-Type: application/problem+json
+    Cache-Control: no-store
+
+A request with valid authentication credentials that is not authorized to perform the requested operation must return `403 Forbidden`.
+
+Authentication error responses must not expose bearer tokens, passwords, password hashes, or other authentication secrets.
+
+## 6.16 HTTP Status Codes
+
+| Status | Usage                                                                            |
+| ------ | -------------------------------------------------------------------------------- |
+| `400`  | Malformed or invalid request syntax                                              |
+| `401`  | Authentication is required or the supplied authentication credential is invalid |
+| `403`  | Authenticated caller is not authorized                                           |
+| `404`  | Account does not exist or is unavailable                                         |
+| `409`  | Request conflicts with current Account state or invariant                        |
+| `422`  | Request is syntactically valid but fails validation                              |
+| `500`  | Unexpected server error                                                          |
 
 The status-code meanings follow HTTP Semantics defined by RFC 9110.
 
 ---
-
-# 7. Implementation Status
-
-**Status:** 🟢 Implemented · 🟡 Partial · 🔴 Not Implemented
 
 ## 7.1 Requirements
 
@@ -994,8 +1030,8 @@ The status-code meanings follow HTTP Semantics defined by RFC 9110.
 | `AC_REQ_FC_11`     | Enforce unique email identity                                      | 🟢 Implemented     | —                                                                                                                                                                                     |
 | `AC_REQ_FC_12`     | Allow email and password credentials to be updated                 | 🔴 Not Implemented | —                                                                                                                                                                                     |
 | `AC_REQ_FC_13`     | Support soft deletion                                              | 🔴 Not Implemented | —                                                                                                                                                                                     |
-| `AC_REQ_FC_14`     | Record soft-deletion timestamp                                     | 🟢 Implemented     | —                                                                                                                                                                                     |
-| `AC_REQ_FC_15`     | Record the account responsible for soft deletion                   | 🟢 Implemented     | —                                                                                                                                                                                     |
+| `AC_REQ_FC_14`     | Record soft-deletion timestamp                                     | 🔴 Not Implemented | —                                                                                                                                                                                     |
+| `AC_REQ_FC_15`     | Record the account responsible for soft deletion                   | 🔴 Not Implemented | —                                                                                                                                                                                     |
 | `AC_REQ_FC_16`     | Prevent authentication for inactive accounts                       | 🔴 Not Implemented | —                                                                                                                                                                                     |
 | `AC_REQ_FC_17`     | Prevent authentication for soft-deleted accounts                   | 🔴 Not Implemented | —                                                                                                                                                                                     |
 | `AC_REQ_FC_18`     | Prevent deactivation of the last active administrator              | 🔴 Not Implemented | —                                                                                                                                                                                     |
@@ -1009,42 +1045,54 @@ The status-code meanings follow HTTP Semantics defined by RFC 9110.
 
 ## 7.2 Security
 
-| ID                       | Description                                                                | Status             | Reason                                                                                                                                                                                                      |
-| ------------------------ | -------------------------------------------------------------------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `AC_SEC_REQ_FC_01`       | Authenticate using email and password                                      | 🔴 Not Implemented | —                                                                                                                                                                                                           |
-| `AC_SEC_REQ_FC_02`       | Verify password against stored password hash                               | 🔴 Not Implemented | —                                                                                                                                                                                                           |
-| `AC_SEC_REQ_FC_03`       | Allow email address changes                                                | 🔴 Not Implemented | —                                                                                                                                                                                                           |
-| `AC_SEC_REQ_FC_04`       | Allow password changes                                                     | 🔴 Not Implemented | —                                                                                                                                                                                                           |
-| `AC_SEC_REQ_NON_FC_01`   | Never store passwords in plaintext                                         | 🟢 Implemented     | —                                                                                                                                                                                                           |
-| `AC_SEC_REQ_NON_FC_02`   | Hash passwords using Argon2id                                              | 🟢 Implemented     | —                                                                                                                                                                                                           |
-| `AC_SEC_REQ_NON_FC_03`   | Use a unique salt for each password                                        | 🟢 Implemented     | —                                                                                                                                                                                                           |
-| `AC_SEC_REQ_NON_FC_04`   | Require a minimum password length of 15 characters                         | 🟢 Implemented     | —                                                                                                                                                                                                           |
-| `AC_SEC_REQ_NON_FC_05`   | Support passwords of at least 64 characters                                | 🟢 Implemented     | —                                                                                                                                                                                                           |
-| `AC_SEC_REQ_NON_FC_06`   | Do not require arbitrary password composition rules                        | 🟢 Implemented     | —                                                                                                                                                                                                           |
-| `AC_SEC_REQ_NON_FC_07`   | Reject commonly used or compromised passwords                              | 🟡 Partial         | The implementation checks passwords against a local blocklist, but the documented compromised-password source and its complete maintenance/refresh process are not implemented yet.                         |
-| `AC_SEC_REQ_NON_FC_08`   | Do not expose credentials through responses, logs, or administrative views | 🟡 Partial         | The Create Account response does not expose credentials, but the broader authentication and account-management surfaces needed to verify credential non-exposure across the system are not implemented yet. |
-| `AC_SEC_DEC_EMAIL_01`    | Email identity is case-insensitive                                         | 🟢 Implemented     | —                                                                                                                                                                                                           |
-| `AC_SEC_DEC_EMAIL_02`    | Store canonical application email value                                    | 🟢 Implemented     | —                                                                                                                                                                                                           |
-| `AC_SEC_DEC_EMAIL_03`    | Trim surrounding whitespace and normalize the domain using IDNA            | 🟢 Implemented     | —                                                                                                                                                                                                           |
-| `AC_SEC_DEC_EMAIL_04`    | Preserve local-part case in the stored email value                         | 🟢 Implemented     | —                                                                                                                                                                                                           |
-| `AC_SEC_DEC_EMAIL_05`    | Do not apply provider-specific normalization                               | 🟢 Implemented     | —                                                                                                                                                                                                           |
-| `AC_SEC_DEC_EMAIL_06`    | Enforce case-insensitive email uniqueness using `email_normalized`         | 🟢 Implemented     | —                                                                                                                                                                                                           |
-| `AC_SEC_DEC_EMAIL_07`    | Accept only valid email addresses in `addr-spec` form                      | 🟢 Implemented     | —                                                                                                                                                                                                           |
-| `AC_SEC_DEC_EMAIL_08`    | Limit the complete email address to 254 characters                         | 🟢 Implemented     | —                                                                                                                                                                                                           |
-| `AC_SEC_DEC_EMAIL_09`    | Support Unicode email addresses and IDN domains                            | 🟢 Implemented     | —                                                                                                                                                                                                           |
-| `AC_SEC_DEC_EMAIL_10`    | Use `email_normalized` as the unique case-insensitive identity key         | 🟢 Implemented     | —                                                                                                                                                                                                           |
-| `AC_SEC_DEC_PASSWORD_01` | Store only the password hash                                               | 🟢 Implemented     | —                                                                                                                                                                                                           |
-| `AC_SEC_DEC_PASSWORD_02` | Use Argon2id                                                               | 🟢 Implemented     | —                                                                                                                                                                                                           |
-| `AC_SEC_DEC_PASSWORD_03` | Use a unique salt for every password                                       | 🟢 Implemented     | —                                                                                                                                                                                                           |
-| `AC_SEC_DEC_PASSWORD_04` | Minimum password length is 15 characters                                   | 🟢 Implemented     | —                                                                                                                                                                                                           |
-| `AC_SEC_DEC_PASSWORD_05` | Support passwords of at least 64 characters                                | 🟢 Implemented     | —                                                                                                                                                                                                           |
-| `AC_SEC_DEC_PASSWORD_06` | No mandatory character composition requirements                            | 🟢 Implemented     | —                                                                                                                                                                                                           |
-| `AC_SEC_DEC_PASSWORD_07` | Reject commonly used or compromised passwords                              | 🟡 Partial         | Blocklisted passwords are rejected, but the complete documented common/compromised-password source and maintenance process are not implemented yet.                                                         |
-| `AC_SEC_DEC_PASSWORD_08` | Never persist plaintext passwords                                          | 🟢 Implemented     | —                                                                                                                                                                                                           |
-| `AC_SEC_DEC_PASSWORD_09` | Use a maintained common/compromised password blocklist                     | 🟡 Partial         | A versioned local password blocklist is supported, but the documented HIBP and project-specific blocklist acquisition/refresh process is not implemented yet.                                               |
-| `AC_SEC_DEC_PASSWORD_10` | Maintain a versioned local blocklist with controlled updates               | 🟡 Partial         | The blocklist loader requires a version and can load a versioned file, but controlled blocklist refresh and update handling are not implemented yet.                                                        |
-| `AC_SEC_DEC_PASSWORD_11` | Compare the complete prospective password against the blocklist            | 🟢 Implemented     | —                                                                                                                                                                                                           |
-| `AC_SEC_DEC_PASSWORD_12` | Continue using the last known good blocklist when an update fails          | 🔴 Not Implemented | —                                                                                                                                                                                                           |
+| ID                       | Description                                                                    | Status             | Reason                                                                                                                                                                                                      |
+| ------------------------ | ------------------------------------------------------------------------------ | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AC_SEC_REQ_FC_01`       | Authenticate using email and password                                          | 🔴 Not Implemented | —                                                                                                                                                                                                           |
+| `AC_SEC_REQ_FC_02`       | Verify password against stored password hash                                   | 🔴 Not Implemented | —                                                                                                                                                                                                           |
+| `AC_SEC_REQ_FC_03`       | Allow email address changes                                                    | 🔴 Not Implemented | —                                                                                                                                                                                                           |
+| `AC_SEC_REQ_FC_04`       | Allow password changes                                                         | 🔴 Not Implemented | —                                                                                                                                                                                                           |
+| `AC_SEC_REQ_NON_FC_01`   | Never store passwords in plaintext                                             | 🟢 Implemented     | —                                                                                                                                                                                                           |
+| `AC_SEC_REQ_NON_FC_02`   | Hash passwords using Argon2id                                                  | 🟢 Implemented     | —                                                                                                                                                                                                           |
+| `AC_SEC_REQ_NON_FC_03`   | Use a unique salt for each password                                            | 🟢 Implemented     | —                                                                                                                                                                                                           |
+| `AC_SEC_REQ_NON_FC_04`   | Require a minimum password length of 15 characters                             | 🟢 Implemented     | —                                                                                                                                                                                                           |
+| `AC_SEC_REQ_NON_FC_05`   | Support passwords of at least 64 characters                                    | 🟢 Implemented     | —                                                                                                                                                                                                           |
+| `AC_SEC_REQ_NON_FC_06`   | Do not require arbitrary password composition rules                            | 🟢 Implemented     | —                                                                                                                                                                                                           |
+| `AC_SEC_REQ_NON_FC_07`   | Reject commonly used or compromised passwords                                  | 🟡 Partial         | The implementation checks passwords against a local blocklist, but the documented compromised-password source and its complete maintenance and refresh process are not implemented yet.                     |
+| `AC_SEC_REQ_NON_FC_08`   | Do not expose credentials through responses, logs, or administrative views     | 🟡 Partial         | The Create Account response does not expose credentials, but the broader authentication and account-management surfaces needed to verify credential non-exposure across the system are not implemented yet. |
+| `AC_SEC_DEC_EMAIL_01`    | Email identity is case-insensitive                                             | 🟢 Implemented     | —                                                                                                                                                                                                           |
+| `AC_SEC_DEC_EMAIL_02`    | Store canonical application email value                                        | 🟢 Implemented     | —                                                                                                                                                                                                           |
+| `AC_SEC_DEC_EMAIL_03`    | Trim surrounding whitespace and normalize the domain using IDNA                | 🟢 Implemented     | —                                                                                                                                                                                                           |
+| `AC_SEC_DEC_EMAIL_04`    | Preserve local-part case in the stored email value                             | 🟢 Implemented     | —                                                                                                                                                                                                           |
+| `AC_SEC_DEC_EMAIL_05`    | Do not apply provider-specific normalization                                   | 🟢 Implemented     | —                                                                                                                                                                                                           |
+| `AC_SEC_DEC_EMAIL_06`    | Enforce case-insensitive email uniqueness using `email_normalized`             | 🟢 Implemented     | —                                                                                                                                                                                                           |
+| `AC_SEC_DEC_EMAIL_07`    | Accept only valid email addresses in `addr-spec` form                          | 🟢 Implemented     | —                                                                                                                                                                                                           |
+| `AC_SEC_DEC_EMAIL_08`    | Limit the complete email address to 254 characters                             | 🟢 Implemented     | —                                                                                                                                                                                                           |
+| `AC_SEC_DEC_EMAIL_09`    | Support Unicode email addresses and IDN domains                                | 🟢 Implemented     | —                                                                                                                                                                                                           |
+| `AC_SEC_DEC_EMAIL_10`    | Use `email_normalized` as the unique case-insensitive identity key             | 🟢 Implemented     | —                                                                                                                                                                                                           |
+| `AC_SEC_DEC_PASSWORD_01` | Store only the password hash                                                   | 🟢 Implemented     | —                                                                                                                                                                                                           |
+| `AC_SEC_DEC_PASSWORD_02` | Use Argon2id                                                                   | 🟢 Implemented     | —                                                                                                                                                                                                           |
+| `AC_SEC_DEC_PASSWORD_03` | Use a unique salt for every password                                           | 🟢 Implemented     | —                                                                                                                                                                                                           |
+| `AC_SEC_DEC_PASSWORD_04` | Minimum password length is 15 characters                                       | 🟢 Implemented     | —                                                                                                                                                                                                           |
+| `AC_SEC_DEC_PASSWORD_05` | Support passwords of at least 64 characters                                    | 🟢 Implemented     | —                                                                                                                                                                                                           |
+| `AC_SEC_DEC_PASSWORD_06` | No mandatory character composition requirements                                | 🟢 Implemented     | —                                                                                                                                                                                                           |
+| `AC_SEC_DEC_PASSWORD_07` | Reject commonly used or compromised passwords                                  | 🟡 Partial         | Blocklisted passwords are rejected, but the complete documented common and compromised password source and maintenance process are not implemented yet.                                                     |
+| `AC_SEC_DEC_PASSWORD_08` | Never persist plaintext passwords                                              | 🟢 Implemented     | —                                                                                                                                                                                                           |
+| `AC_SEC_DEC_PASSWORD_09` | Use a maintained common/compromised password blocklist                         | 🟡 Partial         | A versioned local password blocklist is supported, but the documented HIBP and project-specific blocklist acquisition and refresh process is not implemented yet.                                           |
+| `AC_SEC_DEC_PASSWORD_10` | Maintain a versioned local blocklist with controlled updates                   | 🟡 Partial         | The blocklist loader requires a version and can load a versioned file, but controlled blocklist refresh and update handling are not implemented yet.                                                        |
+| `AC_SEC_DEC_PASSWORD_11` | Compare the complete prospective password against the blocklist                | 🟢 Implemented     | —                                                                                                                                                                                                           |
+| `AC_SEC_DEC_PASSWORD_12` | Continue using the last known good blocklist when an update fails              | 🔴 Not Implemented | —                                                                                                                                                                                                           |
+| `AC_SEC_DEC_AUTH_01`     | Admin API uses HTTP `Bearer` authentication                                    | 🔴 Not Implemented | —                                                                                                                                                                                                           |
+| `AC_SEC_DEC_AUTH_02`     | Authenticated Admin API requests use the HTTP `Authorization` header           | 🔴 Not Implemented | —                                                                                                                                                                                                           |
+| `AC_SEC_DEC_AUTH_03`     | Authorization header format is `Authorization: Bearer <token>`                 | 🔴 Not Implemented | —                                                                                                                                                                                                           |
+| `AC_SEC_DEC_AUTH_04`     | Bearer credentials are not provided in URI or request bodies                   | 🔴 Not Implemented | —                                                                                                                                                                                                           |
+| `AC_SEC_DEC_AUTH_05`     | Admin API protection realm is `admin-api`                                      | 🔴 Not Implemented | —                                                                                                                                                                                                           |
+| `AC_SEC_DEC_AUTH_06`     | Missing authentication returns `401` with a Bearer challenge                   | 🔴 Not Implemented | —                                                                                                                                                                                                           |
+| `AC_SEC_DEC_AUTH_07`     | Invalid bearer authentication returns `401` with `invalid_token`               | 🔴 Not Implemented | —                                                                                                                                                                                                           |
+| `AC_SEC_DEC_AUTH_08`     | Missing-credential challenge does not include a Bearer error parameter         | 🔴 Not Implemented | —                                                                                                                                                                                                           |
+| `AC_SEC_DEC_AUTH_09`     | Bearer credentials are never exposed in responses or logs                      | 🔴 Not Implemented | —                                                                                                                                                                                                           |
+| `AC_SEC_DEC_AUTH_10`     | Bearer credentials are transmitted only over HTTPS/TLS                         | 🔴 Not Implemented | —                                                                                                                                                                                                           |
+| `AC_SEC_DEC_AUTH_11`     | Basic, API-key, query-token, and body-token authentication are not accepted    | 🔴 Not Implemented | —                                                                                                                                                                                                           |
+| `AC_SEC_DEC_AUTH_12`     | Email/password authentication and Admin API Bearer authentication are distinct | 🔴 Not Implemented | —                                                                                                                                                                                                           |
 
 ## 7.3 Design Decisions
 
