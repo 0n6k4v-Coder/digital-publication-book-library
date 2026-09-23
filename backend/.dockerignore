@@ -1,0 +1,30 @@
+# Build output
+target/
+**/target/
+
+# Version control and IDEs
+.git/
+.gitignore
+.dockerignore
+.idea/
+.vscode/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Documentation & tests
+docs/
+tests/
+README.md
+*.md
+
+# Compose and Docker meta (not needed inside application build context)
+compose/
+docker/
+
+# Temporary / Log files
+*.log
+.DS_Store
+Thumbs.db
