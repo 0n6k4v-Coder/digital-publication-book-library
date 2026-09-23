@@ -37,6 +37,7 @@ backend/
 │   ├── Dockerfile
 │   ├── Dockerfile.test
 │   └── postgres/
+│       └── ...
 │
 ├── compose/
 │   ├── docker-compose.yml
@@ -45,6 +46,53 @@ backend/
 │   └── docker-compose.prod.yml
 │
 ├── migrations/
+│   └── ...
+│
 ├── src/
+│   ├── main.rs
+│   │
+│   ├── app/
+│   │   ├── mod.rs
+│   │   ├── config.rs
+│   │   ├── state.rs
+│   │   └── router.rs
+│   │
+│   ├── shared/
+│   │   ├── mod.rs
+│   │   ├── error.rs
+│   │   ├── response.rs
+│   │   ├── auth.rs
+│   │   └── validation.rs
+│   │
+│   └── domains/
+│       └── <domains>/
+│ 
 └── tests/
+    ├── unit/
+    ├── integration/
+    └── e2e/
+```
+
+---
+
+# Test Strategy
+
+```
+                       /\
+                      /  \
+                     /    \
+                    / E2E  \
+                   /________\
+                  /          \
+                 / Integration\
+                /              \
+               /________________\
+              /                  \
+             /       Unit         \
+            /                      \
+           /________________________\
+          /                          \
+         /     Static Code Test       \
+        /                              \
+       /________________________________\
 ```
