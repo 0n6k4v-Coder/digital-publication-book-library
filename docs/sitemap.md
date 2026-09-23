@@ -5,7 +5,7 @@
 The application is kept intentionally small and focused on the core brief:
 
 - **Public Website** — browse published posts and books, then open a post or book detail page.
-- **Admin Panel** — manage posts and books.
+- **Admin Panel** — manage posts, books, and administrator accounts.
 - **System** — authentication and error handling.
 
 ---
@@ -20,14 +20,19 @@ The application is kept intentionally small and focused on the core brief:
 └── /books
     └── /book/:slug
 
+/login
+
 /admin
-├── /login
 ├── /posts
 │   ├── /new
 │   └── /:id/edit
 │
-└── /books
-    ├── /new
+├── /books
+│   ├── /new
+│   └── /:id/edit
+│
+└── /accounts
+    ├── /create
     └── /:id/edit
 
 *
@@ -58,7 +63,9 @@ The homepage is the main landing page and may surface the latest posts. The dedi
 
 | Page ID | Route | Page | Parent |
 |---|---|---|---|
-| `PAGE-ADM-AUTH-001` | `/admin/login` | Admin Login | `/admin` |
+| `PAGE-ADM-AUTH-001` | `/login` | Admin Login | — |
+
+The login page is the entry point for authorized administrators. Public administrator registration is not part of the application scope.
 
 ## Posts
 
@@ -75,6 +82,14 @@ The homepage is the main landing page and may surface the latest posts. The dedi
 | `PAGE-ADM-005` | `/admin/books` | Books Management | `/admin` |
 | `PAGE-ADM-006` | `/admin/books/new` | Book Editor — Create | `/admin/books` |
 | `PAGE-ADM-007` | `/admin/books/:id/edit` | Book Editor — Edit | `/admin/books` |
+
+## Administrator Accounts
+
+| Page ID | Route | Page | Parent |
+|---|---|---|---|
+| `PAGE-ADM-008` | `/admin/accounts` | Administrator Accounts | `/admin` |
+| `PAGE-ADM-009` | `/admin/accounts/create` | Administrator Account — Create | `/admin/accounts` |
+| `PAGE-ADM-010` | `/admin/accounts/:id/edit` | Administrator Account — Edit | `/admin/accounts` |
 
 There is no separate dashboard page in this scope. Admin entry can route directly to the content-management area.
 
@@ -97,7 +112,11 @@ Logo
 ```
 Admin
 ├── Posts
-└── Books
+├── Books
+└── Accounts
+    ├── Administrator Accounts
+    ├── Create Account
+    └── Edit Account
 ```
 
 ---
@@ -151,9 +170,14 @@ Admin
 │   ├── New Post
 │   └── Edit Post
 │
-└── Books
-    ├── New Book
-    └── Edit Book
+├── Books
+│   ├── New Book
+│   └── Edit Book
+│
+└── Accounts
+    ├── Administrator Accounts
+    ├── Create Account
+    └── Edit Account
 ```
 
 ---
@@ -164,7 +188,7 @@ Admin
 |---|---|---|---|
 | `PAGE-SYS-001` | `*` | 404 Not Found | Handle invalid routes. |
 
-Admin authentication is required by `ADM-AUTH-001` but does not need a separate sitemap page beyond the login route.
+Admin authentication is required by `ADM-AUTH-001`. Authorized administrators manage other administrator accounts through the protected accounts section.
 
 ---
 
@@ -178,13 +202,16 @@ Admin authentication is required by `ADM-AUTH-001` but does not need a separate 
 | Library | `/books` |
 | Book detail | `/book/:slug` |
 | Admin | `/admin` |
-| Admin login | `/admin/login` |
+| Admin login | `/login` |
 | Posts management | `/admin/posts` |
 | New post | `/admin/posts/new` |
 | Edit post | `/admin/posts/:id/edit` |
 | Books management | `/admin/books` |
 | New book | `/admin/books/new` |
 | Edit book | `/admin/books/:id/edit` |
+| Administrator accounts | `/admin/accounts` |
+| Create administrator account | `/admin/accounts/create` |
+| Edit administrator account | `/admin/accounts/:id/edit` |
 
 ---
 
@@ -193,8 +220,8 @@ Admin authentication is required by `ADM-AUTH-001` but does not need a separate 
 | Area | Routes |
 |---|---:|
 | Public Website | 5 |
-| Admin Panel | 7 |
+| Admin Panel | 10 |
 | System | 1 |
-| **Total** | **13** |
+| **Total** | **16** |
 
 Dynamic routes such as `/posts/:slug` and `/book/:slug` use shared page templates rather than separate designs for every item.

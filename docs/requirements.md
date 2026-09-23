@@ -145,6 +145,14 @@ Requirement IDs are stable identifiers and should be referenced in:
 | ID | Requirement | Priority |
 |---|---|---|
 | `ADM-AUTH-001` | The admin area must be restricted to authorized administrators. | Must |
+| `ADM-AUTH-002` | The system must support multiple authorized administrator accounts. | Must |
+| `ADM-AUTH-003` | Authorized administrators must be able to create additional administrator accounts. | Must |
+| `ADM-AUTH-004` | Authorized administrators must be able to view administrator accounts. | Must |
+| `ADM-AUTH-005` | Authorized administrators must be able to edit administrator accounts. | Must |
+| `ADM-AUTH-006` | Authorized administrators must be able to deactivate administrator accounts. | Must |
+| `ADM-AUTH-007` | The system must prevent deactivation of the last active administrator account. | Must |
+
+Administrator accounts are managed inside the protected admin area. There is no public administrator registration flow. All administrator accounts have the same access level in this scope; role-based permissions are not required.
 
 ## Post Management
 
@@ -194,6 +202,15 @@ Requirement IDs are stable identifiers and should be referenced in:
 | `CNT-BOOK-006` | PDF File | Yes |
 | `CNT-BOOK-007` | Status | Yes |
 
+## Administrator Account
+
+| ID | Field | Required |
+|---|---|---|
+| `CNT-ADMIN-001` | Name | Yes |
+| `CNT-ADMIN-002` | Email | Yes |
+| `CNT-ADMIN-003` | Password Credential | Yes |
+| `CNT-ADMIN-004` | Status | Yes |
+
 ---
 
 # Scope
@@ -208,6 +225,7 @@ Requirement IDs are stable identifiers and should be referenced in:
 | `SCP-006` | Admin post management. |
 | `SCP-007` | Admin book and PDF management. |
 | `SCP-008` | Post and book publishing status management. |
+| `SCP-009` | Administrator account management, including viewing, creating, editing, and deactivating administrator accounts. |
 
 ---
 
@@ -227,6 +245,8 @@ Requirement IDs are stable identifiers and should be referenced in:
 | `OUT-010` | Membership system. |
 | `OUT-011` | Advanced recommendation system. |
 | `OUT-012` | Complex search and filtering. |
+| `OUT-013` | Role-based administrator permissions or a multi-level authorization system. |
+| `OUT-014` | Public administrator registration or self-service administrator signup. |
 
 ---
 
@@ -242,6 +262,8 @@ Every design and development task should reference one or more requirement IDs.
 | Frontend — Books | `PUB-BOOK-001`, `PUB-BOOK-005` |
 | Admin — Posts | `ADM-POST-002`, `ADM-POST-003`, `ADM-POST-005` |
 | Admin — Books | `ADM-BOOK-002`, `ADM-BOOK-005`, `ADM-BOOK-007` |
+| Admin — Accounts | `ADM-AUTH-002`, `ADM-AUTH-003`, `ADM-AUTH-004`, `ADM-AUTH-005`, `ADM-AUTH-006`, `ADM-AUTH-007` |
+| Admin — Login | `ADM-AUTH-001`, `ADM-AUTH-002` |
 | Testing | Reference the specific requirement being tested |
 
 ### Traceability Flow
