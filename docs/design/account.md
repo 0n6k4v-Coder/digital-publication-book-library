@@ -670,6 +670,16 @@ Location: /admin/accounts/{id}
 
 Soft-deleted accounts are excluded when `include_deleted = false`.
 
+### Authorization
+
+The request MUST satisfy the following authorization contract:
+
+1. When `include_deleted = false`, the authenticated principal MUST have `account:view`.
+2. When `include_deleted = true`, the authenticated principal MUST have both `account:view` and `account:view_deleted`.
+3. Authorization MUST be evaluated server-side using the authenticated principal's assigned roles and permissions.
+4. Client-supplied roles, permissions, or authorization decisions MUST NOT affect the authorization result.
+5. When the authenticated principal lacks any required permission, the request MUST be rejected with `403 Forbidden` and the Account list operation MUST NOT execute.
+
 ### Ordering
 
 The account list MUST be returned in a deterministic order:
