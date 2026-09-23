@@ -531,6 +531,23 @@ account:view
 Account::View Account
 ```
 
+### Account API Permission Contract
+
+For `GET /admin/accounts`, the required permissions are:
+
+| Request condition         | Required permissions                      |
+| ------------------------- | ----------------------------------------- |
+| `include_deleted = false` | `account:view`                            |
+| `include_deleted = true`  | `account:view` and `account:view_deleted` |
+
+Authorization MUST enforce the following rules:
+
+1. Authorization MUST evaluate the required permissions against the authenticated principal's server-side role and permission assignments.
+2. The request MUST be denied if any required permission is missing.
+3. A denied authenticated request MUST return `403 Forbidden`, and the Account list operation MUST NOT execute.
+4. Client-supplied roles, permissions, or authorization decisions MUST NOT affect the authorization result.
+5. After authorization succeeds, the Account domain MUST apply the `include_deleted` filter and execute the Account list operation.
+
 ---
 
 # 9. Error Contract
