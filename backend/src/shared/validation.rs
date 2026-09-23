@@ -42,7 +42,7 @@ pub fn normalize_email(input: &str) -> Result<NormalizedEmail, EmailValidationEr
     let ascii_domain =
         domain_to_ascii_strict(parsed.domain()).map_err(|_| EmailValidationError::InvalidDomain)?;
 
-    let canonical_address = AddrSpec::new(parsed.local_part(), ascii_domain)
+    let canonical_address = AddrSpec::new(parsed.local_part(), &ascii_domain)
         .map_err(|_| EmailValidationError::InvalidFormat)?;
 
     let canonical = canonical_address.to_string();
@@ -296,7 +296,7 @@ mod tests {
 
     #[test]
     fn hashes_password_with_argon2id() {
-        use argon2::password_hash::{PasswordHash, PasswordVerifier};
+        use argon2::password_hash::{phc::PasswordHash, PasswordVerifier};
 
         let password = SecretString::from("a secure password with enough length".to_owned());
 

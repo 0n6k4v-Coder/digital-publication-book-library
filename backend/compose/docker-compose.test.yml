@@ -58,6 +58,12 @@ services:
 
 volumes:
   postgres-test-data:
+
   cargo-target:
+    name: digital-publication-cargo-target
+
   cargo-registry:
+    name: digital-publication-cargo-registry
+
   cargo-git:
+    name: digital-publication-cargo-git
