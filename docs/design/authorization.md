@@ -964,34 +964,34 @@ HTTP `403 Forbidden` is used when the server understands the request but refuses
 
 ## 10.1 Requirements
 
-| ID                 | Status         | Reason                                                                                                                                               |
-| ------------------ | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `AZ_REQ_FC_01`     | 🟢 Implemented |                                                                                                                                                      |
-| `AZ_REQ_FC_02`     | 🟢 Implemented |                                                                                                                                                      |
-| `AZ_REQ_FC_03`     | 🟢 Implemented |                                                                                                                                                      |
-| `AZ_REQ_FC_04`     | 🟢 Implemented |                                                                                                                                                      |
-| `AZ_REQ_FC_05`     | 🟢 Implemented |                                                                                                                                                      |
-| `AZ_REQ_FC_06`     | 🟢 Implemented |                                                                                                                                                      |
-| `AZ_REQ_FC_07`     | 🟢 Implemented |                                                                                                                                                      |
-| `AZ_REQ_FC_08`     | 🟡 Partial     | Account-role assignments are persisted in `authorization_account_role`, but no application-level role-assignment operation is implemented yet.       |
-| `AZ_REQ_FC_09`     | 🟢 Implemented |                                                                                                                                                      |
-| `AZ_REQ_FC_10`     | 🟢 Implemented |                                                                                                                                                      |
-| `AZ_REQ_FC_11`     | 🟡 Partial     | Role assignments can be removed automatically by Account hard-delete cascade, but no application-level role-revocation operation is implemented yet. |
-| `AZ_REQ_FC_12`     | 🟢 Implemented |                                                                                                                                                      |
-| `AZ_REQ_FC_13`     | 🟢 Implemented |                                                                                                                                                      |
-| `AZ_REQ_FC_14`     | 🟢 Implemented |                                                                                                                                                      |
-| `AZ_REQ_FC_15`     | 🟢 Implemented |                                                                                                                                                      |
-| `AZ_REQ_FC_16`     | 🟢 Implemented |                                                                                                                                                      |
-| `AZ_REQ_FC_17`     | 🟢 Implemented |                                                                                                                                                      |
-| `AZ_REQ_FC_18`     | 🟢 Implemented |                                                                                                                                                      |
-| `AZ_REQ_FC_19`     | 🟢 Implemented |                                                                                                                                                      |
-| `AZ_REQ_FC_20`     | 🟢 Implemented |                                                                                                                                                      |
-| `AZ_REQ_NON_FC_01` | 🟢 Implemented |                                                                                                                                                      |
-| `AZ_REQ_NON_FC_02` | 🟢 Implemented |                                                                                                                                                      |
-| `AZ_REQ_NON_FC_03` | 🟢 Implemented |                                                                                                                                                      |
-| `AZ_REQ_NON_FC_04` | 🟢 Implemented |                                                                                                                                                      |
-| `AZ_REQ_NON_FC_05` | 🟢 Implemented |                                                                                                                                                      |
-| `AZ_REQ_NON_FC_06` | 🟢 Implemented |                                                                                                                                                      |
+| ID                 | Status         | Reason |
+| ------------------ | -------------- | ------ |
+| `AZ_REQ_FC_01`     | 🟢 Implemented |        |
+| `AZ_REQ_FC_02`     | 🟢 Implemented |        |
+| `AZ_REQ_FC_03`     | 🟢 Implemented |        |
+| `AZ_REQ_FC_04`     | 🟢 Implemented |        |
+| `AZ_REQ_FC_05`     | 🟢 Implemented |        |
+| `AZ_REQ_FC_06`     | 🟢 Implemented |        |
+| `AZ_REQ_FC_07`     | 🟢 Implemented |        |
+| `AZ_REQ_FC_08`     | 🟢 Implemented |        |
+| `AZ_REQ_FC_09`     | 🟢 Implemented |        |
+| `AZ_REQ_FC_10`     | 🟢 Implemented |        |
+| `AZ_REQ_FC_11`     | 🟢 Implemented |        |
+| `AZ_REQ_FC_12`     | 🟢 Implemented |        |
+| `AZ_REQ_FC_13`     | 🟢 Implemented |        |
+| `AZ_REQ_FC_14`     | 🟢 Implemented |        |
+| `AZ_REQ_FC_15`     | 🟢 Implemented |        |
+| `AZ_REQ_FC_16`     | 🟢 Implemented |        |
+| `AZ_REQ_FC_17`     | 🟢 Implemented |        |
+| `AZ_REQ_FC_18`     | 🟢 Implemented |        |
+| `AZ_REQ_FC_19`     | 🟢 Implemented |        |
+| `AZ_REQ_FC_20`     | 🟢 Implemented |        |
+| `AZ_REQ_NON_FC_01` | 🟢 Implemented |        |
+| `AZ_REQ_NON_FC_02` | 🟢 Implemented |        |
+| `AZ_REQ_NON_FC_03` | 🟢 Implemented |        |
+| `AZ_REQ_NON_FC_04` | 🟢 Implemented |        |
+| `AZ_REQ_NON_FC_05` | 🟢 Implemented |        |
+| `AZ_REQ_NON_FC_06` | 🟢 Implemented |        |
 
 ## 10.2 Security
 
@@ -1027,21 +1027,21 @@ HTTP `403 Forbidden` is used when the server understands the request but refuses
 
 ## 10.3 Data Model
 
-| ID         | Description                            | Status         | Reason |
-| ---------- | -------------------------------------- | -------------- | ------ |
-| `AZ_DM_01` | `authorization_role`                   | 🟢 Implemented |        |
-| `AZ_DM_02` | `authorization_permission`             | 🟢 Implemented |        |
-| `AZ_DM_03` | `authorization_role_permission`        | 🟢 Implemented |        |
-| `AZ_DM_04` | `authorization_account_role`           | 🟢 Implemented |        |
-| `AZ_DM_05` | `authorization_role_revocation_audit`  | 🔴 Not Implemented | Required by `AZ_UC_03` to persist the authoritative revocation actor and timestamp transactionally with assignment deletion. |
+| ID         | Description                           | Status         | Reason |
+| ---------- | ------------------------------------- | -------------- | ------ |
+| `AZ_DM_01` | `authorization_role`                  | 🟢 Implemented |        |
+| `AZ_DM_02` | `authorization_permission`            | 🟢 Implemented |        |
+| `AZ_DM_03` | `authorization_role_permission`       | 🟢 Implemented |        |
+| `AZ_DM_04` | `authorization_account_role`          | 🟢 Implemented |        |
+| `AZ_DM_05` | `authorization_role_revocation_audit` | 🟢 Implemented |        |
 
 ## 10.4 Use Cases
 
-| ID         | Description      | Status             | Reason |
-| ---------- | ---------------- | ------------------ | ------ |
-| `AZ_UC_01` | Authorize Action | 🟢 Implemented     |        |
-| `AZ_UC_02` | Assign Role      | 🔴 Not Implemented |        |
-| `AZ_UC_03` | Revoke Role      | 🔴 Not Implemented |        |
+| ID         | Description      | Status         | Reason |
+| ---------- | ---------------- | -------------- | ------ |
+| `AZ_UC_01` | Authorize Action | 🟢 Implemented |        |
+| `AZ_UC_02` | Assign Role      | 🟢 Implemented |        |
+| `AZ_UC_03` | Revoke Role      | 🟢 Implemented |        |
 
 ## 10.5 Permission Catalog
 
@@ -1063,12 +1063,12 @@ HTTP `403 Forbidden` is used when the server understands the request but refuses
 
 ## 10.6 Integration
 
-| ID          | Description                                                   | Status         | Reason |
-| ----------- | ------------------------------------------------------------- | -------------- | ------ |
-| `AZ_INT_01` | Authentication → Authorization principal contract             | 🟢 Implemented |        |
-| `AZ_INT_02` | Account → Authorization account reference                     | 🟢 Implemented |        |
-| `AZ_INT_03` | Authorization middleware/check boundary for protected actions | 🟢 Implemented |        |
-| `AZ_INT_04` | Role revocation audit, Account hard-delete preservation, and atomic assignment-revocation persistence | 🔴 Not Implemented | Required by `AZ_UC_03`; the authoritative audit persistence contract is defined but not implemented yet. |
+| ID          | Description                                                                                           | Status         | Reason |
+| ----------- | ----------------------------------------------------------------------------------------------------- | -------------- | ------ |
+| `AZ_INT_01` | Authentication → Authorization principal contract                                                     | 🟢 Implemented |        |
+| `AZ_INT_02` | Account → Authorization account reference                                                             | 🟢 Implemented |        |
+| `AZ_INT_03` | Authorization middleware/check boundary for protected actions                                         | 🟢 Implemented |        |
+| `AZ_INT_04` | Role revocation audit, Account hard-delete preservation, and atomic assignment-revocation persistence | 🟢 Implemented |        |
 
 ---
 
