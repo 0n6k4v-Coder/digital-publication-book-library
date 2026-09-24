@@ -879,6 +879,8 @@ Authentication remains responsible for establishing the authenticated principal.
 
 ---
 
+# 8. Implementation Status
+
 ## 8.1 Requirements
 
 | ID                 | Status             | Reason                                                                                                                                                                                                 |
@@ -887,7 +889,7 @@ Authentication remains responsible for establishing the authenticated principal.
 | `AU_REQ_FC_02`     | 🔴 Not Implemented |                                                                                                                                                                                                        |
 | `AU_REQ_FC_03`     | 🔴 Not Implemented |                                                                                                                                                                                                        |
 | `AU_REQ_FC_04`     | 🟡 Partial         | Bearer-token validation rejects tokens for inactive accounts, including accounts transitioned to `inactive` by AC_UC_05, but the email/password authentication flow is not implemented yet.            |
-| `AU_REQ_FC_05`     | 🟡 Partial         | Bearer-token validation rejects tokens for soft-deleted accounts, but the email/password authentication flow is not implemented yet.                                                                   |
+| `AU_REQ_FC_05`     | 🟡 Partial         | Bearer-token validation rejects tokens for soft-deleted accounts, including accounts transitioned to the soft-deleted state by AC_UC_07, but the email/password authentication flow is not implemented yet. |
 | `AU_REQ_FC_06`     | 🟢 Implemented     |                                                                                                                                                                                                        |
 | `AU_REQ_FC_07`     | 🔴 Not Implemented |                                                                                                                                                                                                        |
 | `AU_REQ_FC_08`     | 🔴 Not Implemented |                                                                                                                                                                                                        |
@@ -923,7 +925,7 @@ Authentication remains responsible for establishing the authenticated principal.
 | `AU_SEC_DEC_CREDENTIAL_01` | 🔴 Not Implemented |                                                                                                                                                                                                                                              |
 | `AU_SEC_DEC_CREDENTIAL_02` | 🟡 Partial         | Account implements canonical and normalized email rules, but Authentication does not yet have an email/password login flow that uses those rules.                                                                                            |
 | `AU_SEC_DEC_CREDENTIAL_03` | 🔴 Not Implemented |                                                                                                                                                                                                                                              |
-| `AU_SEC_DEC_CREDENTIAL_04` | 🟡 Partial         | Bearer-token validation requires `status = active` and `deleted_at IS NULL`; AC_UC_05 provides the implemented Account operation that transitions an account to `inactive`, but login-time credential authentication is not implemented yet. |
+| `AU_SEC_DEC_CREDENTIAL_04` | 🟡 Partial         | Bearer-token validation requires `status = active` and `deleted_at IS NULL`, including accounts soft-deleted by AC_UC_07, but login-time credential authentication is not implemented yet. |
 | `AU_SEC_DEC_CREDENTIAL_05` | 🔴 Not Implemented |                                                                                                                                                                                                                                              |
 | `AU_SEC_DEC_CREDENTIAL_06` | 🔴 Not Implemented |                                                                                                                                                                                                                                              |
 | `AU_SEC_DEC_ACCESS_01`     | 🟢 Implemented     |                                                                                                                                                                                                                                              |
@@ -998,7 +1000,7 @@ Authentication remains responsible for establishing the authenticated principal.
 ## 8.6 API Contract
 
 | ID               | Description              | Status             | Reason |
-| ---------------- | ------------------------ | ------------------ | ------ |
+| ---------------- | ------------------------ | -------------- | ------ |
 | `AU_API_01`      | `POST /auth/login`       | 🔴 Not Implemented |        |
 | `AU_API_02`      | `POST /auth/refresh`     | 🔴 Not Implemented |        |
 | `AU_API_03`      | `POST /auth/logout`      | 🔴 Not Implemented |        |
