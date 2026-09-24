@@ -46,7 +46,7 @@
    * [8.1 Authentication Domain](#81-authentication-domain)
    * [8.2 Account Domain](#82-account-domain)
    * [8.3 API Request Flow](#83-api-request-flow)
-   * [8.4 Role Revocation Audit](#84-role-revocation-audit)
+   * [8.4 Role Management Provisioning and Revocation Audit](#84-role-management-provisioning-and-revocation-audit)
 
 9. [Error Contract](#9-error-contract)
 
@@ -198,12 +198,26 @@ A role represents a set of permissions required for a defined responsibility.
 
 Initial roles:
 
-| Role             | Purpose                        |
-| ---------------- | ------------------------------ |
-| `account_admin`  | Manage administrator accounts. |
-| `account_viewer` | View administrator accounts.   |
+| Role             | Purpose                                                   |
+| ---------------- | --------------------------------------------------------- |
+| `account_admin`  | Manage administrator accounts and their role assignments. |
+| `account_viewer` | View administrator accounts.                              |
 
 Roles are stable policy definitions. Permissions are assigned to roles rather than individual accounts.
+
+The initial role-management policy is:
+
+1. `account_admin` is the role responsible for Authorization role management.
+2. `account_admin` grants `authorization:role_assign` and `authorization:role_revoke`.
+3. `account_viewer` does not grant `authorization:role_assign`.
+4. `account_viewer` does not grant `authorization:role_revoke`.
+5. No Account receives a direct permission outside a role.
+6. No role other than `account_admin` grants the initial role-management permissions defined by this document.
+7. Role-management permissions remain distinct permission identifiers even though they are granted through the `account_admin` role.
+8. The Authorization domain evaluates these permissions from authoritative server-side role and permission state.
+9. Client-supplied roles, permissions, or authorization decisions do not affect the authorization result.
+
+Before protected role-management operations are available, the system must establish at least one active, non-deleted Account with the enabled `account_admin` role through the controlled bootstrap procedure defined in Section 8.5.
 
 ## 3.3 Permissions
 
@@ -529,13 +543,23 @@ account:restore
 account:purge
 account:change_email
 account:change_password
+authorization:role_assign
+authorization:role_revoke
 ```
 
-Role-management permissions are intentionally separate from account-management permissions.
+The `account_admin` role is the initial application role authorized to manage administrator accounts and Authorization role assignments.
 
-No initial role is granted automatically by this document.
+`authorization:role_assign` and `authorization:role_revoke` are separate permission identifiers from Account-management permissions, but both are granted to `account_admin` because role management is part of the defined administrative responsibility of that role.
 
-Initial role assignment must be established through a controlled bootstrap or administrative provisioning mechanism.
+`account_viewer` must not receive either role-management permission.
+
+No initial role is granted automatically by the role catalog alone.
+
+The first active, non-deleted `account_admin` assignment must be established through the controlled Authorization bootstrap procedure defined in Section 8.5.
+
+After bootstrap, normal role assignment and revocation must use `AZ_UC_02` and `AZ_UC_03`.
+
+The bootstrap procedure must not create or modify Account credentials and must not bypass Account lifecycle rules.
 
 ---
 
@@ -699,9 +723,9 @@ Authorization MUST enforce the following rules:
 4. Client-supplied roles, permissions, or authorization decisions MUST NOT affect the authorization result.
 5. After authorization succeeds, the Account domain MUST apply the `include_deleted` filter and execute the Account list operation.
 
-## 8.4 Role Revocation Audit
+## 8.4 Role Management Provisioning and Revocation Audit
 
-The Authentication, Authorization, and Account domains use the following revocation-audit contract.
+The Authentication, Authorization, and Account domains use the following role-management and revocation contract.
 
 ### Authentication → Authorization
 
@@ -721,11 +745,85 @@ Authorization uses:
 AuthenticatedPrincipal.account_id
 ```
 
-as the authoritative `revoked_by` value.
+as the authoritative authenticated actor identifier.
 
-The HTTP request must not provide the revocation actor.
+The HTTP request must not provide the authorization actor identity.
+
+### Authorization Role Management
+
+`AZ_UC_02` and `AZ_UC_03` are the normal application-level role-management operations.
+
+`AZ_UC_02` requires:
+
+```text
+authorization:role_assign
+```
+
+`AZ_UC_03` requires:
+
+```text
+authorization:role_revoke
+```
+
+Both permissions are granted by the `account_admin` role only in the initial role catalog.
+
+Authorization must evaluate these permissions from the authenticated principal and current server-side role/permission state.
 
 ### Authorization Persistence
+
+For normal role management:
+
+```text
+Authenticated Request
+    ↓
+Authentication
+    ↓
+AuthenticatedPrincipal
+    ↓
+Authorization
+    ↓
+Required Role-Management Permission
+    ↓
+Authorization Use Case
+    ↓
+Authorization Persistence
+```
+
+Role assignment and role revocation must not trust client-supplied role or permission claims as proof of authorization.
+
+### Authorization Bootstrap
+
+The initial Authorization administrator must be established before protected role-management operations are available.
+
+Bootstrap is a controlled, out-of-band provisioning operation.
+
+Bootstrap requirements:
+
+1. Bootstrap must not be exposed as an HTTP endpoint.
+2. Bootstrap must operate on an existing Account owned by the Account domain.
+3. The target Account identifier must be supplied through a trusted provisioning channel and must not come from an untrusted HTTP request.
+4. Bootstrap must assign only the fixed `account_admin` role defined by this document.
+5. Bootstrap must not accept a client-supplied permission list.
+6. Bootstrap must not create, modify, activate, deactivate, soft-delete, restore, or hard-delete Accounts.
+7. Bootstrap must not create, modify, or delete Account credentials.
+8. The target Account must exist.
+9. The target Account must be active.
+10. The target Account must not be soft-deleted.
+11. Bootstrap must acquire the shared `account_administrator_invariant_lock` before evaluating or assigning the `account_admin` role.
+12. After acquiring the lock, bootstrap must evaluate the current Account state from authoritative database state.
+13. Bootstrap must execute the role assignment inside one database transaction.
+14. Re-running bootstrap for an already assigned `account_admin` role must be a successful no-op.
+15. Bootstrap must not create duplicate rows in `authorization_account_role`.
+16. The database must generate the role-assignment timestamp.
+17. When bootstrap is performed without an authenticated application actor, `created_by` for the bootstrap-created role assignment must remain `NULL`.
+18. A bootstrap failure must roll back the complete bootstrap transaction.
+19. Bootstrap must establish at least one active, non-deleted Account with the enabled `account_admin` role before protected role-management operations are enabled.
+20. After bootstrap, additional role assignments and revocations must use `AZ_UC_02` and `AZ_UC_03`.
+21. Bootstrap must not bypass or weaken any Account lifecycle invariant.
+
+The bootstrap operation establishes the initial administrative principal only. It does not replace `AZ_UC_02` or `AZ_UC_03`.
+
+### Authorization Persistence for Role Revocation
 
 A successful `AZ_UC_03` operation performs:
 
@@ -820,7 +918,7 @@ revoked_at
 
 or the authorization decision.
 
-The Authorization domain continues to evaluate permission using the authenticated principal and server-side role and permission state.
+The Authorization domain continues to evaluate permissions using the authenticated principal and server-side role and permission state.
 
 ---
 
