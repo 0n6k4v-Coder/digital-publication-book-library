@@ -1,9 +1,9 @@
 use axum::{
     extract::{
         rejection::{JsonRejection, QueryRejection},
-        Path, Query, State,
+        FromRequestParts, Path, Query, State,
     },
-    http::{header, HeaderValue, StatusCode},
+    http::{header, request::Parts, HeaderValue, StatusCode},
     response::{IntoResponse, Response},
     Json,
 };
@@ -18,8 +18,7 @@ use crate::{
             service::{authorize, ACCOUNT_VIEW_DELETED_PERMISSION, ACCOUNT_VIEW_PERMISSION},
         },
     },
-    shared::error::AppError,
-    shared::response::add_no_store,
+    shared::{error::AppError, response::add_no_store},
 };
 
 use super::{
@@ -102,13 +101,29 @@ pub async fn view_accounts(
     Ok(response)
 }
 
+#[derive(Debug, Clone, Copy)]
+pub struct AccountId(Uuid);
+
+impl<S> FromRequestParts<S> for AccountId
+where
+    S: Send + Sync,
+{
+    type Rejection = AppError;
+
+    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
+        let Path(account_id) = Path::<Uuid>::from_request_parts(parts, state)
+            .await
+            .map_err(|_| AppError::InvalidAccountId)?;
+
+        Ok(Self(account_id))
+    }
+}
+
 pub async fn view_account(
-    Path(account_id): Path<String>,
+    AccountId(account_id): AccountId,
     principal: AuthenticatedPrincipal,
     State(state): State<AppState>,
 ) -> Result<Response, AppError> {
-    let account_id = Uuid::parse_str(&account_id).map_err(|_| AppError::InvalidAccountId)?;
-
     authorize(
         &AuthorizationRepository::new(state.pool.clone()),
         &principal,
