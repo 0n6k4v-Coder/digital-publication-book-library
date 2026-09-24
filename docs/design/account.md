@@ -208,18 +208,21 @@
 
 ## 3.1 Account
 
-| ID                  | Decision           | Definition                                         |
-| ------------------- | ------------------ | -------------------------------------------------- |
-| `AC_DEC_ACCOUNT_01` | Identifier         | `account.id` uses PostgreSQL `uuid`.               |
-| `AC_DEC_ACCOUNT_02` | ID generation      | Generate IDs with PostgreSQL native `uuidv7()`.    |
-| `AC_DEC_ACCOUNT_03` | Creation timestamp | `created_at TIMESTAMPTZ NOT NULL`.                 |
-| `AC_DEC_ACCOUNT_04` | Update timestamp   | `updated_at TIMESTAMPTZ NOT NULL`.                 |
-| `AC_DEC_ACCOUNT_05` | Deletion timestamp | `deleted_at TIMESTAMPTZ NULL`.                     |
-| `AC_DEC_ACCOUNT_06` | Time zone          | Store timestamps in UTC.                           |
-| `AC_DEC_ACCOUNT_07` | Status             | Only `active` and `inactive`.                      |
-| `AC_DEC_ACCOUNT_08` | `created_by`       | Nullable FK to `account.id`, `ON DELETE SET NULL`. |
-| `AC_DEC_ACCOUNT_09` | `updated_by`       | Nullable FK to `account.id`, `ON DELETE SET NULL`. |
-| `AC_DEC_ACCOUNT_10` | `deleted_by`       | Nullable FK to `account.id`, `ON DELETE SET NULL`. |
+| ID                  | Decision               | Definition |
+| ------------------- | ---------------------- | ---------- |
+| `AC_DEC_ACCOUNT_01` | Identifier             | `account.id` uses PostgreSQL `uuid`. |
+| `AC_DEC_ACCOUNT_02` | ID generation          | Generate IDs with PostgreSQL native `uuidv7()`. |
+| `AC_DEC_ACCOUNT_03` | Creation timestamp     | `created_at TIMESTAMPTZ NOT NULL`. |
+| `AC_DEC_ACCOUNT_04` | Update timestamp       | `updated_at TIMESTAMPTZ NOT NULL`. |
+| `AC_DEC_ACCOUNT_05` | Deletion timestamp     | `deleted_at TIMESTAMPTZ NULL`. |
+| `AC_DEC_ACCOUNT_06` | Time zone              | Store timestamps in UTC. |
+| `AC_DEC_ACCOUNT_07` | Status                 | Only `active` and `inactive`. |
+| `AC_DEC_ACCOUNT_08` | `created_by`           | Nullable FK to `account.id`, `ON DELETE SET NULL`. |
+| `AC_DEC_ACCOUNT_09` | `updated_by`           | Nullable FK to `account.id`, `ON DELETE SET NULL`. |
+| `AC_DEC_ACCOUNT_10` | `deleted_by`           | Nullable FK to `account.id`, `ON DELETE SET NULL`. |
+| `AC_DEC_ACCOUNT_11` | Display name ownership | `account.display_name` is an Account-owned, optional administrative display field. It is not an authentication identifier, credential, authorization input, or lifecycle state. |
+| `AC_DEC_ACCOUNT_12` | Display name validation | `display_name` is normalized to Unicode NFC, surrounding Unicode whitespace is trimmed, internal whitespace and case are preserved, and the normalized value must contain 1–100 Unicode scalar values. `NULL` clears the display name. |
+| `AC_DEC_ACCOUNT_13` | Account update semantics | AC_UC_04 may modify `display_name` only. A value change updates `account.updated_at` and `account.updated_by` to the authenticated administrator. `created_at`, `created_by`, `status`, `deleted_at`, `deleted_by`, and all Account Credentials fields remain unchanged. A semantic no-op does not modify timestamps or actor fields. |
 
 ## 3.2 Account Credentials
 
@@ -298,16 +301,17 @@ SOFT DELETED
 
 **ID:** `AC_DM_01`
 
-| Column       | Type          | Null | Constraint                              |
-| ------------ | ------------- | ---: | --------------------------------------- |
-| `id`         | `uuid`        |   No | PK, default `uuidv7()`                  |
-| `created_at` | `timestamptz` |   No |                                         |
-| `created_by` | `uuid`        |  Yes | FK → `account.id`, `ON DELETE SET NULL` |
-| `updated_at` | `timestamptz` |   No |                                         |
-| `updated_by` | `uuid`        |  Yes | FK → `account.id`, `ON DELETE SET NULL` |
-| `status`     | `text`        |   No | `active` or `inactive`                  |
-| `deleted_at` | `timestamptz` |  Yes |                                         |
-| `deleted_by` | `uuid`        |  Yes | FK → `account.id`, `ON DELETE SET NULL` |
+| Column         | Type          | Null | Constraint                              |
+| -------------- | ------------- | ---: | --------------------------------------- |
+| `id`           | `uuid`        |   No | PK, default `uuidv7()`                  |
+| `created_at`   | `timestamptz` |   No |                                         |
+| `created_by`   | `uuid`        |  Yes | FK → `account.id`, `ON DELETE SET NULL` |
+| `updated_at`   | `timestamptz` |   No |                                         |
+| `updated_by`   | `uuid`        |  Yes | FK → `account.id`, `ON DELETE SET NULL` |
+| `status`       | `text`        |   No | `active` or `inactive`                  |
+| `display_name` | `text`        |  Yes | Optional Account display name           |
+| `deleted_at`   | `timestamptz` |  Yes |                                         |
+| `deleted_by`   | `uuid`        |  Yes | FK → `account.id`, `ON DELETE SET NULL` |
 
 ## 4.2 `account_credentials`
 
@@ -409,21 +413,78 @@ flowchart LR
 
 **ID:** `AC_UC_04`
 
-| Item   | Definition                 |
-| ------ | -------------------------- |
-| Actor  | Authorized Administrator   |
+| Item   | Definition |
+| ------ | ---------- |
+| Actor  | Authorized Administrator |
 | Input  | Account ID, Account fields |
-| Result | Account updated            |
+| Result | Account updated |
 
-```mermaid
-flowchart LR
-    Admin["Authorized Administrator"]
-    UC["Update Account"]
-    Account["Account"]
+### Mutable Account Fields
 
-    Admin --> UC
-    UC --> Account
+AC_UC_04 currently supports exactly one mutable Account field:
+
+```text
+display_name
 ```
+
+The following fields are not mutable through AC_UC_04:
+
+```text
+id
+created_at
+created_by
+updated_at
+updated_by
+status
+deleted_at
+deleted_by
+email
+password_hash
+```
+
+Dedicated operations remain authoritative for:
+
+```text
+email           → AC_UC_10 Change Email
+password_hash   → AC_UC_11 Change Password
+status          → AC_UC_05 Deactivate Account / AC_UC_06 Activate Account
+deleted_at      → AC_UC_07 Soft Delete Account / AC_UC_08 Restore Account / AC_UC_09 Hard Delete Account
+```
+
+### Rules
+
+1. The request must be authenticated.
+2. The authenticated principal must have `account:update`.
+3. Authorization must be evaluated server-side.
+4. The target Account must exist and must not be soft-deleted.
+5. The PATCH document must contain only supported mutable Account fields.
+6. Unknown fields must be rejected.
+7. An empty PATCH document must be rejected.
+8. `display_name: null` clears the current display name.
+9. A string value must be normalized to Unicode NFC after trimming surrounding Unicode whitespace.
+10. The normalized value must contain at least 1 and at most 100 Unicode scalar values.
+11. Internal whitespace and case are preserved.
+12. Credential data must not be changed.
+13. Account lifecycle fields must not be changed.
+14. When `display_name` changes, update `display_name`, `updated_at`, and `updated_by`.
+15. When the submitted value is semantically identical to the stored value, the operation is a semantic no-op and must not change `updated_at` or `updated_by`.
+16. The Account response returned after a successful update must contain the updated Account representation.
+17. The operation must never modify `created_at`, `created_by`, `status`, `deleted_at`, or `deleted_by`.
+
+### Success
+
+**`200 OK`**
+
+Response body: [Account Response](#614-account-response)
+
+### Errors
+
+| Status | Code | Definition |
+| ------ | ---- | ---------- |
+| `400` | `INVALID_ACCOUNT_ID` | The `{id}` path parameter is not a valid UUID. |
+| `404` | `ACCOUNT_NOT_FOUND` | The Account does not exist or is unavailable because it is soft-deleted. |
+| `415` | `UNSUPPORTED_MEDIA_TYPE` | The request does not use `application/merge-patch+json`. |
+| `422` | `VALIDATION_ERROR` | The PATCH document is syntactically valid but contains unsupported fields, invalid field values, or otherwise violates the AC_UC_04 validation rules. |
 
 ## 5.5 Deactivate Account
 
@@ -700,6 +761,7 @@ The account list MUST be returned in a deterministic order:
     {
       "id": "019...",
       "email": "admin@example.com",
+      "display_name": "Library Administrator",
       "status": "active",
       "created_at": "2026-09-23T10:00:00Z",
       "updated_at": "2026-09-23T10:00:00Z",
@@ -741,19 +803,65 @@ Response body: [Account Response](#614-account-response)
 
 `PATCH /admin/accounts/{id}`
 
-This endpoint is reserved for mutable Account fields that are not handled by dedicated lifecycle or credential operations.
+Content-Type:
 
-```json
-{}
+```text
+application/merge-patch+json
 ```
 
-No mutable Account field is currently defined beyond the dedicated operations in this contract.
+Request body:
+
+```json
+{
+  "display_name": "Library Administrator"
+}
+```
+
+To clear the display name:
+
+```json
+{
+  "display_name": null
+}
+```
+
+### Rules
+
+* The request must be authenticated using `Authorization: Bearer <token>`.
+* The authenticated principal must have the `account:update` permission.
+* Authorization is evaluated server-side using the authenticated principal and Authorization domain state.
+* The `{id}` path parameter must be a valid UUID.
+* The target Account must exist and must not be soft-deleted.
+* The patch document must contain only supported mutable Account fields.
+* Unknown fields are rejected.
+* An empty patch document is rejected.
+* `display_name = null` clears the field.
+* A string value is trimmed for surrounding Unicode whitespace and normalized to Unicode NFC.
+* The normalized value must contain between 1 and 100 Unicode scalar values.
+* Internal whitespace and case are preserved.
+* Only Account fields defined as mutable by AC_UC_04 are changed by this operation.
+* When `display_name` changes, update `account.updated_at` and `account.updated_by`.
+* When the submitted value is semantically identical to the stored value, do not modify `account.updated_at` or `account.updated_by`.
+* Do not modify Account Credentials.
+* Do not modify `status`.
+* Do not modify `deleted_at` or `deleted_by`.
+* Do not modify `created_at` or `created_by`.
+* Response caching remains `Cache-Control: no-store`.
 
 ### Success
 
 **`200 OK`**
 
 Response body: [Account Response](#614-account-response)
+
+### Errors
+
+| Status | Code | Definition |
+| ------ | ---- | ---------- |
+| `400` | `INVALID_ACCOUNT_ID` | The account path identifier is not a valid UUID. |
+| `404` | `ACCOUNT_NOT_FOUND` | The requested Account does not exist or is soft-deleted. |
+| `415` | `UNSUPPORTED_MEDIA_TYPE` | The request content type is not `application/merge-patch+json`. |
+| `422` | `VALIDATION_ERROR` | The patch document contains unsupported fields, is empty, or contains an invalid `display_name`. |
 
 ## 6.7 Deactivate Account
 
@@ -1118,33 +1226,27 @@ The status-code meanings follow HTTP Semantics defined by RFC 9110.
 
 ## 7.3 Design Decisions
 
-| ID                     | Description                                                        | Status             | Reason                                                                                                                                                                                         |
-| ---------------------- | ------------------------------------------------------------------ | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `AC_DEC_ACCOUNT_01`    | `account.id` uses PostgreSQL `uuid`                                | 🟢 Implemented     | —                                                                                                                                                                                              |
-| `AC_DEC_ACCOUNT_02`    | Generate IDs with PostgreSQL native `uuidv7()`                     | 🟢 Implemented     | —                                                                                                                                                                                              |
-| `AC_DEC_ACCOUNT_03`    | `created_at` uses `TIMESTAMPTZ NOT NULL`                           | 🟢 Implemented     | —                                                                                                                                                                                              |
-| `AC_DEC_ACCOUNT_04`    | `updated_at` uses `TIMESTAMPTZ NOT NULL`                           | 🟢 Implemented     | —                                                                                                                                                                                              |
-| `AC_DEC_ACCOUNT_05`    | `deleted_at` uses `TIMESTAMPTZ NULL`                               | 🟢 Implemented     | —                                                                                                                                                                                              |
-| `AC_DEC_ACCOUNT_06`    | Store timestamps in UTC                                            | 🟢 Implemented     | —                                                                                                                                                                                              |
-| `AC_DEC_ACCOUNT_07`    | Only `active` and `inactive` statuses are allowed                  | 🟢 Implemented     | —                                                                                                                                                                                              |
-| `AC_DEC_ACCOUNT_08`    | `created_by` uses nullable FK with `ON DELETE SET NULL`            | 🟢 Implemented     | —                                                                                                                                                                                              |
-| `AC_DEC_ACCOUNT_09`    | `updated_by` uses nullable FK with `ON DELETE SET NULL`            | 🟢 Implemented     | —                                                                                                                                                                                              |
-| `AC_DEC_ACCOUNT_10`    | `deleted_by` uses nullable FK with `ON DELETE SET NULL`            | 🟢 Implemented     | —                                                                                                                                                                                              |
-| `AC_DEC_CREDENTIAL_01` | One account has exactly one credential set                         | 🟡 Partial         | `account_credentials.account_id` is a primary key and the Create Account transaction creates one credential set, but the schema does not guarantee credential-set existence for every account. |
-| `AC_DEC_CREDENTIAL_02` | Authentication uses email and password only                        | 🟡 Partial         | The credential model contains email and password credentials, but the account email/password authentication flow is not implemented yet.                                                       |
-| `AC_DEC_CREDENTIAL_03` | `account_credentials.account_id` references `account.id`           | 🟢 Implemented     | —                                                                                                                                                                                              |
-| `AC_DEC_CREDENTIAL_04` | Credential deletion uses `ON DELETE CASCADE`                       | 🟢 Implemented     | —                                                                                                                                                                                              |
-| `AC_DEC_CREDENTIAL_05` | Email or password changes update credential timestamp              | 🔴 Not Implemented | —                                                                                                                                                                                              |
-| `AC_DEC_CREDENTIAL_06` | Credential changes do not update `account.updated_at`              | 🔴 Not Implemented | —                                                                                                                                                                                              |
-| `AC_DEC_LIFECYCLE_01`  | Soft-deleted account must have `status = inactive`                 | 🟢 Implemented     | —                                                                                                                                                                                              |
-| `AC_DEC_LIFECYCLE_02`  | Soft-deleted account must not authenticate                         | 🟡 Partial         | The Admin API Bearer authentication layer rejects soft-deleted accounts, but the account email/password authentication flow is not implemented yet.                                            |
-| `AC_DEC_LIFECYCLE_03`  | Restored account returns to `inactive`                             | 🔴 Not Implemented | —                                                                                                                                                                                              |
-| `AC_DEC_LIFECYCLE_04`  | Hard deletion physically removes the account record                | 🔴 Not Implemented | —                                                                                                                                                                                              |
-| `AC_DEC_LIFECYCLE_05`  | Hard deletion is an explicit operation                             | 🔴 Not Implemented | —                                                                                                                                                                                              |
-| `AC_DEC_LIFECYCLE_06`  | Hard deletion never occurs during normal updates                   | 🔴 Not Implemented | —                                                                                                                                                                                              |
-| `AC_DEC_LIFECYCLE_07`  | At least one active, non-deleted administrator must remain         | 🔴 Not Implemented | —                                                                                                                                                                                              |
-| `AC_DEC_LIFECYCLE_08`  | Last-administrator protection must be transactional                | 🔴 Not Implemented | —                                                                                                                                                                                              |
-| `AC_DEC_LIFECYCLE_09`  | First administrator has null actor references when no actor exists | 🔴 Not Implemented | —                                                                                                                                                                                              |
+| ID                     | Description                                                        | Status             | Reason |
+| ---------------------- | ------------------------------------------------------------------ | ------------------ | ------ |
+| `AC_DEC_ACCOUNT_01`   | `account.id` uses PostgreSQL `uuid`                               | 🟢 Implemented     | — |
+| `AC_DEC_ACCOUNT_02`   | Generate IDs with PostgreSQL native `uuidv7()`                    | 🟢 Implemented     | — |
+| `AC_DEC_ACCOUNT_03`   | `created_at` uses `TIMESTAMPTZ NOT NULL`                          | 🟢 Implemented     | — |
+| `AC_DEC_ACCOUNT_04`   | `updated_at` uses `TIMESTAMPTZ NOT NULL`                          | 🟢 Implemented     | — |
+| `AC_DEC_ACCOUNT_05`   | `deleted_at` uses `TIMESTAMPTZ NULL`                              | 🟢 Implemented     | — |
+| `AC_DEC_ACCOUNT_06`   | Store timestamps in UTC                                           | 🟢 Implemented     | — |
+| `AC_DEC_ACCOUNT_07`   | Only `active` and `inactive` statuses are allowed                 | 🟢 Implemented     | — |
+| `AC_DEC_ACCOUNT_08`   | `created_by` uses nullable FK with `ON DELETE SET NULL`           | 🟢 Implemented     | — |
+| `AC_DEC_ACCOUNT_09`   | `updated_by` uses nullable FK with `ON DELETE SET NULL`           | 🟢 Implemented     | — |
+| `AC_DEC_ACCOUNT_10`   | `deleted_by` uses nullable FK with `ON DELETE SET NULL`           | 🟢 Implemented     | — |
+| `AC_DEC_ACCOUNT_11`   | `account.display_name` is an optional Account-owned administrative display field | 🔴 Not Implemented | — |
+| `AC_DEC_ACCOUNT_12`   | `display_name` uses NFC normalization, surrounding-whitespace trimming, and a 1–100 Unicode scalar-value limit | 🔴 Not Implemented | — |
+| `AC_DEC_ACCOUNT_13`   | AC_UC_04 updates `display_name`, `updated_at`, and `updated_by` only when the value changes | 🔴 Not Implemented | — |
+| `AC_DEC_CREDENTIAL_01` | One account has exactly one credential set | 🟡 Partial | `account_credentials.account_id` is a primary key and the Create Account transaction creates one credential set, but the schema does not guarantee credential-set existence for every account. |
+| `AC_DEC_CREDENTIAL_02` | Authentication uses email and password only | 🟡 Partial | The credential model contains email and password credentials, but the account email/password authentication flow is not implemented yet. |
+| `AC_DEC_CREDENTIAL_03` | `account_credentials.account_id` references `account.id` | 🟢 Implemented | — |
+| `AC_DEC_CREDENTIAL_04` | Credential deletion uses `ON DELETE CASCADE` | 🟢 Implemented | — |
+| `AC_DEC_CREDENTIAL_05` | Email or password changes update credential timestamp | 🔴 Not Implemented | — |
+| `AC_DEC_CREDENTIAL_06` | Credential changes do not update `account.updated_at` | 🔴 Not Implemented | — |                
 
 ## 7.4 Data Model
 
@@ -1155,32 +1257,32 @@ The status-code meanings follow HTTP Semantics defined by RFC 9110.
 
 ## 7.5 Use Cases
 
-| ID         | Description         | Status             | Reason                                                                                                                                                                                                                                                                                                                                                                     |
-| ---------- | ------------------- | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `AC_UC_01` | Create Account      | 🟢 Implemented     | The Create Account use case is implemented with email normalization, password policy validation, Argon2id hashing, atomic account/credential persistence, actor attribution, Bearer authentication, and `account:create` authorization.                                                                                                                                    |
-| `AC_UC_02` | View Accounts       | 🟢 Implemented     | The View Accounts use case is implemented with real Bearer authentication, server-side `account:view` authorization, conditional `account:view_deleted` authorization, pagination, status filtering, deterministic `id ASC` ordering, soft-deleted account handling, validation, sensitive-field exclusion, `Cache-Control: no-store`, and Unit/Integration/E2E coverage.  |
+| ID         | Description         | Status             | Reason |
+| ---------- | ------------------- | ------------------ | ------ |
+| `AC_UC_01` | Create Account      | 🟢 Implemented     | The Create Account use case is implemented with email normalization, password policy validation, Argon2id hashing, atomic account/credential persistence, actor attribution, Bearer authentication, and `account:create` authorization. |
+| `AC_UC_02` | View Accounts       | 🟢 Implemented     | The View Accounts use case is implemented with real Bearer authentication, server-side `account:view` authorization, conditional `account:view_deleted` authorization, pagination, status filtering, deterministic `id ASC` ordering, soft-deleted account handling, validation, sensitive-field exclusion, `Cache-Control: no-store`, and Unit/Integration/E2E coverage. |
 | `AC_UC_03` | View Account        | 🟢 Implemented     | The View Account use case is implemented with UUID validation through the `AccountId` request-parts extractor, Bearer authentication, server-side `account:view` authorization, non-deleted account lookup, response mapping, `404 ACCOUNT_NOT_FOUND`, `400 INVALID_ACCOUNT_ID`, `Cache-Control: no-store`, credential-field exclusion, and Unit/Integration/E2E coverage. |
-| `AC_UC_04` | Update Account      | 🔴 Not Implemented | —                                                                                                                                                                                                                                                                                                                                                                          |
-| `AC_UC_05` | Deactivate Account  | 🔴 Not Implemented | —                                                                                                                                                                                                                                                                                                                                                                          |
-| `AC_UC_06` | Activate Account    | 🔴 Not Implemented | —                                                                                                                                                                                                                                                                                                                                                                          |
-| `AC_UC_07` | Soft Delete Account | 🔴 Not Implemented | —                                                                                                                                                                                                                                                                                                                                                                          |
-| `AC_UC_08` | Restore Account     | 🔴 Not Implemented | —                                                                                                                                                                                                                                                                                                                                                                          |
-| `AC_UC_09` | Hard Delete Account | 🔴 Not Implemented | —                                                                                                                                                                                                                                                                                                                                                                          |
-| `AC_UC_10` | Change Email        | 🔴 Not Implemented | —                                                                                                                                                                                                                                                                                                                                                                          |
-| `AC_UC_11` | Change Password     | 🔴 Not Implemented | —                                                                                                                                                                                                                                                                                                                                                                          |
+| `AC_UC_04` | Update Account      | 🔴 Not Implemented | — |
+| `AC_UC_05` | Deactivate Account  | 🔴 Not Implemented | — |
+| `AC_UC_06` | Activate Account    | 🔴 Not Implemented | — |
+| `AC_UC_07` | Soft Delete Account | 🔴 Not Implemented | — |
+| `AC_UC_08` | Restore Account     | 🔴 Not Implemented | — |
+| `AC_UC_09` | Hard Delete Account | 🔴 Not Implemented | — |
+| `AC_UC_10` | Change Email        | 🔴 Not Implemented | — |
+| `AC_UC_11` | Change Password     | 🔴 Not Implemented | — |
 
-## 7.6 API Contract
+## 7.5 Use Cases
 
-| ID          | Description                  | Status             | Reason                                                                                                                                                                                                                                                                                                                                                                                                |
-| ----------- | ---------------------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `AC_API_01` | Create Account endpoint      | 🟢 Implemented     | The endpoint includes the implemented Bearer authentication and `account:create` authorization flow, in addition to validation, atomic persistence, `201 Created`, `Location`, `Cache-Control: no-store`, `409`, and `422` handling.                                                                                                                                                                  |
-| `AC_API_02` | View Accounts endpoint       | 🟢 Implemented     | The `GET /admin/accounts` endpoint is implemented with Bearer authentication, server-side `account:view` and conditional `account:view_deleted` authorization, pagination, status filtering, deterministic `id ASC` ordering, soft-deleted account handling, validation, `200 OK`, JSON response formatting, `Cache-Control: no-store`, sensitive-field exclusion, and Unit/Integration/E2E coverage. |
-| `AC_API_03` | View Account endpoint        | 🟢 Implemented     | The `GET /admin/accounts/{id}` endpoint is implemented with Bearer authentication, server-side `account:view` authorization, UUID validation through the `AccountId` extractor, `200 OK`, `400 INVALID_ACCOUNT_ID`, `404 ACCOUNT_NOT_FOUND`, JSON/problem responses, `Cache-Control: no-store`, sensitive-field exclusion, and Unit/Integration/E2E coverage.                                         |
-| `AC_API_04` | Update Account endpoint      | 🔴 Not Implemented | —                                                                                                                                                                                                                                                                                                                                                                                                     |
-| `AC_API_05` | Deactivate Account endpoint  | 🔴 Not Implemented | —                                                                                                                                                                                                                                                                                                                                                                                                     |
-| `AC_API_06` | Activate Account endpoint    | 🔴 Not Implemented | —                                                                                                                                                                                                                                                                                                                                                                                                     |
-| `AC_API_07` | Soft Delete Account endpoint | 🔴 Not Implemented | —                                                                                                                                                                                                                                                                                                                                                                                                     |
-| `AC_API_08` | Restore Account endpoint     | 🔴 Not Implemented | —                                                                                                                                                                                                                                                                                                                                                                                                     |
-| `AC_API_09` | Hard Delete Account endpoint | 🔴 Not Implemented | —                                                                                                                                                                                                                                                                                                                                                                                                     |
-| `AC_API_10` | Change Email endpoint        | 🔴 Not Implemented | —                                                                                                                                                                                                                                                                                                                                                                                                     |
-| `AC_API_11` | Change Password endpoint     | 🔴 Not Implemented | —                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ID         | Description         | Status             | Reason |
+| ---------- | ------------------- | ------------------ | ------ |
+| `AC_UC_01` | Create Account      | 🟢 Implemented     | The Create Account use case is implemented with email normalization, password policy validation, Argon2id hashing, atomic account/credential persistence, actor attribution, Bearer authentication, and `account:create` authorization. |
+| `AC_UC_02` | View Accounts       | 🟢 Implemented     | The View Accounts use case is implemented with real Bearer authentication, server-side `account:view` authorization, conditional `account:view_deleted` authorization, pagination, status filtering, deterministic `id ASC` ordering, soft-deleted account handling, validation, sensitive-field exclusion, `Cache-Control: no-store`, and Unit/Integration/E2E coverage. |
+| `AC_UC_03` | View Account        | 🟢 Implemented     | The View Account use case is implemented with UUID validation through the `AccountId` request-parts extractor, Bearer authentication, server-side `account:view` authorization, non-deleted account lookup, response mapping, `404 ACCOUNT_NOT_FOUND`, `400 INVALID_ACCOUNT_ID`, `Cache-Control: no-store`, credential-field exclusion, and Unit/Integration/E2E coverage. |
+| `AC_UC_04` | Update Account      | 🔴 Not Implemented | — |
+| `AC_UC_05` | Deactivate Account  | 🔴 Not Implemented | — |
+| `AC_UC_06` | Activate Account    | 🔴 Not Implemented | — |
+| `AC_UC_07` | Soft Delete Account | 🔴 Not Implemented | — |
+| `AC_UC_08` | Restore Account     | 🔴 Not Implemented | — |
+| `AC_UC_09` | Hard Delete Account | 🔴 Not Implemented | — |
+| `AC_UC_10` | Change Email        | 🔴 Not Implemented | — |
+| `AC_UC_11` | Change Password     | 🔴 Not Implemented | — |
