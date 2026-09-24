@@ -594,107 +594,107 @@ HTTP `403 Forbidden` is used when the server understands the request but refuses
 
 | ID                 | Status         | Reason                                                                                                                                         |
 | ------------------ | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `AZ_REQ_FC_01`     | 🟢 Implemented | Authorization evaluates an `AuthenticatedPrincipal` against a required permission through the Authorization service.                           |
-| `AZ_REQ_FC_02`     | 🟢 Implemented | Authorization decisions are based on permission names supplied to the authorization service.                                                   |
-| `AZ_REQ_FC_03`     | 🟢 Implemented | Permissions are obtained through assigned roles using `authorization_account_role` and `authorization_role_permission`.                        |
-| `AZ_REQ_FC_04`     | 🟢 Implemented | The account-role schema allows an account to have multiple role assignments.                                                                   |
-| `AZ_REQ_FC_05`     | 🟢 Implemented | The role-permission schema and seeded catalog allow multiple permissions for one role.                                                         |
-| `AZ_REQ_FC_06`     | 🟢 Implemented | Missing permissions cause the Authorization service to return `403 Forbidden`.                                                                 |
-| `AZ_REQ_FC_07`     | 🟢 Implemented | The authorization result is returned to the protected operation through the authorization boundary as success or `403 Forbidden`.              |
+| `AZ_REQ_FC_01`     | 🟢 Implemented | — |
+| `AZ_REQ_FC_02`     | 🟢 Implemented | — |
+| `AZ_REQ_FC_03`     | 🟢 Implemented | — |
+| `AZ_REQ_FC_04`     | 🟢 Implemented | — |
+| `AZ_REQ_FC_05`     | 🟢 Implemented | — |
+| `AZ_REQ_FC_06`     | 🟢 Implemented | — |
+| `AZ_REQ_FC_07`     | 🟢 Implemented | — |
 | `AZ_REQ_FC_08`     | 🟡 Partial     | Account-role assignments are persisted in `authorization_account_role`, but no application-level role-assignment operation is implemented yet. |
-| `AZ_REQ_FC_09`     | 🟢 Implemented | Permissions are persisted and assigned to roles through `authorization_role_permission`, including the seeded role catalog.                    |
-| `AZ_REQ_FC_10`     | 🟢 Implemented | No direct account-permission relationship exists; permissions are granted only through roles.                                                  |
+| `AZ_REQ_FC_09`     | 🟢 Implemented | — |
+| `AZ_REQ_FC_10`     | 🟢 Implemented | — |
 | `AZ_REQ_FC_11`     | 🟡 Partial     | Role assignments can be removed at the data-model level, but no application-level role-revocation operation is implemented yet.                |
-| `AZ_REQ_FC_12`     | 🟢 Implemented | The initial application roles and permissions defined by this document are created by the authorization migration.                             |
-| `AZ_REQ_FC_13`     | 🟢 Implemented | No role-hierarchy mechanism exists in the implemented authorization model.                                                                     |
-| `AZ_REQ_FC_14`     | 🟢 Implemented | No separation-of-duty mechanism exists, consistent with the current design.                                                                    |
-| `AZ_REQ_FC_15`     | 🟢 Implemented | Authorization consumes `AuthenticatedPrincipal` from Authentication in the authorization boundary.                                             |
-| `AZ_REQ_FC_16`     | 🟢 Implemented | Authorization does not authenticate credentials; Authentication establishes the principal before authorization.                                |
-| `AZ_REQ_FC_17`     | 🟢 Implemented | Authorization does not validate passwords or bearer tokens; it consumes the principal established by Authentication.                           |
-| `AZ_REQ_FC_18`     | 🟢 Implemented | Authorization owns roles, permissions, and assignments, not Account profile or credential data.                                                |
-| `AZ_REQ_FC_19`     | 🟢 Implemented | Authorization does not execute Account business operations.                                                                                    |
-| `AZ_REQ_FC_20`     | 🟢 Implemented | Authorization runs before the Account Create Account, View Accounts, and View Account operations execute.                                      |
-| `AZ_REQ_NON_FC_01` | 🟢 Implemented | Authorization decisions are enforced server-side by the authorization boundary and Authorization service.                                      |
-| `AZ_REQ_NON_FC_02` | 🟢 Implemented | `has_permission` returns false when no matching role grants the required permission, resulting in denial.                                      |
-| `AZ_REQ_NON_FC_03` | 🟢 Implemented | Authorization uses server-side role and permission records and does not accept client-supplied role or permission claims.                      |
-| `AZ_REQ_NON_FC_04` | 🟢 Implemented | Authorization failures return a generic `403 Forbidden` response without exposing role or permission configuration.                            |
-| `AZ_REQ_NON_FC_05` | 🟢 Implemented | The implemented Authorization path contains no logging of access tokens, passwords, or equivalent authentication secrets.                      |
-| `AZ_REQ_NON_FC_06` | 🟢 Implemented | The same principal, permission, and server-side policy state produce a deterministic authorization result.                                     |
+| `AZ_REQ_FC_12`     | 🟢 Implemented | — |
+| `AZ_REQ_FC_13`     | 🟢 Implemented | — |
+| `AZ_REQ_FC_14`     | 🟢 Implemented | — |
+| `AZ_REQ_FC_15`     | 🟢 Implemented | — |
+| `AZ_REQ_FC_16`     | 🟢 Implemented | — |
+| `AZ_REQ_FC_17`     | 🟢 Implemented | — |
+| `AZ_REQ_FC_18`     | 🟢 Implemented | — |
+| `AZ_REQ_FC_19`     | 🟢 Implemented | — |
+| `AZ_REQ_FC_20`     | 🟢 Implemented | — |
+| `AZ_REQ_NON_FC_01` | 🟢 Implemented | — |
+| `AZ_REQ_NON_FC_02` | 🟢 Implemented | — |
+| `AZ_REQ_NON_FC_03` | 🟢 Implemented | — |
+| `AZ_REQ_NON_FC_04` | 🟢 Implemented | — |
+| `AZ_REQ_NON_FC_05` | 🟢 Implemented | — |
+| `AZ_REQ_NON_FC_06` | 🟢 Implemented | — |
 
 ## 10.2 Security
 
 | ID                      | Status         | Reason                                                                                                     |
 | ----------------------- | -------------- | ---------------------------------------------------------------------------------------------------------- |
-| `AZ_SEC_REQ_01`         | 🟢 Implemented | Authentication establishes the authenticated principal before the Authorization service is called.         |
-| `AZ_SEC_REQ_02`         | 🟢 Implemented | The Authorization service requires an `AuthenticatedPrincipal`.                                            |
-| `AZ_SEC_REQ_03`         | 🟢 Implemented | Permission evaluation is performed server-side through the Authorization repository.                       |
-| `AZ_SEC_REQ_04`         | 🟢 Implemented | Missing required permission results in `AppError::Forbidden` and HTTP `403`.                               |
-| `AZ_SEC_REQ_05`         | 🟢 Implemented | An authenticated principal without the required permission receives `403`, not `401`.                      |
-| `AZ_SEC_REQ_06`         | 🟢 Implemented | The implementation does not accept client-supplied role names as authorization proof.                      |
-| `AZ_SEC_REQ_07`         | 🟢 Implemented | Role assignments and role-permission mappings are stored and evaluated from authoritative database state.  |
-| `AZ_SEC_REQ_08`         | 🟢 Implemented | Authorization checks the specific required permission and does not grant access from authentication alone. |
-| `AZ_SEC_REQ_09`         | 🟢 Implemented | The authorization query denies when no matching permission is found.                                       |
-| `AZ_SEC_DEC_RBAC_01`    | 🟢 Implemented | The implemented model uses Account → Role → Permission Core RBAC relationships.                            |
-| `AZ_SEC_DEC_RBAC_02`    | 🟢 Implemented | `authorization_account_role` allows an account to have zero or more roles.                                 |
-| `AZ_SEC_DEC_RBAC_03`    | 🟢 Implemented | `authorization_role_permission` allows a role to have zero or more permissions.                            |
-| `AZ_SEC_DEC_RBAC_04`    | 🟢 Implemented | There is no direct account-permission table; permissions are granted through roles.                        |
-| `AZ_SEC_DEC_RBAC_05`    | 🟢 Implemented | Role hierarchy is intentionally not implemented by the current design.                                     |
-| `AZ_SEC_DEC_RBAC_06`    | 🟢 Implemented | Direct permissions are intentionally not implemented; permissions are role-based.                          |
-| `AZ_SEC_DEC_RBAC_07`    | 🟢 Implemented | Separation-of-duty rules are intentionally not implemented by the current design.                          |
-| `AZ_SEC_DEC_RBAC_08`    | 🟢 Implemented | An account with no matching role-permission mapping receives no authorization permission.                  |
-| `AZ_SEC_DEC_AUTHZ_01`   | 🟢 Implemented | The authorization service accepts `AuthenticatedPrincipal` and a required permission.                      |
-| `AZ_SEC_DEC_AUTHZ_02`   | 🟢 Implemented | Authorization permits when a role assigned to the principal grants the required permission.                |
-| `AZ_SEC_DEC_AUTHZ_03`   | 🟢 Implemented | Authorization denies when no assigned role grants the required permission.                                 |
-| `AZ_SEC_DEC_AUTHZ_04`   | 🟢 Implemented | Unknown or unmatched permissions result in `403 Forbidden` because the permission lookup returns false.    |
-| `AZ_SEC_DEC_AUTHZ_05`   | 🟢 Implemented | Authorization is enforced by the server-side authorization boundary and service code.                      |
-| `AZ_SEC_DEC_AUTHZ_06`   | 🟢 Implemented | The Authorization service produces an allowed result or `AppError::Forbidden`.                             |
-| `AZ_SEC_DEC_FAILURE_01` | 🟢 Implemented | Authentication establishes the principal first and returns `401` when authentication fails.                |
-| `AZ_SEC_DEC_FAILURE_02` | 🟢 Implemented | Missing authorization permission produces `403 Forbidden`.                                                 |
-| `AZ_SEC_DEC_FAILURE_03` | 🟢 Implemented | Authorization errors use the shared `application/problem+json` error response.                             |
-| `AZ_SEC_DEC_FAILURE_04` | 🟢 Implemented | Authorization error responses use `Cache-Control: no-store`.                                               |
+| `AZ_SEC_REQ_01`         | 🟢 Implemented | — |
+| `AZ_SEC_REQ_02`         | 🟢 Implemented | — |
+| `AZ_SEC_REQ_03`         | 🟢 Implemented | — |
+| `AZ_SEC_REQ_04`         | 🟢 Implemented | — |
+| `AZ_SEC_REQ_05`         | 🟢 Implemented | — |
+| `AZ_SEC_REQ_06`         | 🟢 Implemented | — |
+| `AZ_SEC_REQ_07`         | 🟢 Implemented | — |
+| `AZ_SEC_REQ_08`         | 🟢 Implemented | — |
+| `AZ_SEC_REQ_09`         | 🟢 Implemented | — |
+| `AZ_SEC_DEC_RBAC_01`    | 🟢 Implemented | — |
+| `AZ_SEC_DEC_RBAC_02`    | 🟢 Implemented | — |
+| `AZ_SEC_DEC_RBAC_03`    | 🟢 Implemented | — |
+| `AZ_SEC_DEC_RBAC_04`    | 🟢 Implemented | — |
+| `AZ_SEC_DEC_RBAC_05`    | 🟢 Implemented | — |
+| `AZ_SEC_DEC_RBAC_06`    | 🟢 Implemented | — |
+| `AZ_SEC_DEC_RBAC_07`    | 🟢 Implemented | — |
+| `AZ_SEC_DEC_RBAC_08`    | 🟢 Implemented | — |
+| `AZ_SEC_DEC_AUTHZ_01`   | 🟢 Implemented | — |
+| `AZ_SEC_DEC_AUTHZ_02`   | 🟢 Implemented | — |
+| `AZ_SEC_DEC_AUTHZ_03`   | 🟢 Implemented | — |
+| `AZ_SEC_DEC_AUTHZ_04`   | 🟢 Implemented | — |
+| `AZ_SEC_DEC_AUTHZ_05`   | 🟢 Implemented | — |
+| `AZ_SEC_DEC_AUTHZ_06`   | 🟢 Implemented | — |
+| `AZ_SEC_DEC_FAILURE_01` | 🟢 Implemented | — |
+| `AZ_SEC_DEC_FAILURE_02` | 🟢 Implemented | — |
+| `AZ_SEC_DEC_FAILURE_03` | 🟢 Implemented | — |
+| `AZ_SEC_DEC_FAILURE_04` | 🟢 Implemented | — |
 
 ## 10.3 Data Model
 
 | ID         | Description                     | Status         | Reason                                                                                                                                |
 | ---------- | ------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `AZ_DM_01` | `authorization_role`            | 🟢 Implemented | The `authorization_role` table is implemented with UUID identity, unique role names, descriptions, timestamps, and `disabled_at`.     |
-| `AZ_DM_02` | `authorization_permission`      | 🟢 Implemented | The `authorization_permission` table is implemented with UUID identity, unique permission names, descriptions, and timestamps.        |
-| `AZ_DM_03` | `authorization_role_permission` | 🟢 Implemented | The role-permission join table is implemented with a composite primary key and foreign keys to roles and permissions.                 |
-| `AZ_DM_04` | `authorization_account_role`    | 🟢 Implemented | The account-role join table is implemented with a composite primary key, Account and Role foreign keys, timestamps, and `created_by`. |
+| `AZ_DM_01` | `authorization_role`            | 🟢 Implemented | — |
+| `AZ_DM_02` | `authorization_permission`      | 🟢 Implemented | — |
+| `AZ_DM_03` | `authorization_role_permission` | 🟢 Implemented | — |
+| `AZ_DM_04` | `authorization_account_role`    | 🟢 Implemented | — |
 
 ## 10.4 Use Cases
 
 | ID         | Description      | Status             | Reason                                                                                                                                                                                     |
 | ---------- | ---------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `AZ_UC_01` | Authorize Action | 🟢 Implemented     | Generic permission evaluation is implemented and wired into Create Account, View Accounts, and View Account, including conditional `account:view_deleted` authorization for View Accounts. |
-| `AZ_UC_02` | Assign Role      | 🔴 Not Implemented | No application-level role-assignment operation is implemented.                                                                                                                             |
-| `AZ_UC_03` | Revoke Role      | 🔴 Not Implemented | No application-level role-revocation operation is implemented.                                                                                                                             |
+| `AZ_UC_01` | Authorize Action | 🟢 Implemented     | — |
+| `AZ_UC_02` | Assign Role      | 🔴 Not Implemented | — |
+| `AZ_UC_03` | Revoke Role      | 🔴 Not Implemented | — |
 
 ## 10.5 Permission Catalog
 
 | Permission                  | Status         | Reason                                                                                                                                      |
 | --------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `account:view`              | 🟢 Implemented | Permission is created by the authorization migration and actively evaluated by the View Accounts and View Account authorization boundaries. |
-| `account:view_deleted`      | 🟢 Implemented | Permission is created by the authorization migration and actively evaluated when `include_deleted=true` in View Accounts.                   |
-| `account:create`            | 🟢 Implemented | Permission is created by the authorization migration and actively evaluated by the Create Account authorization boundary.                   |
-| `account:update`            | 🟢 Implemented | Permission is created by the authorization migration and assigned to `account_admin`.                                                       |
-| `account:deactivate`        | 🟢 Implemented | Permission is created by the authorization migration and assigned to `account_admin`.                                                       |
-| `account:activate`          | 🟢 Implemented | Permission is created by the authorization migration and assigned to `account_admin`.                                                       |
-| `account:delete`            | 🟢 Implemented | Permission is created by the authorization migration and assigned to `account_admin`.                                                       |
-| `account:restore`           | 🟢 Implemented | Permission is created by the authorization migration and assigned to `account_admin`.                                                       |
-| `account:purge`             | 🟢 Implemented | Permission is created by the authorization migration and assigned to `account_admin`.                                                       |
-| `account:change_email`      | 🟢 Implemented | Permission is created by the authorization migration and assigned to `account_admin`.                                                       |
-| `account:change_password`   | 🟢 Implemented | Permission is created by the authorization migration and assigned to `account_admin`.                                                       |
-| `authorization:role_assign` | 🟢 Implemented | Permission is created by the authorization migration as part of the authorization catalog.                                                  |
-| `authorization:role_revoke` | 🟢 Implemented | Permission is created by the authorization migration as part of the authorization catalog.                                                  |
+| `account:view`              | 🟢 Implemented | — |
+| `account:view_deleted`      | 🟢 Implemented | — |
+| `account:create`            | 🟢 Implemented | — |
+| `account:update`            | 🟢 Implemented | — |
+| `account:deactivate`        | 🟢 Implemented | — |
+| `account:activate`          | 🟢 Implemented | — |
+| `account:delete`            | 🟢 Implemented | — |
+| `account:restore`           | 🟢 Implemented | — |
+| `account:purge`             | 🟢 Implemented | — |
+| `account:change_email`      | 🟢 Implemented | — |
+| `account:change_password`   | 🟢 Implemented | — |
+| `authorization:role_assign` | 🟢 Implemented | — |
+| `authorization:role_revoke` | 🟢 Implemented | — |
 
 ## 10.6 Integration
 
 | ID          | Description                                       | Status         | Reason                                                                                                                                                                              |
 | ----------- | ------------------------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `AZ_INT_01` | Authentication → Authorization principal contract | 🟢 Implemented | Authorization consumes `AuthenticatedPrincipal` directly from Authentication before evaluating the required permission.                                                             |
-| `AZ_INT_02` | Account → Authorization account reference         | 🟢 Implemented | Authorization role assignments reference `account.id`, and permission evaluation uses the authenticated `account_id`.                                                               |
-| `AZ_INT_03` | Authorization middleware/check boundary           | 🟢 Implemented | The Authentication → Authorization boundary is wired for Create Account, View Accounts, and View Account, including the conditional `account:view_deleted` check for View Accounts. |
+| `AZ_INT_01` | Authentication → Authorization principal contract | 🟢 Implemented | — |
+| `AZ_INT_02` | Account → Authorization account reference         | 🟢 Implemented | — |
+| `AZ_INT_03` | Authorization middleware/check boundary           | 🟢 Implemented | — |
 
 ---
 
