@@ -4,8 +4,9 @@ use uuid::Uuid;
 
 use super::model::{
     ActivationState, ActivationValidationError, CreatedAccount, DeactivationState,
-    DeactivationValidationError, ListedAccount, ListedAccounts, RestoreState,
-    RestoreValidationError, SoftDeleteState, SoftDeleteValidationError, ViewedAccount,
+    DeactivationValidationError, HardDeleteState, HardDeleteValidationError, ListedAccount,
+    ListedAccounts, RestoreState, RestoreValidationError, SoftDeleteState,
+    SoftDeleteValidationError, ViewedAccount,
 };
 
 const EMAIL_UNIQUE_CONSTRAINT: &str = "account_credentials_email_normalized_key";
@@ -484,6 +485,110 @@ impl AccountRepository {
         Ok(())
     }
 
+    pub async fn hard_delete(
+        &self,
+        account_id: Uuid,
+    ) -> Result<(), HardDeleteAccountRepositoryError> {
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .map_err(HardDeleteAccountRepositoryError::Database)?;
+
+        sqlx::query_scalar::<_, i16>(
+            r#"
+            SELECT id
+            FROM account_administrator_invariant_lock
+            WHERE id = 1
+            FOR UPDATE
+            "#,
+        )
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(HardDeleteAccountRepositoryError::Database)?;
+
+        let rows = sqlx::query_as::<_, HardDeleteAccountRow>(
+            r#"
+            SELECT
+                a.id,
+                a.status,
+                a.deleted_at,
+                EXISTS (
+                    SELECT 1
+                    FROM authorization_account_role AS ar
+                    INNER JOIN authorization_role AS r
+                        ON r.id = ar.role_id
+                    WHERE ar.account_id = a.id
+                      AND r.name = $2
+                      AND r.disabled_at IS NULL
+                ) AS is_administrator
+            FROM account AS a
+            WHERE a.id = $1
+               OR (
+                    a.status = 'active'
+                    AND a.deleted_at IS NULL
+                    AND EXISTS (
+                        SELECT 1
+                        FROM authorization_account_role AS ar_active
+                        INNER JOIN authorization_role AS r_active
+                            ON r_active.id = ar_active.role_id
+                        WHERE ar_active.account_id = a.id
+                          AND r_active.name = $2
+                          AND r_active.disabled_at IS NULL
+                    )
+                )
+            ORDER BY a.id ASC
+            FOR UPDATE OF a
+            "#,
+        )
+        .bind(account_id)
+        .bind(ACCOUNT_ADMIN_ROLE)
+        .fetch_all(&mut *tx)
+        .await
+        .map_err(HardDeleteAccountRepositoryError::Database)?;
+
+        let Some(target) = rows.iter().find(|row| row.id == account_id) else {
+            return Err(HardDeleteAccountRepositoryError::AccountNotFound);
+        };
+
+        let active_administrator_count = rows
+            .iter()
+            .filter(|row| {
+                row.status == "active" && row.deleted_at.is_none() && row.is_administrator
+            })
+            .count();
+
+        let state = HardDeleteState {
+            is_active: target.status == "active",
+            is_deleted: target.deleted_at.is_some(),
+            is_administrator: target.is_administrator,
+            active_administrator_count,
+        };
+
+        state.validate().map_err(|error| match error {
+            HardDeleteValidationError::LastActiveAdministrator => {
+                HardDeleteAccountRepositoryError::LastActiveAdministrator
+            }
+        })?;
+
+        sqlx::query(
+            r#"
+            DELETE FROM account
+            WHERE id = $1
+            "#,
+        )
+        .bind(account_id)
+        .execute(&mut *tx)
+        .await
+        .map_err(HardDeleteAccountRepositoryError::Database)?;
+
+        tx.commit()
+            .await
+            .map_err(HardDeleteAccountRepositoryError::Database)?;
+
+        Ok(())
+    }
+
     pub async fn activate(
         &self,
         account_id: Uuid,
@@ -717,6 +822,14 @@ struct SoftDeleteAccountRow {
 }
 
 #[derive(Debug, sqlx::FromRow)]
+struct HardDeleteAccountRow {
+    id: Uuid,
+    status: String,
+    deleted_at: Option<OffsetDateTime>,
+    is_administrator: bool,
+}
+
+#[derive(Debug, sqlx::FromRow)]
 struct ActivationAccountRow {
     email: String,
     status: String,
@@ -865,6 +978,25 @@ impl std::fmt::Display for SoftDeleteAccountRepositoryError {
 }
 
 impl std::error::Error for SoftDeleteAccountRepositoryError {}
+
+#[derive(Debug)]
+pub enum HardDeleteAccountRepositoryError {
+    AccountNotFound,
+    LastActiveAdministrator,
+    Database(sqlx::Error),
+}
+
+impl std::fmt::Display for HardDeleteAccountRepositoryError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::AccountNotFound => f.write_str("account not found"),
+            Self::LastActiveAdministrator => f.write_str("last active administrator"),
+            Self::Database(error) => write!(f, "{error}"),
+        }
+    }
+}
+
+impl std::error::Error for HardDeleteAccountRepositoryError {}
 
 #[derive(Debug)]
 pub enum ActivateAccountRepositoryError {

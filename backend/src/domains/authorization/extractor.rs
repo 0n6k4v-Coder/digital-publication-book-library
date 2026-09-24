@@ -11,8 +11,8 @@ use super::{
     repository::AuthorizationRepository,
     service::{
         authorize, ACCOUNT_ACTIVATE_PERMISSION, ACCOUNT_CREATE_PERMISSION,
-        ACCOUNT_DEACTIVATE_PERMISSION, ACCOUNT_DELETE_PERMISSION, ACCOUNT_RESTORE_PERMISSION,
-        ACCOUNT_UPDATE_PERMISSION,
+        ACCOUNT_DEACTIVATE_PERMISSION, ACCOUNT_DELETE_PERMISSION, ACCOUNT_PURGE_PERMISSION,
+        ACCOUNT_RESTORE_PERMISSION, ACCOUNT_UPDATE_PERMISSION,
     },
 };
 
@@ -133,6 +133,37 @@ impl FromRequestParts<AppState> for AuthorizedAccountDelete {
             &AuthorizationRepository::new(state.pool.clone()),
             &principal,
             ACCOUNT_DELETE_PERMISSION,
+        )
+        .await?;
+
+        Ok(Self { principal })
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct AuthorizedAccountPurge {
+    principal: AuthenticatedPrincipal,
+}
+
+impl AuthorizedAccountPurge {
+    pub fn account_id(self) -> uuid::Uuid {
+        self.principal.account_id
+    }
+}
+
+impl FromRequestParts<AppState> for AuthorizedAccountPurge {
+    type Rejection = AppError;
+
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &AppState,
+    ) -> Result<Self, Self::Rejection> {
+        let principal = authenticate_request(parts, state).await?;
+
+        authorize(
+            &AuthorizationRepository::new(state.pool.clone()),
+            &principal,
+            ACCOUNT_PURGE_PERMISSION,
         )
         .await?;
 

@@ -21,9 +21,9 @@ use super::{
     },
     repository::{
         AccountRepository, ActivateAccountRepositoryError, CreateAccountRepositoryError,
-        DeactivateAccountRepositoryError, ListAccountsRepositoryError,
-        RestoreAccountRepositoryError, SoftDeleteAccountRepositoryError,
-        UpdateAccountRepositoryError, ViewAccountRepositoryError,
+        DeactivateAccountRepositoryError, HardDeleteAccountRepositoryError,
+        ListAccountsRepositoryError, RestoreAccountRepositoryError,
+        SoftDeleteAccountRepositoryError, UpdateAccountRepositoryError, ViewAccountRepositoryError,
     },
 };
 
@@ -161,6 +161,13 @@ impl AccountService {
             .map_err(map_soft_delete_account_repository_error)
     }
 
+    pub async fn hard_delete_account(&self, account_id: Uuid) -> Result<(), AppError> {
+        self.repository
+            .hard_delete(account_id)
+            .await
+            .map_err(map_hard_delete_account_repository_error)
+    }
+
     pub async fn activate_account(
         &self,
         actor_id: Uuid,
@@ -245,6 +252,18 @@ fn map_soft_delete_account_repository_error(error: SoftDeleteAccountRepositoryEr
             AppError::LastActiveAdministrator
         }
         SoftDeleteAccountRepositoryError::Database(error) => {
+            crate::shared::error::internal_error(error)
+        }
+    }
+}
+
+fn map_hard_delete_account_repository_error(error: HardDeleteAccountRepositoryError) -> AppError {
+    match error {
+        HardDeleteAccountRepositoryError::AccountNotFound => AppError::AccountNotFound,
+        HardDeleteAccountRepositoryError::LastActiveAdministrator => {
+            AppError::LastActiveAdministrator
+        }
+        HardDeleteAccountRepositoryError::Database(error) => {
             crate::shared::error::internal_error(error)
         }
     }
@@ -370,6 +389,22 @@ mod tests {
         assert!(matches!(
             map_soft_delete_account_repository_error(
                 SoftDeleteAccountRepositoryError::AccountNotFound
+            ),
+            AppError::AccountNotFound
+        ));
+    }
+
+    #[test]
+    fn hard_delete_repository_errors_map_to_account_errors() {
+        assert!(matches!(
+            map_hard_delete_account_repository_error(
+                HardDeleteAccountRepositoryError::LastActiveAdministrator
+            ),
+            AppError::LastActiveAdministrator
+        ));
+        assert!(matches!(
+            map_hard_delete_account_repository_error(
+                HardDeleteAccountRepositoryError::AccountNotFound
             ),
             AppError::AccountNotFound
         ));

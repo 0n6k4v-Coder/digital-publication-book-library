@@ -192,6 +192,33 @@ pub enum SoftDeleteValidationError {
 }
 
 #[derive(Debug, PartialEq, Eq)]
+pub struct HardDeleteState {
+    pub is_active: bool,
+    pub is_deleted: bool,
+    pub is_administrator: bool,
+    pub active_administrator_count: usize,
+}
+
+impl HardDeleteState {
+    pub fn validate(self) -> Result<(), HardDeleteValidationError> {
+        if self.is_active
+            && !self.is_deleted
+            && self.is_administrator
+            && self.active_administrator_count <= 1
+        {
+            return Err(HardDeleteValidationError::LastActiveAdministrator);
+        }
+
+        Ok(())
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum HardDeleteValidationError {
+    LastActiveAdministrator,
+}
+
+#[derive(Debug, PartialEq, Eq)]
 pub struct ActivationState {
     pub is_active: bool,
     pub is_deleted: bool,
