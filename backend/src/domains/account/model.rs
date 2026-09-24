@@ -16,6 +16,16 @@ pub struct UpdateAccountRequest {
     pub display_name: Option<Option<String>>,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct ChangeEmailRequest {
+    pub email: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ChangePasswordRequest {
+    pub password: SecretString,
+}
+
 fn deserialize_nullable_patch<'de, D>(deserializer: D) -> Result<Option<Option<String>>, D::Error>
 where
     D: Deserializer<'de>,

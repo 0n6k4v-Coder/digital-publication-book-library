@@ -21,6 +21,8 @@ pub enum AppError {
     InvalidRequest(&'static str),
     #[error("validation error: {0}")]
     Validation(&'static str),
+    #[error("password policy violation")]
+    PasswordPolicyViolation,
     #[error("unsupported media type")]
     UnsupportedMediaType,
     #[error("invalid account id")]
@@ -82,6 +84,13 @@ impl AppError {
                 "Validation failed",
                 *detail,
                 "https://github.com/0n6k4v-Coder/digital-publication-book-library/problems/validation-error",
+            ),
+            Self::PasswordPolicyViolation => (
+                StatusCode::UNPROCESSABLE_ENTITY,
+                "PASSWORD_POLICY_VIOLATION",
+                "Password policy violation",
+                "The supplied password does not satisfy the password policy.",
+                "https://github.com/0n6k4v-Coder/digital-publication-book-library/problems/password-policy-violation",
             ),
             Self::UnsupportedMediaType => (
                 StatusCode::UNSUPPORTED_MEDIA_TYPE,

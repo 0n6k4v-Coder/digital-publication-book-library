@@ -17,9 +17,10 @@ use crate::{
         authentication::model::AuthenticatedPrincipal,
         authorization::{
             extractor::{
-                AuthorizedAccountActivate, AuthorizedAccountCreate, AuthorizedAccountDeactivate,
-                AuthorizedAccountDelete, AuthorizedAccountPurge, AuthorizedAccountRestore,
-                AuthorizedAccountUpdate,
+                AuthorizedAccountActivate, AuthorizedAccountChangeEmail,
+                AuthorizedAccountChangePassword, AuthorizedAccountCreate,
+                AuthorizedAccountDeactivate, AuthorizedAccountDelete, AuthorizedAccountPurge,
+                AuthorizedAccountRestore, AuthorizedAccountUpdate,
             },
             repository::AuthorizationRepository,
             service::{authorize, ACCOUNT_VIEW_DELETED_PERMISSION, ACCOUNT_VIEW_PERMISSION},
@@ -30,8 +31,8 @@ use crate::{
 
 use super::{
     model::{
-        AccountListResponse, AccountResponse, CreateAccountRequest, ListAccountsQuery,
-        UpdateAccountRequest,
+        AccountListResponse, AccountResponse, ChangeEmailRequest, ChangePasswordRequest,
+        CreateAccountRequest, ListAccountsQuery, UpdateAccountRequest,
     },
     repository::AccountRepository,
     service::AccountService,
@@ -108,6 +109,51 @@ pub async fn view_accounts(
     let response_body = AccountListResponse::from(accounts);
 
     let mut response = (StatusCode::OK, Json(response_body)).into_response();
+    add_no_store(response.headers_mut());
+
+    Ok(response)
+}
+
+pub async fn change_email(
+    AccountId(account_id): AccountId,
+    _authorized: AuthorizedAccountChangeEmail,
+    State(state): State<AppState>,
+    request: Result<Json<ChangeEmailRequest>, JsonRejection>,
+) -> Result<Response, AppError> {
+    let Json(request) = request.map_err(|_| crate::shared::error::invalid_json_response())?;
+
+    let service = AccountService::new(
+        AccountRepository::new(state.pool.clone()),
+        state.password_policy.clone(),
+        state.password_hash_semaphore.clone(),
+    );
+
+    let account = service.change_email(account_id, request).await?;
+    let response_body = AccountResponse::from(account);
+
+    let mut response = (StatusCode::OK, Json(response_body)).into_response();
+    add_no_store(response.headers_mut());
+
+    Ok(response)
+}
+
+pub async fn change_password(
+    AccountId(account_id): AccountId,
+    _authorized: AuthorizedAccountChangePassword,
+    State(state): State<AppState>,
+    request: Result<Json<ChangePasswordRequest>, JsonRejection>,
+) -> Result<Response, AppError> {
+    let Json(request) = request.map_err(|_| crate::shared::error::invalid_json_response())?;
+
+    let service = AccountService::new(
+        AccountRepository::new(state.pool.clone()),
+        state.password_policy.clone(),
+        state.password_hash_semaphore.clone(),
+    );
+
+    service.change_password(account_id, request).await?;
+
+    let mut response = StatusCode::NO_CONTENT.into_response();
     add_no_store(response.headers_mut());
 
     Ok(response)

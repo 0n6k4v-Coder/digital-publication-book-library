@@ -16,11 +16,13 @@ use crate::shared::{
 
 use super::{
     model::{
-        CreateAccountRequest, CreatedAccount, ListAccountsQuery, ListAccountsQueryValidationError,
-        ListedAccounts, UpdateAccountRequest, ViewedAccount,
+        ChangeEmailRequest, ChangePasswordRequest, CreateAccountRequest, CreatedAccount,
+        ListAccountsQuery, ListAccountsQueryValidationError, ListedAccounts, UpdateAccountRequest,
+        ViewedAccount,
     },
     repository::{
-        AccountRepository, ActivateAccountRepositoryError, CreateAccountRepositoryError,
+        AccountRepository, ActivateAccountRepositoryError, ChangeEmailRepositoryError,
+        ChangePasswordRepositoryError, CreateAccountRepositoryError,
         DeactivateAccountRepositoryError, HardDeleteAccountRepositoryError,
         ListAccountsRepositoryError, RestoreAccountRepositoryError,
         SoftDeleteAccountRepositoryError, UpdateAccountRepositoryError, ViewAccountRepositoryError,
@@ -73,6 +75,36 @@ impl AccountService {
                     crate::shared::error::internal_error(error)
                 }
             })
+    }
+
+    pub async fn change_email(
+        &self,
+        account_id: Uuid,
+        request: ChangeEmailRequest,
+    ) -> Result<ViewedAccount, AppError> {
+        let email = normalize_email(&request.email).map_err(map_email_validation)?;
+
+        self.repository
+            .change_email(account_id, &email.canonical, &email.normalized)
+            .await
+            .map_err(map_change_email_repository_error)
+    }
+
+    pub async fn change_password(
+        &self,
+        account_id: Uuid,
+        request: ChangePasswordRequest,
+    ) -> Result<(), AppError> {
+        self.password_policy
+            .validate(&request.password)
+            .map_err(map_change_password_validation)?;
+
+        let password_hash = self.hash_password(request.password).await?;
+
+        self.repository
+            .change_password(account_id, &password_hash)
+            .await
+            .map_err(map_change_password_repository_error)
     }
 
     pub async fn list_accounts(
@@ -229,6 +261,31 @@ pub enum DisplayNameValidationError {
     TooLong,
 }
 
+fn map_change_email_repository_error(error: ChangeEmailRepositoryError) -> AppError {
+    match error {
+        ChangeEmailRepositoryError::AccountNotFound => AppError::AccountNotFound,
+        ChangeEmailRepositoryError::EmailAlreadyInUse => AppError::EmailAlreadyInUse,
+        ChangeEmailRepositoryError::Database(error) => crate::shared::error::internal_error(error),
+    }
+}
+
+fn map_change_password_repository_error(error: ChangePasswordRepositoryError) -> AppError {
+    match error {
+        ChangePasswordRepositoryError::AccountNotFound => AppError::AccountNotFound,
+        ChangePasswordRepositoryError::Database(error) => {
+            crate::shared::error::internal_error(error)
+        }
+    }
+}
+
+fn map_change_password_validation(error: PasswordValidationError) -> AppError {
+    match error {
+        PasswordValidationError::TooShort | PasswordValidationError::Blocklisted => {
+            AppError::PasswordPolicyViolation
+        }
+    }
+}
+
 fn map_deactivate_account_repository_error(error: DeactivateAccountRepositoryError) -> AppError {
     match error {
         DeactivateAccountRepositoryError::AccountNotFound => AppError::AccountNotFound,
@@ -339,6 +396,18 @@ fn map_display_name_validation(error: DisplayNameValidationError) -> AppError {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn change_password_policy_mapping_is_dedicated_and_does_not_expose_input_values() {
+        assert!(matches!(
+            map_change_password_validation(PasswordValidationError::TooShort),
+            AppError::PasswordPolicyViolation
+        ));
+        assert!(matches!(
+            map_change_password_validation(PasswordValidationError::Blocklisted),
+            AppError::PasswordPolicyViolation
+        ));
+    }
 
     #[test]
     fn validation_mapping_does_not_expose_input_values() {

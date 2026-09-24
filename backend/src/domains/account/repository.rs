@@ -87,6 +87,148 @@ impl AccountRepository {
         })
     }
 
+    pub async fn change_email(
+        &self,
+        account_id: Uuid,
+        email: &str,
+        email_normalized: &str,
+    ) -> Result<ViewedAccount, ChangeEmailRepositoryError> {
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .map_err(ChangeEmailRepositoryError::Database)?;
+
+        let current = sqlx::query_as::<_, AccountCredentialTargetRow>(
+            r#"
+            SELECT
+                a.id,
+                ac.email,
+                a.status,
+                a.created_at,
+                a.updated_at,
+                a.deleted_at
+            FROM account AS a
+            INNER JOIN account_credentials AS ac
+                ON ac.account_id = a.id
+            WHERE a.id = $1
+            FOR UPDATE OF a, ac
+            "#,
+        )
+        .bind(account_id)
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(ChangeEmailRepositoryError::Database)?;
+
+        let Some(current) = current else {
+            return Err(ChangeEmailRepositoryError::AccountNotFound);
+        };
+
+        if current.deleted_at.is_some() {
+            return Err(ChangeEmailRepositoryError::AccountNotFound);
+        }
+
+        sqlx::query(
+            r#"
+            UPDATE account_credentials
+            SET
+                email = $2,
+                email_normalized = $3,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE account_id = $1
+            "#,
+        )
+        .bind(account_id)
+        .bind(email)
+        .bind(email_normalized)
+        .execute(&mut *tx)
+        .await
+        .map_err(|error| {
+            if let Some(database_error) = error.as_database_error() {
+                if database_error.constraint() == Some(EMAIL_UNIQUE_CONSTRAINT) {
+                    return ChangeEmailRepositoryError::EmailAlreadyInUse;
+                }
+            }
+
+            ChangeEmailRepositoryError::Database(error)
+        })?;
+
+        tx.commit()
+            .await
+            .map_err(ChangeEmailRepositoryError::Database)?;
+
+        Ok(ViewedAccount {
+            id: current.id,
+            email: email.to_owned(),
+            status: current.status,
+            created_at: current.created_at,
+            updated_at: current.updated_at,
+            deleted_at: current.deleted_at,
+        })
+    }
+
+    pub async fn change_password(
+        &self,
+        account_id: Uuid,
+        password_hash: &str,
+    ) -> Result<(), ChangePasswordRepositoryError> {
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .map_err(ChangePasswordRepositoryError::Database)?;
+
+        let current = sqlx::query_as::<_, AccountCredentialTargetRow>(
+            r#"
+            SELECT
+                a.id,
+                ac.email,
+                a.status,
+                a.created_at,
+                a.updated_at,
+                a.deleted_at
+            FROM account AS a
+            INNER JOIN account_credentials AS ac
+                ON ac.account_id = a.id
+            WHERE a.id = $1
+            FOR UPDATE OF a, ac
+            "#,
+        )
+        .bind(account_id)
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(ChangePasswordRepositoryError::Database)?;
+
+        let Some(current) = current else {
+            return Err(ChangePasswordRepositoryError::AccountNotFound);
+        };
+
+        if current.deleted_at.is_some() {
+            return Err(ChangePasswordRepositoryError::AccountNotFound);
+        }
+
+        sqlx::query(
+            r#"
+            UPDATE account_credentials
+            SET
+                password_hash = $2,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE account_id = $1
+            "#,
+        )
+        .bind(account_id)
+        .bind(password_hash)
+        .execute(&mut *tx)
+        .await
+        .map_err(ChangePasswordRepositoryError::Database)?;
+
+        tx.commit()
+            .await
+            .map_err(ChangePasswordRepositoryError::Database)?;
+
+        Ok(())
+    }
+
     pub async fn list(
         &self,
         page: u32,
@@ -796,6 +938,16 @@ struct AccountUpdateTargetRow {
 }
 
 #[derive(Debug, sqlx::FromRow)]
+struct AccountCredentialTargetRow {
+    id: Uuid,
+    email: String,
+    status: String,
+    created_at: OffsetDateTime,
+    updated_at: OffsetDateTime,
+    deleted_at: Option<OffsetDateTime>,
+}
+
+#[derive(Debug, sqlx::FromRow)]
 struct AccountUpdatedRow {
     id: Uuid,
     created_at: OffsetDateTime,
@@ -891,6 +1043,42 @@ impl std::fmt::Display for CreateAccountRepositoryError {
 }
 
 impl std::error::Error for CreateAccountRepositoryError {}
+
+#[derive(Debug)]
+pub enum ChangeEmailRepositoryError {
+    AccountNotFound,
+    EmailAlreadyInUse,
+    Database(sqlx::Error),
+}
+
+impl std::fmt::Display for ChangeEmailRepositoryError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::AccountNotFound => f.write_str("account not found"),
+            Self::EmailAlreadyInUse => f.write_str("email already in use"),
+            Self::Database(error) => write!(f, "{error}"),
+        }
+    }
+}
+
+impl std::error::Error for ChangeEmailRepositoryError {}
+
+#[derive(Debug)]
+pub enum ChangePasswordRepositoryError {
+    AccountNotFound,
+    Database(sqlx::Error),
+}
+
+impl std::fmt::Display for ChangePasswordRepositoryError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::AccountNotFound => f.write_str("account not found"),
+            Self::Database(error) => write!(f, "{error}"),
+        }
+    }
+}
+
+impl std::error::Error for ChangePasswordRepositoryError {}
 
 #[derive(Debug)]
 pub enum ListAccountsRepositoryError {

@@ -1,13 +1,14 @@
 use axum::{
-    routing::{delete, get, post},
+    routing::{delete, get, patch, post},
     Router,
 };
 
 use crate::{
     app::state::AppState,
     domains::account::handler::{
-        activate_account, create_account, deactivate_account, hard_delete_account, restore_account,
-        soft_delete_account, update_account, view_account, view_accounts,
+        activate_account, change_email, change_password, create_account, deactivate_account,
+        hard_delete_account, restore_account, soft_delete_account, update_account, view_account,
+        view_accounts,
     },
 };
 
@@ -20,6 +21,8 @@ pub fn build_router(state: AppState) -> Router {
                 .patch(update_account)
                 .delete(soft_delete_account),
         )
+        .route("/admin/accounts/{id}/email", patch(change_email))
+        .route("/admin/accounts/{id}/password", patch(change_password))
         .route("/admin/accounts/{id}/purge", delete(hard_delete_account))
         .route("/admin/accounts/{id}/deactivate", post(deactivate_account))
         .route("/admin/accounts/{id}/activate", post(activate_account))
