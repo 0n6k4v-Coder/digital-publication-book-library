@@ -103,7 +103,6 @@ impl AccountRepository {
             r#"
             SELECT
                 a.id,
-                ac.email,
                 a.status,
                 a.created_at,
                 a.updated_at,
@@ -182,7 +181,6 @@ impl AccountRepository {
             r#"
             SELECT
                 a.id,
-                ac.email,
                 a.status,
                 a.created_at,
                 a.updated_at,
@@ -940,7 +938,6 @@ struct AccountUpdateTargetRow {
 #[derive(Debug, sqlx::FromRow)]
 struct AccountCredentialTargetRow {
     id: Uuid,
-    email: String,
     status: String,
     created_at: OffsetDateTime,
     updated_at: OffsetDateTime,

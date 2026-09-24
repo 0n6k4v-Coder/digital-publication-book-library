@@ -10,7 +10,7 @@ use axum::{
     response::Response,
     Router,
 };
-use secret​y::SecretString;
+use secrecy::SecretString;
 use serde_json::{json, Value};
 use sha1::{Digest, Sha1};
 use sqlx::PgPool;
