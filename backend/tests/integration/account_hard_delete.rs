@@ -36,7 +36,7 @@ async fn test_pool() -> Option<PgPool> {
 
 async fn seed_account(
     pool: &PgPool,
-    email: &str,
+    _email: &str,
     status: &str,
     deleted_at: Option<OffsetDateTime>,
     created_by: Option<Uuid>,
