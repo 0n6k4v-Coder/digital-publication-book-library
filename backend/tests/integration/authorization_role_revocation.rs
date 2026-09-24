@@ -313,14 +313,17 @@ async fn rejects_revoking_the_last_active_administrator() {
     )
     .await;
 
+    let assignment_remains = assignment_exists(&pool, admin_id, "account_admin").await;
+    let audit_records = audit_count(&pool, admin_id).await;
+
+    cleanup_accounts(&pool, &[admin_id]).await;
+
     assert_eq!(
         result,
         Err(RoleManagementError::LastActiveAdministrator)
     );
-    assert!(assignment_exists(&pool, admin_id, "account_admin").await);
-    assert_eq!(audit_count(&pool, admin_id).await, 0);
-
-    cleanup_accounts(&pool, &[admin_id]).await;
+    assert!(assignment_remains);
+    assert_eq!(audit_records, 0);
 }
 
 #[tokio::test]
@@ -396,13 +399,24 @@ async fn concurrent_admin_revocations_preserve_last_active_administrator() {
         requests.spawn(async move {
             let repository = AuthorizationRepository::new(request_pool);
 
-            revoke_role(
-                &repository,
-                &principal(actor_id),
-                target_id,
-                "account_admin",
-            )
-            .await
+            repository
+                .revoke_role(target_id, "account_admin", actor_id)
+                .await
+                .map_err(|error| match error {
+                    digital_publication_backend::domains::authorization::repository::RoleRevocationRepositoryError::Validation(error) => {
+                        match error {
+                            digital_publication_backend::domains::authorization::model::RoleRevocationValidationError::RoleAssignmentNotFound => {
+                                RoleManagementError::RoleAssignmentNotFound
+                            }
+                            digital_publication_backend::domains::authorization::model::RoleRevocationValidationError::LastActiveAdministrator => {
+                                RoleManagementError::LastActiveAdministrator
+                            }
+                        }
+                    }
+                    digital_publication_backend::domains::authorization::repository::RoleRevocationRepositoryError::Database(_) => {
+                        RoleManagementError::Internal
+                    }
+                })
         });
     }
 
@@ -417,14 +431,6 @@ async fn concurrent_admin_revocations_preserve_last_active_administrator() {
         Err(RoleManagementError::LastActiveAdministrator) => 1_u8,
         Err(_) => 2_u8,
     });
-
-    assert_eq!(
-        results,
-        vec![
-            Ok(()),
-            Err(RoleManagementError::LastActiveAdministrator)
-        ]
-    );
 
     let remaining_active_administrators = sqlx::query_scalar::<_, i64>(
         r#"
@@ -446,13 +452,20 @@ async fn concurrent_admin_revocations_preserve_last_active_administrator() {
     .await
     .expect("count remaining administrators");
 
-    assert_eq!(remaining_active_administrators, 1);
-    assert_eq!(
-        audit_count(&pool, admin_a_id).await + audit_count(&pool, admin_b_id).await,
-        1
-    );
+    let total_audit_records =
+        audit_count(&pool, admin_a_id).await + audit_count(&pool, admin_b_id).await;
 
     cleanup_accounts(&pool, &[admin_a_id, admin_b_id]).await;
+
+    assert_eq!(
+        results,
+        vec![
+            Ok(()),
+            Err(RoleManagementError::LastActiveAdministrator)
+        ]
+    );
+    assert_eq!(remaining_active_administrators, 1);
+    assert_eq!(total_audit_records, 1);
 }
 
 #[tokio::test]
