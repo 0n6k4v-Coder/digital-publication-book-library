@@ -18,7 +18,8 @@ use crate::{
             service::{authorize, ACCOUNT_VIEW_DELETED_PERMISSION, ACCOUNT_VIEW_PERMISSION},
         },
     },
-    shared::{auth::AuthenticatedAdmin, error::AppError, response::add_no_store},
+    shared::error::AppError,
+    shared::response::add_no_store,
 };
 
 use super::{
@@ -102,11 +103,18 @@ pub async fn view_accounts(
 }
 
 pub async fn view_account(
-    _auth: AuthenticatedAdmin,
-    State(state): State<AppState>,
     Path(account_id): Path<String>,
+    principal: AuthenticatedPrincipal,
+    State(state): State<AppState>,
 ) -> Result<Response, AppError> {
     let account_id = Uuid::parse_str(&account_id).map_err(|_| AppError::InvalidAccountId)?;
+
+    authorize(
+        &AuthorizationRepository::new(state.pool.clone()),
+        &principal,
+        ACCOUNT_VIEW_PERMISSION,
+    )
+    .await?;
 
     let service = AccountService::new(
         AccountRepository::new(state.pool.clone()),

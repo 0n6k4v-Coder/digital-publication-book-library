@@ -1,6 +1,6 @@
 use std::{env, net::SocketAddr, sync::Arc};
 
-use axum::{extract::Request, middleware, Router};
+use axum::Router;
 use reqwest::Client;
 use serde_json::Value;
 use sqlx::PgPool;
@@ -9,7 +9,8 @@ use uuid::Uuid;
 
 use digital_publication_backend::{
     app::{router::build_router, state::AppState},
-    shared::{auth::AuthenticatedAdmin, validation::PasswordBlocklist},
+    domains::authentication::extractor::sha256_token_verifier,
+    shared::validation::PasswordBlocklist,
 };
 
 static TEST_DATABASE_LOCK: Mutex<()> = Mutex::const_new(());
@@ -62,30 +63,102 @@ async fn seed_account(
     account_id
 }
 
+async fn seed_access_token(pool: &PgPool, account_id: Uuid, role_name: Option<&str>) -> String {
+    let session_id = sqlx::query_scalar::<_, Uuid>(
+        r#"
+        INSERT INTO authentication_session (
+            account_id,
+            expires_at,
+            last_authenticated_at
+        )
+        VALUES ($1, CURRENT_TIMESTAMP + INTERVAL '1 hour', CURRENT_TIMESTAMP)
+        RETURNING id
+        "#,
+    )
+    .bind(account_id)
+    .fetch_one(pool)
+    .await
+    .expect("seed authentication session");
+
+    let token = format!(
+        "test-view-{}-{}-{}",
+        Uuid::new_v4(),
+        Uuid::new_v4(),
+        Uuid::new_v4()
+    );
+
+    sqlx::query(
+        r#"
+        INSERT INTO authentication_access_token (
+            session_id,
+            token_hash,
+            expires_at
+        )
+        VALUES ($1, $2, CURRENT_TIMESTAMP + INTERVAL '1 hour')
+        "#,
+    )
+    .bind(session_id)
+    .bind(sha256_token_verifier(&token))
+    .execute(pool)
+    .await
+    .expect("seed access token");
+
+    if let Some(role_name) = role_name {
+        let role_id = sqlx::query_scalar::<_, Uuid>(
+            "SELECT id FROM authorization_role WHERE name = $1",
+        )
+        .bind(role_name)
+        .fetch_one(pool)
+        .await
+        .expect("find authorization role");
+
+        sqlx::query(
+            r#"
+            INSERT INTO authorization_account_role (
+                account_id,
+                role_id,
+                created_by
+            )
+            VALUES ($1, $2, $1)
+            "#,
+        )
+        .bind(account_id)
+        .bind(role_id)
+        .execute(pool)
+        .await
+        .expect("seed authorization role");
+    }
+
+    token
+}
+
+async fn cleanup_account(pool: &PgPool, account_id: Uuid) {
+    sqlx::query("DELETE FROM authorization_account_role WHERE account_id = $1")
+        .bind(account_id)
+        .execute(pool)
+        .await
+        .expect("cleanup authorization role");
+
+    sqlx::query("DELETE FROM authentication_session WHERE account_id = $1")
+        .bind(account_id)
+        .execute(pool)
+        .await
+        .expect("cleanup authentication session");
+
+    sqlx::query("DELETE FROM account WHERE id = $1")
+        .bind(account_id)
+        .execute(pool)
+        .await
+        .expect("cleanup account");
+}
+
 fn test_router(pool: PgPool) -> Router {
     let blocklist = PasswordBlocklist::from_hashes("test", Vec::<[u8; 20]>::new());
-    let application = build_router(AppState::new(
+
+    build_router(AppState::new(
         pool,
         Arc::new(blocklist),
         std::num::NonZeroUsize::new(2).unwrap(),
-    ));
-
-    application.layer(middleware::from_fn(
-        |mut request: Request, next: middleware::Next| async move {
-            let admin_id = request
-                .headers()
-                .get("x-test-admin-id")
-                .and_then(|value| value.to_str().ok())
-                .and_then(|value| Uuid::parse_str(value).ok());
-
-            if let Some(admin_id) = admin_id {
-                request
-                    .extensions_mut()
-                    .insert(AuthenticatedAdmin::from_verified_account(admin_id));
-            }
-
-            next.run(request).await
-        },
     ))
 }
 
@@ -115,6 +188,13 @@ async fn views_account_end_to_end_and_hides_sensitive_fields() {
         .await
         .expect("run migrations");
 
+    let principal_id = seed_account(
+        &pool,
+        &format!("e2e-principal-{}@example.com", Uuid::new_v4()),
+        "active",
+        None,
+    )
+    .await;
     let account_id = seed_account(
         &pool,
         &format!("e2e-view-{}@example.com", Uuid::new_v4()),
@@ -122,6 +202,7 @@ async fn views_account_end_to_end_and_hides_sensitive_fields() {
         None,
     )
     .await;
+    let token = seed_access_token(&pool, principal_id, Some("account_viewer")).await;
 
     let app = test_router(pool.clone());
     let (address, server) = start_server(app).await;
@@ -129,7 +210,7 @@ async fn views_account_end_to_end_and_hides_sensitive_fields() {
 
     let response = client
         .get(format!("http://{address}/admin/accounts/{account_id}"))
-        .header("x-test-admin-id", Uuid::new_v4().to_string())
+        .header("authorization", format!("Bearer {token}"))
         .send()
         .await
         .expect("send view-account request");
@@ -164,7 +245,7 @@ async fn views_account_end_to_end_and_hides_sensitive_fields() {
 
     let response = client
         .get(format!("http://{address}/admin/accounts/{deleted_id}"))
-        .header("x-test-admin-id", Uuid::new_v4().to_string())
+        .header("authorization", format!("Bearer {token}"))
         .send()
         .await
         .expect("send deleted-account request");
@@ -181,12 +262,9 @@ async fn views_account_end_to_end_and_hides_sensitive_fields() {
     let payload: Value = response.json().await.expect("decode problem response");
     assert_eq!(payload["code"], "ACCOUNT_NOT_FOUND");
 
-    sqlx::query("DELETE FROM account WHERE id IN ($1, $2)")
-        .bind(account_id)
-        .bind(deleted_id)
-        .execute(&pool)
-        .await
-        .expect("cleanup test accounts");
+    cleanup_account(&pool, deleted_id).await;
+    cleanup_account(&pool, account_id).await;
+    cleanup_account(&pool, principal_id).await;
 
     server.abort();
 }
@@ -200,7 +278,6 @@ async fn invalid_account_id_and_unauthenticated_request_are_rejected_end_to_end(
 
     let invalid = client
         .get(format!("http://{address}/admin/accounts/not-a-uuid"))
-        .header("x-test-admin-id", Uuid::new_v4().to_string())
         .send()
         .await
         .expect("send invalid-id request");
@@ -233,5 +310,56 @@ async fn invalid_account_id_and_unauthenticated_request_are_rejected_end_to_end(
         Some(r#"Bearer realm="admin-api""#)
     );
 
+    server.abort();
+}
+
+#[tokio::test]
+#[ignore = "requires PostgreSQL and a built backend"]
+async fn authenticated_principal_without_view_permission_is_rejected_end_to_end() {
+    let _database_guard = TEST_DATABASE_LOCK.lock().await;
+    let pool = connect_database().await;
+
+    sqlx::migrate!()
+        .run(&pool)
+        .await
+        .expect("run migrations");
+
+    let principal_id = seed_account(
+        &pool,
+        &format!("e2e-forbidden-{}@example.com", Uuid::new_v4()),
+        "active",
+        None,
+    )
+    .await;
+    let token = seed_access_token(&pool, principal_id, None).await;
+
+    let app = test_router(pool.clone());
+    let (address, server) = start_server(app).await;
+
+    let response = Client::new()
+        .get(format!("http://{address}/admin/accounts/{}", Uuid::new_v4()))
+        .header("authorization", format!("Bearer {token}"))
+        .send()
+        .await
+        .expect("send forbidden request");
+
+    assert_eq!(response.status(), reqwest::StatusCode::FORBIDDEN);
+    assert_eq!(
+        response
+            .headers()
+            .get("cache-control")
+            .and_then(|value| value.to_str().ok()),
+        Some("no-store")
+    );
+    assert_eq!(
+        response
+            .headers()
+            .get("content-type")
+            .and_then(|value| value.to_str().ok()),
+        Some("application/problem+json")
+    );
+    assert!(response.headers().get("www-authenticate").is_none());
+
+    cleanup_account(&pool, principal_id).await;
     server.abort();
 }
