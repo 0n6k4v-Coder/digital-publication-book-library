@@ -588,113 +588,111 @@ HTTP `403 Forbidden` is used when the server understands the request but refuses
 
 ---
 
-# 10. Implementation Status
-
 ## 10.1 Requirements
 
 | ID                 | Status         | Reason                                                                                                                                         |
 | ------------------ | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `AZ_REQ_FC_01`     | 🟢 Implemented | —                                                                                                                                              |
-| `AZ_REQ_FC_02`     | 🟢 Implemented | —                                                                                                                                              |
-| `AZ_REQ_FC_03`     | 🟢 Implemented | —                                                                                                                                              |
-| `AZ_REQ_FC_04`     | 🟢 Implemented | —                                                                                                                                              |
-| `AZ_REQ_FC_05`     | 🟢 Implemented | —                                                                                                                                              |
-| `AZ_REQ_FC_06`     | 🟢 Implemented | —                                                                                                                                              |
-| `AZ_REQ_FC_07`     | 🟢 Implemented | —                                                                                                                                              |
+| `AZ_REQ_FC_01`     | 🟢 Implemented |                                                                                                                                                |
+| `AZ_REQ_FC_02`     | 🟢 Implemented |                                                                                                                                                |
+| `AZ_REQ_FC_03`     | 🟢 Implemented |                                                                                                                                                |
+| `AZ_REQ_FC_04`     | 🟢 Implemented |                                                                                                                                                |
+| `AZ_REQ_FC_05`     | 🟢 Implemented |                                                                                                                                                |
+| `AZ_REQ_FC_06`     | 🟢 Implemented |                                                                                                                                                |
+| `AZ_REQ_FC_07`     | 🟢 Implemented |                                                                                                                                                |
 | `AZ_REQ_FC_08`     | 🟡 Partial     | Account-role assignments are persisted in `authorization_account_role`, but no application-level role-assignment operation is implemented yet. |
-| `AZ_REQ_FC_09`     | 🟢 Implemented | —                                                                                                                                              |
-| `AZ_REQ_FC_10`     | 🟢 Implemented | —                                                                                                                                              |
+| `AZ_REQ_FC_09`     | 🟢 Implemented |                                                                                                                                                |
+| `AZ_REQ_FC_10`     | 🟢 Implemented |                                                                                                                                                |
 | `AZ_REQ_FC_11`     | 🟡 Partial     | Role assignments can be removed at the data-model level, but no application-level role-revocation operation is implemented yet.                |
-| `AZ_REQ_FC_12`     | 🟢 Implemented | —                                                                                                                                              |
-| `AZ_REQ_FC_13`     | 🟢 Implemented | —                                                                                                                                              |
-| `AZ_REQ_FC_14`     | 🟢 Implemented | —                                                                                                                                              |
-| `AZ_REQ_FC_15`     | 🟢 Implemented | —                                                                                                                                              |
-| `AZ_REQ_FC_16`     | 🟢 Implemented | —                                                                                                                                              |
-| `AZ_REQ_FC_17`     | 🟢 Implemented | —                                                                                                                                              |
-| `AZ_REQ_FC_18`     | 🟢 Implemented | —                                                                                                                                              |
-| `AZ_REQ_FC_19`     | 🟢 Implemented | —                                                                                                                                              |
-| `AZ_REQ_FC_20`     | 🟢 Implemented | —                                                                                                                                              |
-| `AZ_REQ_NON_FC_01` | 🟢 Implemented | —                                                                                                                                              |
-| `AZ_REQ_NON_FC_02` | 🟢 Implemented | —                                                                                                                                              |
-| `AZ_REQ_NON_FC_03` | 🟢 Implemented | —                                                                                                                                              |
-| `AZ_REQ_NON_FC_04` | 🟢 Implemented | —                                                                                                                                              |
-| `AZ_REQ_NON_FC_05` | 🟢 Implemented | —                                                                                                                                              |
-| `AZ_REQ_NON_FC_06` | 🟢 Implemented | —                                                                                                                                              |
+| `AZ_REQ_FC_12`     | 🟢 Implemented |                                                                                                                                                |
+| `AZ_REQ_FC_13`     | 🟢 Implemented |                                                                                                                                                |
+| `AZ_REQ_FC_14`     | 🟢 Implemented |                                                                                                                                                |
+| `AZ_REQ_FC_15`     | 🟢 Implemented |                                                                                                                                                |
+| `AZ_REQ_FC_16`     | 🟢 Implemented |                                                                                                                                                |
+| `AZ_REQ_FC_17`     | 🟢 Implemented |                                                                                                                                                |
+| `AZ_REQ_FC_18`     | 🟢 Implemented |                                                                                                                                                |
+| `AZ_REQ_FC_19`     | 🟢 Implemented |                                                                                                                                                |
+| `AZ_REQ_FC_20`     | 🟢 Implemented |                                                                                                                                                |
+| `AZ_REQ_NON_FC_01` | 🟢 Implemented |                                                                                                                                                |
+| `AZ_REQ_NON_FC_02` | 🟢 Implemented |                                                                                                                                                |
+| `AZ_REQ_NON_FC_03` | 🟢 Implemented |                                                                                                                                                |
+| `AZ_REQ_NON_FC_04` | 🟢 Implemented |                                                                                                                                                |
+| `AZ_REQ_NON_FC_05` | 🟢 Implemented |                                                                                                                                                |
+| `AZ_REQ_NON_FC_06` | 🟢 Implemented |                                                                                                                                                |
 
 ## 10.2 Security
 
 | ID                      | Status         | Reason |
 | ----------------------- | -------------- | ------ |
-| `AZ_SEC_REQ_01`         | 🟢 Implemented | —      |
-| `AZ_SEC_REQ_02`         | 🟢 Implemented | —      |
-| `AZ_SEC_REQ_03`         | 🟢 Implemented | —      |
-| `AZ_SEC_REQ_04`         | 🟢 Implemented | —      |
-| `AZ_SEC_REQ_05`         | 🟢 Implemented | —      |
-| `AZ_SEC_REQ_06`         | 🟢 Implemented | —      |
-| `AZ_SEC_REQ_07`         | 🟢 Implemented | —      |
-| `AZ_SEC_REQ_08`         | 🟢 Implemented | —      |
-| `AZ_SEC_REQ_09`         | 🟢 Implemented | —      |
-| `AZ_SEC_DEC_RBAC_01`    | 🟢 Implemented | —      |
-| `AZ_SEC_DEC_RBAC_02`    | 🟢 Implemented | —      |
-| `AZ_SEC_DEC_RBAC_03`    | 🟢 Implemented | —      |
-| `AZ_SEC_DEC_RBAC_04`    | 🟢 Implemented | —      |
-| `AZ_SEC_DEC_RBAC_05`    | 🟢 Implemented | —      |
-| `AZ_SEC_DEC_RBAC_06`    | 🟢 Implemented | —      |
-| `AZ_SEC_DEC_RBAC_07`    | 🟢 Implemented | —      |
-| `AZ_SEC_DEC_RBAC_08`    | 🟢 Implemented | —      |
-| `AZ_SEC_DEC_AUTHZ_01`   | 🟢 Implemented | —      |
-| `AZ_SEC_DEC_AUTHZ_02`   | 🟢 Implemented | —      |
-| `AZ_SEC_DEC_AUTHZ_03`   | 🟢 Implemented | —      |
-| `AZ_SEC_DEC_AUTHZ_04`   | 🟢 Implemented | —      |
-| `AZ_SEC_DEC_AUTHZ_05`   | 🟢 Implemented | —      |
-| `AZ_SEC_DEC_AUTHZ_06`   | 🟢 Implemented | —      |
-| `AZ_SEC_DEC_FAILURE_01` | 🟢 Implemented | —      |
-| `AZ_SEC_DEC_FAILURE_02` | 🟢 Implemented | —      |
-| `AZ_SEC_DEC_FAILURE_03` | 🟢 Implemented | —      |
-| `AZ_SEC_DEC_FAILURE_04` | 🟢 Implemented | —      |
+| `AZ_SEC_REQ_01`         | 🟢 Implemented |        |
+| `AZ_SEC_REQ_02`         | 🟢 Implemented |        |
+| `AZ_SEC_REQ_03`         | 🟢 Implemented |        |
+| `AZ_SEC_REQ_04`         | 🟢 Implemented |        |
+| `AZ_SEC_REQ_05`         | 🟢 Implemented |        |
+| `AZ_SEC_REQ_06`         | 🟢 Implemented |        |
+| `AZ_SEC_REQ_07`         | 🟢 Implemented |        |
+| `AZ_SEC_REQ_08`         | 🟢 Implemented |        |
+| `AZ_SEC_REQ_09`         | 🟢 Implemented |        |
+| `AZ_SEC_DEC_RBAC_01`    | 🟢 Implemented |        |
+| `AZ_SEC_DEC_RBAC_02`    | 🟢 Implemented |        |
+| `AZ_SEC_DEC_RBAC_03`    | 🟢 Implemented |        |
+| `AZ_SEC_DEC_RBAC_04`    | 🟢 Implemented |        |
+| `AZ_SEC_DEC_RBAC_05`    | 🟢 Implemented |        |
+| `AZ_SEC_DEC_RBAC_06`    | 🟢 Implemented |        |
+| `AZ_SEC_DEC_RBAC_07`    | 🟢 Implemented |        |
+| `AZ_SEC_DEC_RBAC_08`    | 🟢 Implemented |        |
+| `AZ_SEC_DEC_AUTHZ_01`   | 🟢 Implemented |        |
+| `AZ_SEC_DEC_AUTHZ_02`   | 🟢 Implemented |        |
+| `AZ_SEC_DEC_AUTHZ_03`   | 🟢 Implemented |        |
+| `AZ_SEC_DEC_AUTHZ_04`   | 🟢 Implemented |        |
+| `AZ_SEC_DEC_AUTHZ_05`   | 🟢 Implemented |        |
+| `AZ_SEC_DEC_AUTHZ_06`   | 🟢 Implemented |        |
+| `AZ_SEC_DEC_FAILURE_01` | 🟢 Implemented |        |
+| `AZ_SEC_DEC_FAILURE_02` | 🟢 Implemented |        |
+| `AZ_SEC_DEC_FAILURE_03` | 🟢 Implemented |        |
+| `AZ_SEC_DEC_FAILURE_04` | 🟢 Implemented |        |
 
 ## 10.3 Data Model
 
 | ID         | Description                     | Status         | Reason |
 | ---------- | ------------------------------- | -------------- | ------ |
-| `AZ_DM_01` | `authorization_role`            | 🟢 Implemented | —      |
-| `AZ_DM_02` | `authorization_permission`      | 🟢 Implemented | —      |
-| `AZ_DM_03` | `authorization_role_permission` | 🟢 Implemented | —      |
-| `AZ_DM_04` | `authorization_account_role`    | 🟢 Implemented | —      |
+| `AZ_DM_01` | `authorization_role`            | 🟢 Implemented |        |
+| `AZ_DM_02` | `authorization_permission`      | 🟢 Implemented |        |
+| `AZ_DM_03` | `authorization_role_permission` | 🟢 Implemented |        |
+| `AZ_DM_04` | `authorization_account_role`    | 🟢 Implemented |        |
 
 ## 10.4 Use Cases
 
-| ID         | Description      | Status             | Reason                                                                                                                                                  |
-| ---------- | ---------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `AZ_UC_01` | Authorize Action | 🟢 Implemented     | — |
-| `AZ_UC_02` | Assign Role      | 🔴 Not Implemented | —                                                                                                                                                       |
-| `AZ_UC_03` | Revoke Role      | 🔴 Not Implemented | —                                                                                                                                                       |
+| ID         | Description      | Status             | Reason |
+| ---------- | ---------------- | ------------------ | ------ |
+| `AZ_UC_01` | Authorize Action | 🟢 Implemented     |        |
+| `AZ_UC_02` | Assign Role      | 🔴 Not Implemented |        |
+| `AZ_UC_03` | Revoke Role      | 🔴 Not Implemented |        |
 
 ## 10.5 Permission Catalog
 
-| Permission                  | Status         | Reason                                                                                                         |
-| --------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------- |
-| `account:view`              | 🟢 Implemented | —                                                                                                              |
-| `account:view_deleted`      | 🟢 Implemented | —                                                                                                              |
-| `account:create`            | 🟢 Implemented | —                                                                                                              |
-| `account:update`            | 🟢 Implemented | —                                                                                                              |
-| `account:deactivate`        | 🟢 Implemented | — |
-| `account:activate`          | 🟢 Implemented | —                                                                                                              |
-| `account:delete`            | 🟢 Implemented | —                                                                                                              |
-| `account:restore`           | 🟢 Implemented | —                                                                                                              |
-| `account:purge`             | 🟢 Implemented | —                                                                                                              |
-| `account:change_email`      | 🟢 Implemented | —                                                                                                              |
-| `account:change_password`   | 🟢 Implemented | —                                                                                                              |
-| `authorization:role_assign` | 🟢 Implemented | —                                                                                                              |
-| `authorization:role_revoke` | 🟢 Implemented | —                                                                                                              |
+| Permission                  | Status         | Reason |
+| --------------------------- | -------------- | ------ |
+| `account:view`              | 🟢 Implemented |        |
+| `account:view_deleted`      | 🟢 Implemented |        |
+| `account:create`            | 🟢 Implemented |        |
+| `account:update`            | 🟢 Implemented |        |
+| `account:deactivate`        | 🟢 Implemented |        |
+| `account:activate`          | 🟢 Implemented |        |
+| `account:delete`            | 🟢 Implemented |        |
+| `account:restore`           | 🟢 Implemented |        |
+| `account:purge`             | 🟢 Implemented |        |
+| `account:change_email`      | 🟢 Implemented |        |
+| `account:change_password`   | 🟢 Implemented |        |
+| `authorization:role_assign` | 🟢 Implemented |        |
+| `authorization:role_revoke` | 🟢 Implemented |        |
 
 ## 10.6 Integration
 
-| ID          | Description                                       | Status         | Reason                                                                                                                                                     |
-| ----------- | ------------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `AZ_INT_01` | Authentication → Authorization principal contract | 🟢 Implemented | —                                                                                                                                                          |
-| `AZ_INT_02` | Account → Authorization account reference         | 🟢 Implemented | —                                                                                                                                                          |
-| `AZ_INT_03` | Authorization middleware/check boundary           | 🟢 Implemented | — |
+| ID          | Description                                       | Status         | Reason |
+| ----------- | ------------------------------------------------- | -------------- | ------ |
+| `AZ_INT_01` | Authentication → Authorization principal contract | 🟢 Implemented |        |
+| `AZ_INT_02` | Account → Authorization account reference         | 🟢 Implemented |        |
+| `AZ_INT_03` | Authorization middleware/check boundary           | 🟢 Implemented |        |
 
 ---
 
