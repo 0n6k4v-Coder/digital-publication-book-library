@@ -1028,25 +1028,25 @@ Authentication remains responsible for establishing the authenticated principal.
 | `AU_SEC_DEC_SESSION_02`    | 🟢 Implemented     |                                                                                                                                                                                                                                                                            |
 | `AU_SEC_DEC_SESSION_03`    | 🟢 Implemented     |                                                                                                                                                                                                                                                                            |
 | `AU_SEC_DEC_SESSION_04`    | 🟢 Implemented     |                                                                                                                                                                                                                                                                            |
-| `AU_SEC_DEC_SESSION_05`    | 🟡 Partial         | Access tokens are bound to and invalidated by session state, but refresh tokens are not implemented.                                                                                                                                                                       |
+| `AU_SEC_DEC_SESSION_05`    | 🟡 Partial         | The refresh-token persistence model now exists and is removed with its session, but refresh-token issuance, rotation, and revocation are not implemented yet.                                                                                                              |
 | `AU_SEC_DEC_SESSION_06`    | 🟢 Implemented     |                                                                                                                                                                                                                                                                            |
 
 ## 8.3 Design Decisions
 
-| ID                              | Status             | Reason                                                                                                                                                                                                                                                    |
-| ------------------------------- | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Authentication responsibilities | 🟡 Partial         | Bearer-token validation and `AuthenticatedPrincipal` creation are implemented, but credential verification, session creation, token issuance, refresh, and revocation are not implemented. Account restore remains an Account-domain lifecycle operation. |
-| Authentication flow             | 🔴 Not Implemented |                                                                                                                                                                                                                                                           |
-| Protected request flow          | 🟢 Implemented     |                                                                                                                                                                                                                                                           |
-| Refresh flow                    | 🔴 Not Implemented |                                                                                                                                                                                                                                                           |
+| ID                              | Status             | Reason                                                                                                                                                                                                                                                                            |
+| ------------------------------- | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Authentication responsibilities | 🟡 Partial         | Bearer-token validation and `AuthenticatedPrincipal` creation are implemented, and refresh-token persistence now exists, but credential verification, token issuance, refresh, and revocation are not implemented. Account restore remains an Account-domain lifecycle operation. |
+| Authentication flow             | 🔴 Not Implemented |                                                                                                                                                                                                                                                                                   |
+| Protected request flow          | 🟢 Implemented     |                                                                                                                                                                                                                                                                                   |
+| Refresh flow                    | 🔴 Not Implemented |                                                                                                                                                                                                                                                                                   |
 
 ## 8.4 Data Model
 
-| ID         | Data Model                     | Status             | Reason |
-| ---------- | ------------------------------ | ------------------ | ------ |
-| `AU_DM_01` | `authentication_session`       | 🟢 Implemented     |        |
-| `AU_DM_02` | `authentication_refresh_token` | 🔴 Not Implemented |        |
-| `AU_DM_03` | `authentication_access_token`  | 🟢 Implemented     |        |
+| ID         | Data Model                     | Status         | Reason |
+| ---------- | ------------------------------ | -------------- | ------ |
+| `AU_DM_01` | `authentication_session`       | 🟢 Implemented |        |
+| `AU_DM_02` | `authentication_refresh_token` | 🟢 Implemented |        |
+| `AU_DM_03` | `authentication_access_token`  | 🟢 Implemented |        |
 
 ## 8.5 Use Cases
 
