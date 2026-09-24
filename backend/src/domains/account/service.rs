@@ -22,7 +22,8 @@ use super::{
     repository::{
         AccountRepository, ActivateAccountRepositoryError, CreateAccountRepositoryError,
         DeactivateAccountRepositoryError, ListAccountsRepositoryError,
-        SoftDeleteAccountRepositoryError, UpdateAccountRepositoryError, ViewAccountRepositoryError,
+        RestoreAccountRepositoryError, SoftDeleteAccountRepositoryError,
+        UpdateAccountRepositoryError, ViewAccountRepositoryError,
     },
 };
 
@@ -171,6 +172,17 @@ impl AccountService {
             .map_err(map_activate_account_repository_error)
     }
 
+    pub async fn restore_account(
+        &self,
+        actor_id: Uuid,
+        account_id: Uuid,
+    ) -> Result<ViewedAccount, AppError> {
+        self.repository
+            .restore(account_id, actor_id)
+            .await
+            .map_err(map_restore_account_repository_error)
+    }
+
     async fn hash_password(&self, password: SecretString) -> Result<String, AppError> {
         let permit = self
             .password_hash_semaphore
@@ -244,6 +256,16 @@ fn map_activate_account_repository_error(error: ActivateAccountRepositoryError) 
         ActivateAccountRepositoryError::AccountAlreadyActive => AppError::AccountAlreadyActive,
         ActivateAccountRepositoryError::AccountSoftDeleted => AppError::AccountSoftDeleted,
         ActivateAccountRepositoryError::Database(error) => {
+            crate::shared::error::internal_error(error)
+        }
+    }
+}
+
+fn map_restore_account_repository_error(error: RestoreAccountRepositoryError) -> AppError {
+    match error {
+        RestoreAccountRepositoryError::AccountNotFound => AppError::AccountNotFound,
+        RestoreAccountRepositoryError::AccountNotDeleted => AppError::AccountNotDeleted,
+        RestoreAccountRepositoryError::Database(error) => {
             crate::shared::error::internal_error(error)
         }
     }
@@ -370,6 +392,18 @@ mod tests {
         assert!(matches!(
             map_activate_account_repository_error(ActivateAccountRepositoryError::AccountNotFound),
             AppError::AccountNotFound
+        ));
+    }
+
+    #[test]
+    fn restore_repository_errors_map_to_account_errors() {
+        assert!(matches!(
+            map_restore_account_repository_error(RestoreAccountRepositoryError::AccountNotFound),
+            AppError::AccountNotFound
+        ));
+        assert!(matches!(
+            map_restore_account_repository_error(RestoreAccountRepositoryError::AccountNotDeleted),
+            AppError::AccountNotDeleted
         ));
     }
 }
