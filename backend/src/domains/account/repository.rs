@@ -412,6 +412,10 @@ impl AccountRepository {
             .await
             .map_err(DeactivateAccountRepositoryError::Database)?;
 
+        lock_administrator_invariant(&mut tx)
+            .await
+            .map_err(DeactivateAccountRepositoryError::Database)?;
+
         let rows = sqlx::query_as::<_, DeactivationAccountRow>(
             r#"
             SELECT
@@ -426,6 +430,7 @@ impl AccountRepository {
                         ON r.id = ar.role_id
                     WHERE ar.account_id = a.id
                       AND r.name = $2
+                      AND r.disabled_at IS NULL
                 ) AS is_administrator
             FROM account AS a
             INNER JOIN account_credentials AS ac
@@ -441,6 +446,7 @@ impl AccountRepository {
                             ON r_active.id = ar_active.role_id
                         WHERE ar_active.account_id = a.id
                           AND r_active.name = $2
+                          AND r_active.disabled_at IS NULL
                     )
                 )
             ORDER BY a.id ASC
@@ -534,6 +540,10 @@ impl AccountRepository {
             .await
             .map_err(SoftDeleteAccountRepositoryError::Database)?;
 
+        lock_administrator_invariant(&mut tx)
+            .await
+            .map_err(SoftDeleteAccountRepositoryError::Database)?;
+
         let rows = sqlx::query_as::<_, SoftDeleteAccountRow>(
             r#"
             SELECT
@@ -547,6 +557,7 @@ impl AccountRepository {
                         ON r.id = ar.role_id
                     WHERE ar.account_id = a.id
                       AND r.name = $2
+                      AND r.disabled_at IS NULL
                 ) AS is_administrator
             FROM account AS a
             WHERE a.id = $1
@@ -560,6 +571,7 @@ impl AccountRepository {
                             ON r_active.id = ar_active.role_id
                         WHERE ar_active.account_id = a.id
                           AND r_active.name = $2
+                          AND r_active.disabled_at IS NULL
                     )
                 )
             ORDER BY a.id ASC
@@ -740,6 +752,10 @@ impl AccountRepository {
             .await
             .map_err(ActivateAccountRepositoryError::Database)?;
 
+        lock_administrator_invariant(&mut tx)
+            .await
+            .map_err(ActivateAccountRepositoryError::Database)?;
+
         let Some(target) = sqlx::query_as::<_, ActivationAccountRow>(
             r#"
             SELECT
@@ -893,6 +909,22 @@ impl AccountRepository {
             deleted_at: updated.deleted_at,
         })
     }
+}
+
+async fn lock_administrator_invariant(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+) -> Result<(), sqlx::Error> {
+    sqlx::query_scalar::<_, i16>(
+        r#"
+        SELECT id
+        FROM account_administrator_invariant_lock
+        WHERE id = 1
+        FOR UPDATE
+        "#,
+    )
+    .fetch_one(&mut **tx)
+    .await
+    .map(|_| ())
 }
 
 #[derive(Debug, sqlx::FromRow)]
