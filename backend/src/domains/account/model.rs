@@ -1,5 +1,5 @@
 use secrecy::SecretString;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use time::OffsetDateTime;
 use uuid::Uuid;
 
@@ -12,8 +12,15 @@ pub struct CreateAccountRequest {
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct UpdateAccountRequest {
-    #[serde(default)]
+    #[serde(default, deserialize_with = "deserialize_nullable_patch")]
     pub display_name: Option<Option<String>>,
+}
+
+fn deserialize_nullable_patch<'de, D>(deserializer: D) -> Result<Option<Option<String>>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    Ok(Some(Option::<String>::deserialize(deserializer)?))
 }
 
 #[derive(Debug, Deserialize)]
