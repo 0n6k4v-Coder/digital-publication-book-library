@@ -113,7 +113,7 @@
 | `AU_SEC_DEC_CREDENTIAL_03` | Password Verification     | Verify the supplied password against the Account password hash.                   |
 | `AU_SEC_DEC_CREDENTIAL_04` | Account State             | Authentication requires `status = active` and `deleted_at IS NULL`.               |
 | `AU_SEC_DEC_CREDENTIAL_05` | Failed Authentication     | Return a generic credential failure without revealing whether the account exists. |
-| `AU_SEC_DEC_CREDENTIAL_06` | Rate Limiting             | Rate-limit failed authentication attempts.                                        |
+| `AU_SEC_DEC_CREDENTIAL_06` | Rate Limiting             | Failed password authentication attempts are throttled using two independent server-side sliding-window limits. The first limit allows at most 10 failed authentication attempts for the same normalized Account email identity within any rolling 15-minute window. The second limit allows at most 50 failed authentication attempts from the same source IP address within any rolling 15-minute window. Both limits are evaluated independently, and a login request is allowed only when both limits are below their thresholds. The source IP is the server-observed client connection address; forwarded client-address headers must not be trusted unless they are supplied through an explicitly configured trusted-proxy boundary. Rate-limit state must be maintained server-side and shared across all application instances. When either limit is exceeded, the request is rejected with `429 AUTHENTICATION_RATE_LIMITED` before credential verification continues. The response must remain generic and must not disclose which limit was exceeded, the current attempt count, remaining attempts, or a precise reset time. The email-identity failure counter is reset after successful authentication for that identity. The source-IP counter is not reset by another account's successful authentication and expires naturally as entries leave the rolling 15-minute window. Rate limiting must not change Account status, disable the Account, revoke existing sessions, or otherwise modify Account lifecycle state. The policy applies to `AU_UC_01` login authentication and does not apply to `AU_UC_02` refresh or `AU_UC_03` revoke authentication. |
 
 ### 2.2.2 Access Tokens
 
@@ -191,7 +191,7 @@ The database stores only the verifier.
 | ----------------------- | ------------ | ---------------------------------------------------------------------------------------------------------------------------- |
 | `AU_SEC_DEC_SESSION_01` | Purpose      | An authentication session is the server-side lifecycle record binding an authenticated account to its authentication tokens. |
 | `AU_SEC_DEC_SESSION_02` | Identifier   | Each authentication session has a unique `id`.                                                                               |
-| `AU_SEC_DEC_SESSION_03` | Expiration   | Each authentication session has an `expires_at` value and is invalid when `expires_at <= current_time`.                      |
+| `AU_SEC_DEC_SESSION_03` | Expiration   | Every authentication session created by `AU_UC_01` has a fixed absolute lifetime of 24 hours. The lifetime begins at the time successful email/password authentication creates the session, and `expires_at` is set to that session creation time plus 24 hours. A session is invalid when `expires_at <= current_time`. The expiration is absolute and does not slide with request activity or token refresh. `AU_UC_02` refresh is not reauthentication and must not extend `expires_at` or establish a new session. A newly successful `AU_UC_01` authentication creates a new session with a new 24-hour expiration. |
 | `AU_SEC_DEC_SESSION_04` | Revocation   | A revoked authentication session is invalid immediately.                                                                     |
 | `AU_SEC_DEC_SESSION_05` | Token Scope  | Access and refresh tokens are valid only while their bound authentication session remains valid.                             |
 | `AU_SEC_DEC_SESSION_06` | Account Bind | Each authentication session belongs to exactly one Account.                                                                  |
@@ -366,15 +366,21 @@ A successful refresh must invalidate the presented refresh token before the new 
 Rules:
 
 * `expires_at` defines the authentication-session expiration time.
+* Every authentication session created by `AU_UC_01` must use a fixed absolute lifetime of 24 hours.
+* The 24-hour lifetime begins when successful email/password authentication creates the authentication session.
+* `expires_at` must therefore equal the session creation time plus 24 hours.
 * A session is invalid when `expires_at <= current_time`.
+* The session expiration is absolute and does not slide with request activity.
+* `AU_UC_02` refresh does not extend or reset `expires_at`.
+* `AU_UC_02` refresh does not modify `last_authenticated_at`.
+* `AU_UC_02` refresh is not a new authentication session and does not establish a new session expiration period.
+* A newly successful `AU_UC_01` authentication creates a new authentication session with its own new 24-hour expiration.
 * A revoked session is invalid regardless of `expires_at`.
 * `last_authenticated_at` is set when account authentication succeeds.
 * `last_authenticated_at` is not modified by refresh.
 * Each session belongs to exactly one Account.
 * When an Account is hard-deleted, its Authentication sessions are deleted automatically through `ON DELETE CASCADE`.
 * Authentication session deletion is part of the same database transaction as Account hard deletion.
-
-The policy used to calculate `expires_at` is outside this document and must be defined before implementation of session creation.
 
 ## 4.2 `authentication_refresh_token`
 
@@ -465,9 +471,9 @@ Client-provided identity or authorization data must never replace or bypass serv
 3. Verify the password.
 4. Require `status = active`.
 5. Require `deleted_at IS NULL`.
-6. Apply authentication rate limiting.
+6. Apply the authentication rate-limiting policy defined by `AU_SEC_DEC_CREDENTIAL_06`. If either the normalized-email or source-IP limit is exceeded, reject the request with `429 AUTHENTICATION_RATE_LIMITED` and do not continue authentication processing.
 7. Create an authentication session.
-8. Set `expires_at` according to the authentication-session expiration policy.
+8. Set `expires_at = session_creation_time + 24 hours`.
 9. Set `last_authenticated_at = current_time`.
 10. Issue an access token with a 3600-second lifetime.
 11. Issue a refresh token with a 2592000-second lifetime.
@@ -505,6 +511,8 @@ Client-provided identity or authorization data must never replace or bypass serv
 18. Return the authentication response.
 
 A replayed refresh token must not issue new credentials.
+
+A successful refresh must not modify `authentication_session.expires_at` or `authentication_session.last_authenticated_at`. Refresh is not reauthentication and does not establish a new authentication session or reset the session's 24-hour absolute lifetime.
 
 ## 5.3 Revoke Authentication
 
