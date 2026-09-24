@@ -20,8 +20,9 @@ use super::{
         ListedAccounts, UpdateAccountRequest, ViewedAccount,
     },
     repository::{
-        AccountRepository, CreateAccountRepositoryError, DeactivateAccountRepositoryError,
-        ListAccountsRepositoryError, UpdateAccountRepositoryError, ViewAccountRepositoryError,
+        AccountRepository, ActivateAccountRepositoryError, CreateAccountRepositoryError,
+        DeactivateAccountRepositoryError, ListAccountsRepositoryError,
+        UpdateAccountRepositoryError, ViewAccountRepositoryError,
     },
 };
 
@@ -148,6 +149,17 @@ impl AccountService {
             .map_err(map_deactivate_account_repository_error)
     }
 
+    pub async fn activate_account(
+        &self,
+        actor_id: Uuid,
+        account_id: Uuid,
+    ) -> Result<ViewedAccount, AppError> {
+        self.repository
+            .activate(account_id, actor_id)
+            .await
+            .map_err(map_activate_account_repository_error)
+    }
+
     async fn hash_password(&self, password: SecretString) -> Result<String, AppError> {
         let permit = self
             .password_hash_semaphore
@@ -197,6 +209,17 @@ fn map_deactivate_account_repository_error(error: DeactivateAccountRepositoryErr
             AppError::LastActiveAdministrator
         }
         DeactivateAccountRepositoryError::Database(error) => {
+            crate::shared::error::internal_error(error)
+        }
+    }
+}
+
+fn map_activate_account_repository_error(error: ActivateAccountRepositoryError) -> AppError {
+    match error {
+        ActivateAccountRepositoryError::AccountNotFound => AppError::AccountNotFound,
+        ActivateAccountRepositoryError::AccountAlreadyActive => AppError::AccountAlreadyActive,
+        ActivateAccountRepositoryError::AccountSoftDeleted => AppError::AccountSoftDeleted,
+        ActivateAccountRepositoryError::Database(error) => {
             crate::shared::error::internal_error(error)
         }
     }
@@ -280,6 +303,26 @@ mod tests {
             map_deactivate_account_repository_error(
                 DeactivateAccountRepositoryError::AccountNotFound
             ),
+            AppError::AccountNotFound
+        ));
+    }
+
+    #[test]
+    fn activation_repository_errors_map_to_account_errors() {
+        assert!(matches!(
+            map_activate_account_repository_error(
+                ActivateAccountRepositoryError::AccountAlreadyActive
+            ),
+            AppError::AccountAlreadyActive
+        ));
+        assert!(matches!(
+            map_activate_account_repository_error(
+                ActivateAccountRepositoryError::AccountSoftDeleted
+            ),
+            AppError::AccountSoftDeleted
+        ));
+        assert!(matches!(
+            map_activate_account_repository_error(ActivateAccountRepositoryError::AccountNotFound),
             AppError::AccountNotFound
         ));
     }

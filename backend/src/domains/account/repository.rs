@@ -3,8 +3,8 @@ use time::OffsetDateTime;
 use uuid::Uuid;
 
 use super::model::{
-    CreatedAccount, DeactivationState, DeactivationValidationError, ListedAccount, ListedAccounts,
-    ViewedAccount,
+    ActivationState, ActivationValidationError, CreatedAccount, DeactivationState,
+    DeactivationValidationError, ListedAccount, ListedAccounts, ViewedAccount,
 };
 
 const EMAIL_UNIQUE_CONSTRAINT: &str = "account_credentials_email_normalized_key";
@@ -380,6 +380,90 @@ impl AccountRepository {
             deleted_at: updated.deleted_at,
         })
     }
+
+    pub async fn activate(
+        &self,
+        account_id: Uuid,
+        actor_id: Uuid,
+    ) -> Result<ViewedAccount, ActivateAccountRepositoryError> {
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .map_err(ActivateAccountRepositoryError::Database)?;
+
+        let Some(target) = sqlx::query_as::<_, ActivationAccountRow>(
+            r#"
+            SELECT
+                ac.email,
+                a.status,
+                a.deleted_at
+            FROM account AS a
+            INNER JOIN account_credentials AS ac
+                ON ac.account_id = a.id
+            WHERE a.id = $1
+            FOR UPDATE OF a
+            "#,
+        )
+        .bind(account_id)
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(ActivateAccountRepositoryError::Database)?
+        else {
+            return Err(ActivateAccountRepositoryError::AccountNotFound);
+        };
+
+        ActivationState {
+            is_active: target.status == "active",
+            is_deleted: target.deleted_at.is_some(),
+        }
+        .validate()
+        .map_err(|error| match error {
+            ActivationValidationError::AccountSoftDeleted => {
+                ActivateAccountRepositoryError::AccountSoftDeleted
+            }
+            ActivationValidationError::AccountAlreadyActive => {
+                ActivateAccountRepositoryError::AccountAlreadyActive
+            }
+        })?;
+
+        let updated = sqlx::query_as::<_, AccountUpdatedRow>(
+            r#"
+            UPDATE account
+            SET
+                status = 'active',
+                updated_at = CURRENT_TIMESTAMP,
+                updated_by = $2
+            WHERE id = $1
+              AND status = 'inactive'
+              AND deleted_at IS NULL
+            RETURNING
+                id,
+                created_at,
+                updated_at,
+                status,
+                deleted_at
+            "#,
+        )
+        .bind(account_id)
+        .bind(actor_id)
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(ActivateAccountRepositoryError::Database)?;
+
+        tx.commit()
+            .await
+            .map_err(ActivateAccountRepositoryError::Database)?;
+
+        Ok(ViewedAccount {
+            id: updated.id,
+            email: target.email,
+            status: updated.status,
+            created_at: updated.created_at,
+            updated_at: updated.updated_at,
+            deleted_at: updated.deleted_at,
+        })
+    }
 }
 
 #[derive(Debug, sqlx::FromRow)]
@@ -438,6 +522,13 @@ struct DeactivationAccountRow {
     status: String,
     deleted_at: Option<OffsetDateTime>,
     is_administrator: bool,
+}
+
+#[derive(Debug, sqlx::FromRow)]
+struct ActivationAccountRow {
+    email: String,
+    status: String,
+    deleted_at: Option<OffsetDateTime>,
 }
 
 impl From<ListedAccountRow> for ListedAccount {
@@ -561,3 +652,24 @@ impl std::fmt::Display for DeactivateAccountRepositoryError {
 }
 
 impl std::error::Error for DeactivateAccountRepositoryError {}
+
+#[derive(Debug)]
+pub enum ActivateAccountRepositoryError {
+    AccountNotFound,
+    AccountAlreadyActive,
+    AccountSoftDeleted,
+    Database(sqlx::Error),
+}
+
+impl std::fmt::Display for ActivateAccountRepositoryError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::AccountNotFound => f.write_str("account not found"),
+            Self::AccountAlreadyActive => f.write_str("account already active"),
+            Self::AccountSoftDeleted => f.write_str("account is soft deleted"),
+            Self::Database(error) => write!(f, "{error}"),
+        }
+    }
+}
+
+impl std::error::Error for ActivateAccountRepositoryError {}

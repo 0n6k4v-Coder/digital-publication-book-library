@@ -163,6 +163,32 @@ pub enum DeactivationValidationError {
     LastActiveAdministrator,
 }
 
+#[derive(Debug, PartialEq, Eq)]
+pub struct ActivationState {
+    pub is_active: bool,
+    pub is_deleted: bool,
+}
+
+impl ActivationState {
+    pub fn validate(self) -> Result<(), ActivationValidationError> {
+        if self.is_deleted {
+            return Err(ActivationValidationError::AccountSoftDeleted);
+        }
+
+        if self.is_active {
+            return Err(ActivationValidationError::AccountAlreadyActive);
+        }
+
+        Ok(())
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum ActivationValidationError {
+    AccountSoftDeleted,
+    AccountAlreadyActive,
+}
+
 impl From<CreatedAccount> for AccountResponse {
     fn from(account: CreatedAccount) -> Self {
         Self {

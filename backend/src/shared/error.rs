@@ -31,6 +31,10 @@ pub enum AppError {
     AccountAlreadyInactive,
     #[error("last active administrator")]
     LastActiveAdministrator,
+    #[error("account already active")]
+    AccountAlreadyActive,
+    #[error("account is soft deleted")]
+    AccountSoftDeleted,
     #[error("email already in use")]
     EmailAlreadyInUse,
     #[error("internal server error")]
@@ -109,6 +113,20 @@ impl AppError {
                 "Last active administrator",
                 "The last active administrator account cannot be deactivated.",
                 "https://github.com/0n6k4v-Coder/digital-publication-book-library/problems/last-active-administrator",
+            ),
+            Self::AccountAlreadyActive => (
+                StatusCode::CONFLICT,
+                "ACCOUNT_ALREADY_ACTIVE",
+                "Account already active",
+                "The requested account is already active.",
+                "https://github.com/0n6k4v-Coder/digital-publication-book-library/problems/account-already-active",
+            ),
+            Self::AccountSoftDeleted => (
+                StatusCode::CONFLICT,
+                "ACCOUNT_SOFT_DELETED",
+                "Account is soft deleted",
+                "The requested account is soft-deleted and cannot be activated.",
+                "https://github.com/0n6k4v-Coder/digital-publication-book-library/problems/account-soft-deleted",
             ),
             Self::EmailAlreadyInUse => (
                 StatusCode::CONFLICT,
