@@ -1334,7 +1334,7 @@ The status-code meanings follow HTTP Semantics defined by RFC 9110.
 | `AC_REQ_FC_09`     | Use email and password authentication                              | 🔴 Not Implemented |                                                                                                                                                                                                                                                                                                    |
 | `AC_REQ_FC_10`     | Use email as the authentication identifier                         | 🔴 Not Implemented |                                                                                                                                                                                                                                                                                                    |
 | `AC_REQ_FC_11`     | Enforce unique email identity                                      | 🟢 Implemented     |                                                                                                                                                                                                                                                                                                    |
-| `AC_REQ_FC_12`     | Allow email and password credentials to be updated                 | 🔴 Not Implemented |                                                                                                                                                                                                                                                                                                    |
+| `AC_REQ_FC_12`     | Allow email and password credentials to be updated                 | 🟢 Implemented     |                                                                                                                                                                                                                                                                                                    |
 | `AC_REQ_FC_13`     | Support soft deletion                                              | 🟢 Implemented     |                                                                                                                                                                                                                                                                                                    |
 | `AC_REQ_FC_14`     | Record soft-deletion timestamp                                     | 🟢 Implemented     |                                                                                                                                                                                                                                                                                                    |
 | `AC_REQ_FC_15`     | Record the account responsible for soft deletion                   | 🟢 Implemented     |                                                                                                                                                                                                                                                                                                    |
@@ -1346,7 +1346,7 @@ The status-code meanings follow HTTP Semantics defined by RFC 9110.
 | `AC_REQ_NON_FC_01` | Preserve Account invariants during lifecycle operations            | 🟡 Partial         | AC_UC_05 through AC_UC_09 preserve the implemented lifecycle invariants, including transactional last-active-administrator protection and hard-delete cross-domain cleanup; Authorization role-management operations are not yet implemented with the required shared invariant-lock coordination. |
 | `AC_REQ_NON_FC_02` | Use `TIMESTAMPTZ` for Account timestamps                           | 🟢 Implemented     |                                                                                                                                                                                                                                                                                                    |
 | `AC_REQ_NON_FC_03` | Keep Account lifecycle data separate from credential data          | 🟢 Implemented     |                                                                                                                                                                                                                                                                                                    |
-| `AC_REQ_NON_FC_04` | Exclude soft-deleted accounts from normal Account operations       | 🟡 Partial         | View Accounts and View Account exclude soft-deleted accounts, Deactivate and Activate reject soft-deleted targets, AC_UC_07/AC_UC_08 transition the soft-deleted state, and AC_UC_09 explicitly purges deleted targets; AC_UC_10 and AC_UC_11 are not implemented yet.                             |
+| `AC_REQ_NON_FC_04` | Exclude soft-deleted accounts from normal Account operations       | 🟢 Implemented     |                                                                                                                                                                                                                                                                                                    |
 | `AC_REQ_NON_FC_05` | Make hard deletion an explicit operation                           | 🟢 Implemented     |                                                                                                                                                                                                                                                                                                    |
 
 ## 7.2 Security
@@ -1355,8 +1355,8 @@ The status-code meanings follow HTTP Semantics defined by RFC 9110.
 | ------------------------ | ------------------------------------------------------------------------------ | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `AC_SEC_REQ_FC_01`       | Authenticate using email and password                                          | 🔴 Not Implemented |                                                                                                                                                                                                     |
 | `AC_SEC_REQ_FC_02`       | Verify password against stored password hash                                   | 🔴 Not Implemented |                                                                                                                                                                                                     |
-| `AC_SEC_REQ_FC_03`       | Allow email address changes                                                    | 🔴 Not Implemented |                                                                                                                                                                                                     |
-| `AC_SEC_REQ_FC_04`       | Allow password changes                                                         | 🔴 Not Implemented |                                                                                                                                                                                                     |
+| `AC_SEC_REQ_FC_03`       | Allow email address changes                                                    | 🟢 Implemented     |                                                                                                                                                                                                     |
+| `AC_SEC_REQ_FC_04`       | Allow password changes                                                         | 🟢 Implemented     |                                                                                                                                                                                                     |
 | `AC_SEC_REQ_NON_FC_01`   | Never store passwords in plaintext                                             | 🟢 Implemented     |                                                                                                                                                                                                     |
 | `AC_SEC_REQ_NON_FC_02`   | Hash passwords using Argon2id                                                  | 🟢 Implemented     |                                                                                                                                                                                                     |
 | `AC_SEC_REQ_NON_FC_03`   | Use a unique salt for each password                                            | 🟢 Implemented     |                                                                                                                                                                                                     |
@@ -1421,8 +1421,8 @@ The status-code meanings follow HTTP Semantics defined by RFC 9110.
 | `AC_DEC_CREDENTIAL_02` | Authentication uses email and password only                                                                    | 🟡 Partial         | The credential model contains email and password credentials, but the account email/password authentication flow is not implemented yet.                                                       |
 | `AC_DEC_CREDENTIAL_03` | `account_credentials.account_id` references `account.id`                                                       | 🟢 Implemented     |                                                                                                                                                                                                |
 | `AC_DEC_CREDENTIAL_04` | Credential deletion uses `ON DELETE CASCADE`                                                                   | 🟢 Implemented     |                                                                                                                                                                                                |
-| `AC_DEC_CREDENTIAL_05` | Email or password changes update credential timestamp                                                          | 🔴 Not Implemented |                                                                                                                                                                                                |
-| `AC_DEC_CREDENTIAL_06` | Credential changes do not update `account.updated_at`                                                          | 🔴 Not Implemented |                                                                                                                                                                                                |
+| `AC_DEC_CREDENTIAL_05` | Email or password changes update credential timestamp                                                          | 🟢 Implemented     |                                                                                                                                                                                                |
+| `AC_DEC_CREDENTIAL_06` | Credential changes do not update `account.updated_at`                                                          | 🟢 Implemented     |                                                                                                                                                                                                |
 | `AC_DEC_LIFECYCLE_01`  | Soft-deleted account must have `status = inactive`                                                             | 🟢 Implemented     |                                                                                                                                                                                                |
 | `AC_DEC_LIFECYCLE_02`  | Soft-deleted account must not authenticate                                                                     | 🟡 Partial         | The Admin API Bearer authentication layer rejects soft-deleted accounts, but the account email/password authentication flow is not implemented yet.                                            |
 | `AC_DEC_LIFECYCLE_03`  | Restored account returns to `inactive`                                                                         | 🟢 Implemented     |                                                                                                                                                                                                |
@@ -1460,32 +1460,32 @@ The status-code meanings follow HTTP Semantics defined by RFC 9110.
 
 ## 7.5 Use Cases
 
-| ID         | Description         | Status             | Reason |
-| ---------- | ------------------- | ------------------ | ------ |
-| `AC_UC_01` | Create Account      | 🟢 Implemented     |        |
-| `AC_UC_02` | View Accounts       | 🟢 Implemented     |        |
-| `AC_UC_03` | View Account        | 🟢 Implemented     |        |
-| `AC_UC_04` | Update Account      | 🟢 Implemented     |        |
-| `AC_UC_05` | Deactivate Account  | 🟢 Implemented     |        |
-| `AC_UC_06` | Activate Account    | 🟢 Implemented     |        |
-| `AC_UC_07` | Soft Delete Account | 🟢 Implemented     |        |
-| `AC_UC_08` | Restore Account     | 🟢 Implemented     |        |
-| `AC_UC_09` | Hard Delete Account | 🟢 Implemented     |        |
-| `AC_UC_10` | Change Email        | 🔴 Not Implemented |        |
-| `AC_UC_11` | Change Password     | 🔴 Not Implemented |        |
+| ID         | Description         | Status         | Reason |
+| ---------- | ------------------- | -------------- | ------ |
+| `AC_UC_01` | Create Account      | 🟢 Implemented |        |
+| `AC_UC_02` | View Accounts       | 🟢 Implemented |        |
+| `AC_UC_03` | View Account        | 🟢 Implemented |        |
+| `AC_UC_04` | Update Account      | 🟢 Implemented |        |
+| `AC_UC_05` | Deactivate Account  | 🟢 Implemented |        |
+| `AC_UC_06` | Activate Account    | 🟢 Implemented |        |
+| `AC_UC_07` | Soft Delete Account | 🟢 Implemented |        |
+| `AC_UC_08` | Restore Account     | 🟢 Implemented |        |
+| `AC_UC_09` | Hard Delete Account | 🟢 Implemented |        |
+| `AC_UC_10` | Change Email        | 🟢 Implemented |        |
+| `AC_UC_11` | Change Password     | 🟢 Implemented |        |
 
 ## 7.6 API Contract
 
-| ID          | Method   | Endpoint                          | Use Case                       | Status             | Reason |
-| ----------- | -------- | --------------------------------- | ------------------------------ | ------------------ | ------ |
-| `AC_API_01` | `POST`   | `/admin/accounts`                 | `AC_UC_01` Create Account      | 🟢 Implemented     |        |
-| `AC_API_02` | `GET`    | `/admin/accounts`                 | `AC_UC_02` View Accounts       | 🟢 Implemented     |        |
-| `AC_API_03` | `GET`    | `/admin/accounts/{id}`            | `AC_UC_03` View Account        | 🟢 Implemented     |        |
-| `AC_API_04` | `PATCH`  | `/admin/accounts/{id}`            | `AC_UC_04` Update Account      | 🟢 Implemented     |        |
-| `AC_API_05` | `POST`   | `/admin/accounts/{id}/deactivate` | `AC_UC_05` Deactivate Account  | 🟢 Implemented     |        |
-| `AC_API_06` | `POST`   | `/admin/accounts/{id}/activate`   | `AC_UC_06` Activate Account    | 🟢 Implemented     |        |
-| `AC_API_07` | `DELETE` | `/admin/accounts/{id}`            | `AC_UC_07` Soft Delete Account | 🟢 Implemented     |        |
-| `AC_API_08` | `POST`   | `/admin/accounts/{id}/restore`    | `AC_UC_08` Restore Account     | 🟢 Implemented     |        |
-| `AC_API_09` | `DELETE` | `/admin/accounts/{id}/purge`      | `AC_UC_09` Hard Delete Account | 🟢 Implemented     |        |
-| `AC_API_10` | `PATCH`  | `/admin/accounts/{id}/email`      | `AC_UC_10` Change Email        | 🔴 Not Implemented |        |
-| `AC_API_11` | `PATCH`  | `/admin/accounts/{id}/password`   | `AC_UC_11` Change Password     | 🔴 Not Implemented |        |
+| ID          | Method   | Endpoint                          | Use Case                       | Status         | Reason |
+| ----------- | -------- | --------------------------------- | ------------------------------ | -------------- | ------ |
+| `AC_API_01` | `POST`   | `/admin/accounts`                 | `AC_UC_01` Create Account      | 🟢 Implemented |        |
+| `AC_API_02` | `GET`    | `/admin/accounts`                 | `AC_UC_02` View Accounts       | 🟢 Implemented |        |
+| `AC_API_03` | `GET`    | `/admin/accounts/{id}`            | `AC_UC_03` View Account        | 🟢 Implemented |        |
+| `AC_API_04` | `PATCH`  | `/admin/accounts/{id}`            | `AC_UC_04` Update Account      | 🟢 Implemented |        |
+| `AC_API_05` | `POST`   | `/admin/accounts/{id}/deactivate` | `AC_UC_05` Deactivate Account  | 🟢 Implemented |        |
+| `AC_API_06` | `POST`   | `/admin/accounts/{id}/activate`   | `AC_UC_06` Activate Account    | 🟢 Implemented |        |
+| `AC_API_07` | `DELETE` | `/admin/accounts/{id}`            | `AC_UC_07` Soft Delete Account | 🟢 Implemented |        |
+| `AC_API_08` | `POST`   | `/admin/accounts/{id}/restore`    | `AC_UC_08` Restore Account     | 🟢 Implemented |        |
+| `AC_API_09` | `DELETE` | `/admin/accounts/{id}/purge`      | `AC_UC_09` Hard Delete Account | 🟢 Implemented |        |
+| `AC_API_10` | `PATCH`  | `/admin/accounts/{id}/email`      | `AC_UC_10` Change Email        | 🟢 Implemented |        |
+| `AC_API_11` | `PATCH`  | `/admin/accounts/{id}/password`   | `AC_UC_11` Change Password     | 🟢 Implemented |        |
