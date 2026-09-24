@@ -5,15 +5,21 @@ use axum::{
 
 use crate::{
     app::state::AppState,
-    domains::account::handler::{
-        activate_account, change_email, change_password, create_account, deactivate_account,
-        hard_delete_account, restore_account, soft_delete_account, update_account, view_account,
-        view_accounts,
+    domains::{
+        account::handler::{
+            activate_account, change_email, change_password, create_account, deactivate_account,
+            hard_delete_account, restore_account, soft_delete_account, update_account,
+            view_account, view_accounts,
+        },
+        authentication::handler::{login, logout, refresh},
     },
 };
 
 pub fn build_router(state: AppState) -> Router {
     Router::new()
+        .route("/auth/login", post(login))
+        .route("/auth/refresh", post(refresh))
+        .route("/auth/logout", post(logout))
         .route("/admin/accounts", get(view_accounts).post(create_account))
         .route(
             "/admin/accounts/{id}",

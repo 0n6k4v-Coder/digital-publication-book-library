@@ -15,6 +15,12 @@ pub enum AppError {
     Unauthorized,
     #[error("invalid authentication")]
     InvalidAuthentication,
+    #[error("invalid credentials")]
+    InvalidCredentials,
+    #[error("invalid refresh token")]
+    InvalidRefreshToken,
+    #[error("authentication rate limited")]
+    AuthenticationRateLimited,
     #[error("forbidden")]
     Forbidden,
     #[error("invalid request: {0}")]
@@ -63,6 +69,27 @@ impl AppError {
                 "Authentication required",
                 "The supplied authentication credentials are invalid or no longer valid.",
                 "https://github.com/0n6k4v-Coder/digital-publication-book-library/problems/unauthorized",
+            ),
+            Self::InvalidCredentials => (
+                StatusCode::UNAUTHORIZED,
+                "INVALID_CREDENTIALS",
+                "Invalid credentials",
+                "The supplied credentials are invalid.",
+                "https://github.com/0n6k4v-Coder/digital-publication-book-library/problems/invalid-credentials",
+            ),
+            Self::InvalidRefreshToken => (
+                StatusCode::UNAUTHORIZED,
+                "INVALID_REFRESH_TOKEN",
+                "Invalid refresh token",
+                "The supplied refresh token is invalid or no longer usable.",
+                "https://github.com/0n6k4v-Coder/digital-publication-book-library/problems/invalid-refresh-token",
+            ),
+            Self::AuthenticationRateLimited => (
+                StatusCode::TOO_MANY_REQUESTS,
+                "AUTHENTICATION_RATE_LIMITED",
+                "Authentication rate limited",
+                "Authentication is temporarily unavailable for the supplied request.",
+                "https://github.com/0n6k4v-Coder/digital-publication-book-library/problems/authentication-rate-limited",
             ),
             Self::Forbidden => (
                 StatusCode::FORBIDDEN,
