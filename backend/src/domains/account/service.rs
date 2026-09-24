@@ -20,8 +20,8 @@ use super::{
         ListedAccounts, UpdateAccountRequest, ViewedAccount,
     },
     repository::{
-        AccountRepository, CreateAccountRepositoryError, ListAccountsRepositoryError,
-        UpdateAccountRepositoryError, ViewAccountRepositoryError,
+        AccountRepository, CreateAccountRepositoryError, DeactivateAccountRepositoryError,
+        ListAccountsRepositoryError, UpdateAccountRepositoryError, ViewAccountRepositoryError,
     },
 };
 
@@ -137,6 +137,17 @@ impl AccountService {
             .ok_or(AppError::AccountNotFound)
     }
 
+    pub async fn deactivate_account(
+        &self,
+        actor_id: Uuid,
+        account_id: Uuid,
+    ) -> Result<ViewedAccount, AppError> {
+        self.repository
+            .deactivate(account_id, actor_id)
+            .await
+            .map_err(map_deactivate_account_repository_error)
+    }
+
     async fn hash_password(&self, password: SecretString) -> Result<String, AppError> {
         let permit = self
             .password_hash_semaphore
@@ -174,6 +185,21 @@ pub enum DisplayNameValidationError {
     Empty,
     #[error("display name is too long")]
     TooLong,
+}
+
+fn map_deactivate_account_repository_error(error: DeactivateAccountRepositoryError) -> AppError {
+    match error {
+        DeactivateAccountRepositoryError::AccountNotFound => AppError::AccountNotFound,
+        DeactivateAccountRepositoryError::AccountAlreadyInactive => {
+            AppError::AccountAlreadyInactive
+        }
+        DeactivateAccountRepositoryError::LastActiveAdministrator => {
+            AppError::LastActiveAdministrator
+        }
+        DeactivateAccountRepositoryError::Database(error) => {
+            crate::shared::error::internal_error(error)
+        }
+    }
 }
 
 fn map_email_validation(error: EmailValidationError) -> AppError {
@@ -233,6 +259,28 @@ mod tests {
         assert!(matches!(
             error,
             AppError::Validation("Password is commonly used or compromised and cannot be used.")
+        ));
+    }
+
+    #[test]
+    fn deactivation_repository_errors_map_to_account_errors() {
+        assert!(matches!(
+            map_deactivate_account_repository_error(
+                DeactivateAccountRepositoryError::AccountAlreadyInactive
+            ),
+            AppError::AccountAlreadyInactive
+        ));
+        assert!(matches!(
+            map_deactivate_account_repository_error(
+                DeactivateAccountRepositoryError::LastActiveAdministrator
+            ),
+            AppError::LastActiveAdministrator
+        ));
+        assert!(matches!(
+            map_deactivate_account_repository_error(
+                DeactivateAccountRepositoryError::AccountNotFound
+            ),
+            AppError::AccountNotFound
         ));
     }
 }

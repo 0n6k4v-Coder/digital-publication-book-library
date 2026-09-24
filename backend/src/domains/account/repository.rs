@@ -2,9 +2,13 @@ use sqlx::PgPool;
 use time::OffsetDateTime;
 use uuid::Uuid;
 
-use super::model::{CreatedAccount, ListedAccount, ListedAccounts, ViewedAccount};
+use super::model::{
+    CreatedAccount, DeactivationState, DeactivationValidationError, ListedAccount, ListedAccounts,
+    ViewedAccount,
+};
 
 const EMAIL_UNIQUE_CONSTRAINT: &str = "account_credentials_email_normalized_key";
+const ACCOUNT_ADMIN_ROLE: &str = "account_admin";
 
 pub struct AccountRepository {
     pool: PgPool,
@@ -254,6 +258,130 @@ impl AccountRepository {
             deleted_at: updated.deleted_at,
         }))
     }
+
+    pub async fn deactivate(
+        &self,
+        account_id: Uuid,
+        actor_id: Uuid,
+    ) -> Result<ViewedAccount, DeactivateAccountRepositoryError> {
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .map_err(DeactivateAccountRepositoryError::Database)?;
+
+        let rows = sqlx::query_as::<_, DeactivationAccountRow>(
+            r#"
+            SELECT
+                a.id,
+                ac.email,
+                a.status,
+                a.created_at,
+                a.updated_at,
+                a.deleted_at,
+                EXISTS (
+                    SELECT 1
+                    FROM authorization_account_role AS ar
+                    INNER JOIN authorization_role AS r
+                        ON r.id = ar.role_id
+                    WHERE ar.account_id = a.id
+                      AND r.name = $2
+                ) AS is_administrator
+            FROM account AS a
+            INNER JOIN account_credentials AS ac
+                ON ac.account_id = a.id
+            WHERE a.id = $1
+               OR (
+                    a.status = 'active'
+                    AND a.deleted_at IS NULL
+                    AND EXISTS (
+                        SELECT 1
+                        FROM authorization_account_role AS ar_active
+                        INNER JOIN authorization_role AS r_active
+                            ON r_active.id = ar_active.role_id
+                        WHERE ar_active.account_id = a.id
+                          AND r_active.name = $2
+                    )
+                )
+            ORDER BY a.id ASC
+            FOR UPDATE OF a
+            "#,
+        )
+        .bind(account_id)
+        .bind(ACCOUNT_ADMIN_ROLE)
+        .fetch_all(&mut *tx)
+        .await
+        .map_err(DeactivateAccountRepositoryError::Database)?;
+
+        let Some(target) = rows.iter().find(|row| row.id == account_id) else {
+            return Err(DeactivateAccountRepositoryError::AccountNotFound);
+        };
+
+        let active_administrator_count = rows
+            .iter()
+            .filter(|row| {
+                row.status == "active" && row.deleted_at.is_none() && row.is_administrator
+            })
+            .count();
+
+        let state = DeactivationState {
+            is_active: target.status == "active",
+            is_deleted: target.deleted_at.is_some(),
+            is_administrator: target.is_administrator,
+            active_administrator_count,
+        };
+
+        state.validate().map_err(|error| match error {
+            DeactivationValidationError::AccountNotFound => {
+                DeactivateAccountRepositoryError::AccountNotFound
+            }
+            DeactivationValidationError::AccountAlreadyInactive => {
+                DeactivateAccountRepositoryError::AccountAlreadyInactive
+            }
+            DeactivationValidationError::LastActiveAdministrator => {
+                DeactivateAccountRepositoryError::LastActiveAdministrator
+            }
+        })?;
+
+        let target_email = target.email.clone();
+
+        let updated = sqlx::query_as::<_, AccountUpdatedRow>(
+            r#"
+            UPDATE account
+            SET
+                status = 'inactive',
+                updated_at = CURRENT_TIMESTAMP,
+                updated_by = $2
+            WHERE id = $1
+              AND status = 'active'
+              AND deleted_at IS NULL
+            RETURNING
+                id,
+                created_at,
+                updated_at,
+                status,
+                deleted_at
+            "#,
+        )
+        .bind(account_id)
+        .bind(actor_id)
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(DeactivateAccountRepositoryError::Database)?;
+
+        tx.commit()
+            .await
+            .map_err(DeactivateAccountRepositoryError::Database)?;
+
+        Ok(ViewedAccount {
+            id: updated.id,
+            email: target_email,
+            status: updated.status,
+            created_at: updated.created_at,
+            updated_at: updated.updated_at,
+            deleted_at: updated.deleted_at,
+        })
+    }
 }
 
 #[derive(Debug, sqlx::FromRow)]
@@ -303,6 +431,17 @@ struct AccountUpdatedRow {
     updated_at: OffsetDateTime,
     status: String,
     deleted_at: Option<OffsetDateTime>,
+}
+
+#[derive(Debug, sqlx::FromRow)]
+struct DeactivationAccountRow {
+    id: Uuid,
+    email: String,
+    status: String,
+    created_at: OffsetDateTime,
+    updated_at: OffsetDateTime,
+    deleted_at: Option<OffsetDateTime>,
+    is_administrator: bool,
 }
 
 impl From<ListedAccountRow> for ListedAccount {
@@ -405,3 +544,24 @@ impl std::fmt::Display for UpdateAccountRepositoryError {
 }
 
 impl std::error::Error for UpdateAccountRepositoryError {}
+
+#[derive(Debug)]
+pub enum DeactivateAccountRepositoryError {
+    AccountNotFound,
+    AccountAlreadyInactive,
+    LastActiveAdministrator,
+    Database(sqlx::Error),
+}
+
+impl std::fmt::Display for DeactivateAccountRepositoryError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::AccountNotFound => f.write_str("account not found"),
+            Self::AccountAlreadyInactive => f.write_str("account already inactive"),
+            Self::LastActiveAdministrator => f.write_str("last active administrator"),
+            Self::Database(error) => write!(f, "{error}"),
+        }
+    }
+}
+
+impl std::error::Error for DeactivateAccountRepositoryError {}

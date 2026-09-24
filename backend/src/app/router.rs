@@ -1,8 +1,13 @@
-use axum::{routing::get, Router};
+use axum::{
+    routing::{get, post},
+    Router,
+};
 
 use crate::{
     app::state::AppState,
-    domains::account::handler::{create_account, update_account, view_account, view_accounts},
+    domains::account::handler::{
+        create_account, deactivate_account, update_account, view_account, view_accounts,
+    },
 };
 
 pub fn build_router(state: AppState) -> Router {
@@ -12,5 +17,6 @@ pub fn build_router(state: AppState) -> Router {
             "/admin/accounts/{id}",
             get(view_account).patch(update_account),
         )
+        .route("/admin/accounts/{id}/deactivate", post(deactivate_account))
         .with_state(state)
 }

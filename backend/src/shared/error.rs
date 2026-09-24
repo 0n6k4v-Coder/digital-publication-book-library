@@ -27,6 +27,10 @@ pub enum AppError {
     InvalidAccountId,
     #[error("account not found")]
     AccountNotFound,
+    #[error("account already inactive")]
+    AccountAlreadyInactive,
+    #[error("last active administrator")]
+    LastActiveAdministrator,
     #[error("email already in use")]
     EmailAlreadyInUse,
     #[error("internal server error")]
@@ -91,6 +95,20 @@ impl AppError {
                 "Account not found",
                 "The requested account was not found.",
                 "https://github.com/0n6k4v-Coder/digital-publication-book-library/problems/account-not-found",
+            ),
+            Self::AccountAlreadyInactive => (
+                StatusCode::CONFLICT,
+                "ACCOUNT_ALREADY_INACTIVE",
+                "Account already inactive",
+                "The requested account is already inactive.",
+                "https://github.com/0n6k4v-Coder/digital-publication-book-library/problems/account-already-inactive",
+            ),
+            Self::LastActiveAdministrator => (
+                StatusCode::CONFLICT,
+                "LAST_ACTIVE_ADMINISTRATOR",
+                "Last active administrator",
+                "The last active administrator account cannot be deactivated.",
+                "https://github.com/0n6k4v-Coder/digital-publication-book-library/problems/last-active-administrator",
             ),
             Self::EmailAlreadyInUse => (
                 StatusCode::CONFLICT,

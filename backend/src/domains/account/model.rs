@@ -130,6 +130,39 @@ pub struct ListedAccounts {
     pub total: i64,
 }
 
+#[derive(Debug, PartialEq, Eq)]
+pub struct DeactivationState {
+    pub is_active: bool,
+    pub is_deleted: bool,
+    pub is_administrator: bool,
+    pub active_administrator_count: usize,
+}
+
+impl DeactivationState {
+    pub fn validate(self) -> Result<(), DeactivationValidationError> {
+        if self.is_deleted {
+            return Err(DeactivationValidationError::AccountNotFound);
+        }
+
+        if !self.is_active {
+            return Err(DeactivationValidationError::AccountAlreadyInactive);
+        }
+
+        if self.is_administrator && self.active_administrator_count <= 1 {
+            return Err(DeactivationValidationError::LastActiveAdministrator);
+        }
+
+        Ok(())
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum DeactivationValidationError {
+    AccountNotFound,
+    AccountAlreadyInactive,
+    LastActiveAdministrator,
+}
+
 impl From<CreatedAccount> for AccountResponse {
     fn from(account: CreatedAccount) -> Self {
         Self {

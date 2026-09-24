@@ -9,6 +9,7 @@ pub const ACCOUNT_VIEW_PERMISSION: &str = "account:view";
 pub const ACCOUNT_VIEW_DELETED_PERMISSION: &str = "account:view_deleted";
 pub const ACCOUNT_CREATE_PERMISSION: &str = "account:create";
 pub const ACCOUNT_UPDATE_PERMISSION: &str = "account:update";
+pub const ACCOUNT_DEACTIVATE_PERMISSION: &str = "account:deactivate";
 
 pub async fn authorize(
     repository: &AuthorizationRepository,

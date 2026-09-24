@@ -16,7 +16,9 @@ use crate::{
     domains::{
         authentication::model::AuthenticatedPrincipal,
         authorization::{
-            extractor::{AuthorizedAccountCreate, AuthorizedAccountUpdate},
+            extractor::{
+                AuthorizedAccountCreate, AuthorizedAccountDeactivate, AuthorizedAccountUpdate,
+            },
             repository::AuthorizationRepository,
             service::{authorize, ACCOUNT_VIEW_DELETED_PERMISSION, ACCOUNT_VIEW_PERMISSION},
         },
@@ -186,6 +188,29 @@ pub async fn update_account(
 
     let account = service
         .update_account(authorized.account_id(), account_id, patch)
+        .await?;
+
+    let response_body = AccountResponse::from(account);
+
+    let mut response = (StatusCode::OK, Json(response_body)).into_response();
+    add_no_store(response.headers_mut());
+
+    Ok(response)
+}
+
+pub async fn deactivate_account(
+    AccountId(account_id): AccountId,
+    authorized: AuthorizedAccountDeactivate,
+    State(state): State<AppState>,
+) -> Result<Response, AppError> {
+    let service = AccountService::new(
+        AccountRepository::new(state.pool.clone()),
+        state.password_policy.clone(),
+        state.password_hash_semaphore.clone(),
+    );
+
+    let account = service
+        .deactivate_account(authorized.account_id(), account_id)
         .await?;
 
     let response_body = AccountResponse::from(account);
