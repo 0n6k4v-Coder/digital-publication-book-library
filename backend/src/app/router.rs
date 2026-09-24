@@ -6,8 +6,8 @@ use axum::{
 use crate::{
     app::state::AppState,
     domains::account::handler::{
-        activate_account, create_account, deactivate_account, soft_delete_account, update_account,
-        view_account, view_accounts,
+        activate_account, create_account, deactivate_account, restore_account, soft_delete_account,
+        update_account, view_account, view_accounts,
     },
 };
 
@@ -22,5 +22,6 @@ pub fn build_router(state: AppState) -> Router {
         )
         .route("/admin/accounts/{id}/deactivate", post(deactivate_account))
         .route("/admin/accounts/{id}/activate", post(activate_account))
+        .route("/admin/accounts/{id}/restore", post(restore_account))
         .with_state(state)
 }

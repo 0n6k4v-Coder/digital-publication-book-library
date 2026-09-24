@@ -4,8 +4,8 @@ use uuid::Uuid;
 
 use super::model::{
     ActivationState, ActivationValidationError, CreatedAccount, DeactivationState,
-    DeactivationValidationError, ListedAccount, ListedAccounts, SoftDeleteState,
-    SoftDeleteValidationError, ViewedAccount,
+    DeactivationValidationError, ListedAccount, ListedAccounts, RestoreState,
+    RestoreValidationError, SoftDeleteState, SoftDeleteValidationError, ViewedAccount,
 };
 
 const EMAIL_UNIQUE_CONSTRAINT: &str = "account_credentials_email_normalized_key";
@@ -567,6 +567,87 @@ impl AccountRepository {
             deleted_at: updated.deleted_at,
         })
     }
+
+    pub async fn restore(
+        &self,
+        account_id: Uuid,
+        actor_id: Uuid,
+    ) -> Result<ViewedAccount, RestoreAccountRepositoryError> {
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .map_err(RestoreAccountRepositoryError::Database)?;
+
+        let Some(target) = sqlx::query_as::<_, ActivationAccountRow>(
+            r#"
+            SELECT
+                ac.email,
+                a.status,
+                a.deleted_at
+            FROM account AS a
+            INNER JOIN account_credentials AS ac
+                ON ac.account_id = a.id
+            WHERE a.id = $1
+            FOR UPDATE OF a
+            "#,
+        )
+        .bind(account_id)
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(RestoreAccountRepositoryError::Database)?
+        else {
+            return Err(RestoreAccountRepositoryError::AccountNotFound);
+        };
+
+        RestoreState {
+            is_deleted: target.deleted_at.is_some(),
+        }
+        .validate()
+        .map_err(|error| match error {
+            RestoreValidationError::AccountNotDeleted => {
+                RestoreAccountRepositoryError::AccountNotDeleted
+            }
+        })?;
+
+        let updated = sqlx::query_as::<_, AccountUpdatedRow>(
+            r#"
+            UPDATE account
+            SET
+                status = 'inactive',
+                deleted_at = NULL,
+                deleted_by = NULL,
+                updated_at = CURRENT_TIMESTAMP,
+                updated_by = $2
+            WHERE id = $1
+              AND deleted_at IS NOT NULL
+            RETURNING
+                id,
+                created_at,
+                updated_at,
+                status,
+                deleted_at
+            "#,
+        )
+        .bind(account_id)
+        .bind(actor_id)
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(RestoreAccountRepositoryError::Database)?;
+
+        tx.commit()
+            .await
+            .map_err(RestoreAccountRepositoryError::Database)?;
+
+        Ok(ViewedAccount {
+            id: updated.id,
+            email: target.email,
+            status: updated.status,
+            created_at: updated.created_at,
+            updated_at: updated.updated_at,
+            deleted_at: updated.deleted_at,
+        })
+    }
 }
 
 #[derive(Debug, sqlx::FromRow)]
@@ -805,3 +886,22 @@ impl std::fmt::Display for ActivateAccountRepositoryError {
 }
 
 impl std::error::Error for ActivateAccountRepositoryError {}
+
+#[derive(Debug)]
+pub enum RestoreAccountRepositoryError {
+    AccountNotFound,
+    AccountNotDeleted,
+    Database(sqlx::Error),
+}
+
+impl std::fmt::Display for RestoreAccountRepositoryError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::AccountNotFound => f.write_str("account not found"),
+            Self::AccountNotDeleted => f.write_str("account is not soft deleted"),
+            Self::Database(error) => write!(f, "{error}"),
+        }
+    }
+}
+
+impl std::error::Error for RestoreAccountRepositoryError {}

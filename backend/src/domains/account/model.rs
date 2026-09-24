@@ -217,6 +217,26 @@ pub enum ActivationValidationError {
     AccountAlreadyActive,
 }
 
+#[derive(Debug, PartialEq, Eq)]
+pub struct RestoreState {
+    pub is_deleted: bool,
+}
+
+impl RestoreState {
+    pub fn validate(self) -> Result<(), RestoreValidationError> {
+        if !self.is_deleted {
+            return Err(RestoreValidationError::AccountNotDeleted);
+        }
+
+        Ok(())
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum RestoreValidationError {
+    AccountNotDeleted,
+}
+
 impl From<CreatedAccount> for AccountResponse {
     fn from(account: CreatedAccount) -> Self {
         Self {
