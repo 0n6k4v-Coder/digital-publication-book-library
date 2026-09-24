@@ -690,11 +690,11 @@ HTTP `403 Forbidden` is used when the server understands the request but refuses
 
 ## 10.6 Integration
 
-| ID          | Description                                       | Status         | Reason |
-| ----------- | ------------------------------------------------- | ------ | ------ |
-| `AZ_INT_01` | Authentication → Authorization principal contract | 🟢 Implemented |        |
-| `AZ_INT_02` | Account → Authorization account reference         | 🟢 Implemented |        |
-| `AZ_INT_03` | Authorization middleware/check boundary           | 🟢 Implemented |        |
+| ID          | Description                                                   | Status         | Reason |
+| ----------- | ------------------------------------------------------------- | -------------- | ------ |
+| `AZ_INT_01` | Authentication → Authorization principal contract             | 🟢 Implemented |        |
+| `AZ_INT_02` | Account → Authorization account reference                     | 🟢 Implemented |        |
+| `AZ_INT_03` | Authorization middleware/check boundary for protected actions | 🟢 Implemented |        |
 
 ---
 
