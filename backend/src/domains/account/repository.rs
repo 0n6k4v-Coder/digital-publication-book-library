@@ -276,8 +276,6 @@ impl AccountRepository {
                 a.id,
                 ac.email,
                 a.status,
-                a.created_at,
-                a.updated_at,
                 a.deleted_at,
                 EXISTS (
                     SELECT 1
@@ -438,8 +436,6 @@ struct DeactivationAccountRow {
     id: Uuid,
     email: String,
     status: String,
-    created_at: OffsetDateTime,
-    updated_at: OffsetDateTime,
     deleted_at: Option<OffsetDateTime>,
     is_administrator: bool,
 }
