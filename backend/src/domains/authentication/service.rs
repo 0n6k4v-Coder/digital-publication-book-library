@@ -1,6 +1,6 @@
 use std::{net::IpAddr, sync::Arc};
 
-use argon2::password_hash::{PasswordHash, PasswordVerifier};
+use argon2::password_hash::{phc::PasswordHash, PasswordVerifier};
 use argon2::Argon2;
 use secrecy::{ExposeSecret, SecretString};
 use tokio::sync::Semaphore;
@@ -78,7 +78,6 @@ impl AuthenticationService {
                 .mark_login_attempt_failed(attempt_id)
                 .await
                 .map_err(crate::shared::error::internal_error)?;
-
             return Err(AppError::InvalidCredentials);
         }
 
@@ -116,16 +115,14 @@ impl AuthenticationService {
     ) -> Result<AuthenticationTokens, AppError> {
         let access_token = generate_opaque_token();
         let refresh_token = generate_opaque_token();
-
-        let presented_refresh_token_hash =
-            sha256_token_verifier(request.refresh_token.expose_secret());
+        let refresh_token_hash = sha256_token_verifier(request.refresh_token.expose_secret());
         let access_token_hash = sha256_token_verifier(access_token.expose_secret());
         let replacement_refresh_token_hash = sha256_token_verifier(refresh_token.expose_secret());
 
         let refreshed = self
             .repository
             .refresh_tokens(
-                &presented_refresh_token_hash,
+                &refresh_token_hash,
                 &access_token_hash,
                 &replacement_refresh_token_hash,
             )
