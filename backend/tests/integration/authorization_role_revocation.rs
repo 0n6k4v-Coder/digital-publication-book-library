@@ -1,6 +1,6 @@
 use std::{env, sync::Arc};
 
-use sqlx::PgPool;
+use sqlx::{AssertSqlSafe, PgPool};
 use time::OffsetDateTime;
 use tokio::{sync::Mutex, task::JoinSet};
 use uuid::Uuid;
@@ -336,12 +336,8 @@ async fn allows_revoking_admin_role_from_inactive_or_soft_deleted_account() {
 
     let actor_id = seed_account(&pool, "active", None).await;
     let inactive_id = seed_account(&pool, "inactive", None).await;
-    let deleted_id = seed_account(
-        &pool,
-        "inactive",
-        Some(OffsetDateTime::now_utc()),
-    )
-    .await;
+    let deleted_id =
+        seed_account(&pool, "inactive", Some(OffsetDateTime::now_utc())).await;
 
     assign_role_direct(&pool, actor_id, "account_admin", None).await;
     assign_role_direct(&pool, inactive_id, "account_admin", Some(actor_id)).await;
@@ -480,7 +476,7 @@ async fn audit_failure_rolls_back_role_revocation() {
     let function_name = format!("test_fail_role_revocation_audit_{suffix}");
     let trigger_name = format!("test_fail_role_revocation_audit_trigger_{suffix}");
 
-    sqlx::query(&format!(
+    sqlx::query(AssertSqlSafe(format!(
         r#"
         CREATE FUNCTION {function_name}()
         RETURNS trigger
@@ -491,19 +487,19 @@ async fn audit_failure_rolls_back_role_revocation() {
         END;
         $$
         "#
-    ))
+    )))
     .execute(&pool)
     .await
     .expect("create audit failure function");
 
-    sqlx::query(&format!(
+    sqlx::query(AssertSqlSafe(format!(
         r#"
         CREATE TRIGGER {trigger_name}
         BEFORE INSERT ON authorization_role_revocation_audit
         FOR EACH ROW
         EXECUTE FUNCTION {function_name}()
         "#
-    ))
+    )))
     .execute(&pool)
     .await
     .expect("create audit failure trigger");
@@ -518,17 +514,19 @@ async fn audit_failure_rolls_back_role_revocation() {
     )
     .await;
 
-    sqlx::query(&format!(
+    sqlx::query(AssertSqlSafe(format!(
         "DROP TRIGGER {trigger_name} ON authorization_role_revocation_audit"
-    ))
+    )))
     .execute(&pool)
     .await
     .expect("drop audit failure trigger");
 
-    sqlx::query(&format!("DROP FUNCTION {function_name}()"))
-        .execute(&pool)
-        .await
-        .expect("drop audit failure function");
+    sqlx::query(AssertSqlSafe(format!(
+        "DROP FUNCTION {function_name}()"
+    )))
+    .execute(&pool)
+    .await
+    .expect("drop audit failure function");
 
     assert_eq!(result, Err(RoleManagementError::Internal));
     assert!(assignment_exists(&pool, target_id, "account_viewer").await);
@@ -561,7 +559,7 @@ async fn role_assignment_delete_failure_rolls_back_audit_insert() {
         suffix.as_str()
     );
 
-    sqlx::query(&format!(
+    sqlx::query(AssertSqlSafe(format!(
         r#"
         CREATE FUNCTION {function_name}()
         RETURNS trigger
@@ -572,19 +570,19 @@ async fn role_assignment_delete_failure_rolls_back_audit_insert() {
         END;
         $$
         "#
-    ))
+    )))
     .execute(&pool)
     .await
     .expect("create assignment delete failure function");
 
-    sqlx::query(&format!(
+    sqlx::query(AssertSqlSafe(format!(
         r#"
         CREATE TRIGGER {trigger_name}
         BEFORE DELETE ON authorization_account_role
         FOR EACH ROW
         EXECUTE FUNCTION {function_name}()
         "#
-    ))
+    )))
     .execute(&pool)
     .await
     .expect("create assignment delete failure trigger");
@@ -599,17 +597,19 @@ async fn role_assignment_delete_failure_rolls_back_audit_insert() {
     )
     .await;
 
-    sqlx::query(&format!(
+    sqlx::query(AssertSqlSafe(format!(
         "DROP TRIGGER {trigger_name} ON authorization_account_role"
-    ))
+    )))
     .execute(&pool)
     .await
     .expect("drop assignment delete failure trigger");
 
-    sqlx::query(&format!("DROP FUNCTION {function_name}()"))
-        .execute(&pool)
-        .await
-        .expect("drop assignment delete failure function");
+    sqlx::query(AssertSqlSafe(format!(
+        "DROP FUNCTION {function_name}()"
+    )))
+    .execute(&pool)
+    .await
+    .expect("drop assignment delete failure function");
 
     assert_eq!(result, Err(RoleManagementError::Internal));
     assert!(assignment_exists(&pool, target_id, "account_viewer").await);

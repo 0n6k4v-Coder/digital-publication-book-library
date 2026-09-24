@@ -51,13 +51,9 @@ pub async fn assign_role(
     account_id: Uuid,
     role_name: &str,
 ) -> Result<(), RoleManagementError> {
-    authorize(
-        repository,
-        principal,
-        AUTHORIZATION_ROLE_ASSIGN_PERMISSION,
-    )
-    .await
-    .map_err(map_authorization_error)?;
+    authorize(repository, principal, AUTHORIZATION_ROLE_ASSIGN_PERMISSION)
+        .await
+        .map_err(map_authorization_error)?;
 
     repository
         .assign_role(account_id, role_name, principal.account_id)
@@ -71,13 +67,9 @@ pub async fn revoke_role(
     account_id: Uuid,
     role_name: &str,
 ) -> Result<(), RoleManagementError> {
-    authorize(
-        repository,
-        principal,
-        AUTHORIZATION_ROLE_REVOKE_PERMISSION,
-    )
-    .await
-    .map_err(map_authorization_error)?;
+    authorize(repository, principal, AUTHORIZATION_ROLE_REVOKE_PERMISSION)
+        .await
+        .map_err(map_authorization_error)?;
 
     repository
         .revoke_role(account_id, role_name, principal.account_id)
@@ -119,9 +111,7 @@ fn map_authorization_error(error: AppError) -> RoleManagementError {
     }
 }
 
-fn map_assignment_repository_error(
-    error: RoleAssignmentRepositoryError,
-) -> RoleManagementError {
+fn map_assignment_repository_error(error: RoleAssignmentRepositoryError) -> RoleManagementError {
     match error {
         RoleAssignmentRepositoryError::Validation(error) => match error {
             RoleAssignmentValidationError::RoleNotFound => RoleManagementError::RoleNotFound,
@@ -138,9 +128,7 @@ fn map_assignment_repository_error(
     }
 }
 
-fn map_revocation_repository_error(
-    error: RoleRevocationRepositoryError,
-) -> RoleManagementError {
+fn map_revocation_repository_error(error: RoleRevocationRepositoryError) -> RoleManagementError {
     match error {
         RoleRevocationRepositoryError::Validation(error) => match error {
             RoleRevocationValidationError::RoleAssignmentNotFound => {
