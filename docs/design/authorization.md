@@ -305,12 +305,12 @@ Primary key:
 
 **ID:** `AZ_DM_04`
 
-| Column       | Type          | Null | Constraint                   |
-| ------------ | ------------- | ---: | ---------------------------- |
-| `account_id` | `uuid`        |   No | References `account.id`      |
-| `role_id`    | `uuid`        |   No | FK → `authorization_role.id` |
-| `created_at` | `timestamptz` |   No |                              |
-| `created_by` | `uuid`        |  Yes | Authenticated actor          |
+| Column       | Type          | Null | Constraint                                          |
+| ------------ | ------------- | ---: | --------------------------------------------------- |
+| `account_id` | `uuid`        |   No | FK → `account.id`; `ON DELETE CASCADE`              |
+| `role_id`    | `uuid`        |   No | FK → `authorization_role.id`; `ON DELETE NO ACTION` |
+| `created_at` | `timestamptz` |   No |                                                     |
+| `created_by` | `uuid`        |  Yes | FK → `account.id`; `ON DELETE SET NULL`             |
 
 Primary key:
 
@@ -318,7 +318,37 @@ Primary key:
 (account_id, role_id)
 ```
 
-One account may have multiple roles.
+Rules:
+
+1. One role assignment belongs to exactly one Account.
+2. An Account may have multiple roles.
+3. The role assignment cannot survive deletion of its target Account.
+4. Hard deletion of an Account therefore deletes all `authorization_account_role` rows where `account_id` equals the deleted Account through `ON DELETE CASCADE`.
+5. `created_by` is optional audit metadata and does not determine whether the role assignment belongs to the target Account.
+6. When an Account that acted as `created_by` is hard-deleted, `created_by` becomes `NULL` on surviving role-assignment rows belonging to other Accounts.
+7. Deleting an Account must not delete `authorization_role` or `authorization_permission` definitions.
+8. The `role_id` foreign key therefore does not cascade from Account deletion.
+9. All referential actions caused by Account hard deletion execute inside the same database transaction as the Account deletion.
+
+### Authoritative SQL Relationship
+
+The persistence contract is equivalent to:
+
+```sql
+account_id UUID NOT NULL
+    REFERENCES account(id)
+    ON DELETE CASCADE,
+
+role_id UUID NOT NULL
+    REFERENCES authorization_role(id)
+    ON DELETE NO ACTION,
+
+created_by UUID NULL
+    REFERENCES account(id)
+    ON DELETE SET NULL
+```
+
+PostgreSQL defines `CASCADE` as deleting referencing rows and `SET NULL` as nulling referencing columns. It also defines `NO ACTION` as the default behavior when no explicit action is supplied. The actions above are therefore explicit business persistence decisions, not implicit database defaults. ([PostgreSQL][1])
 
 ---
 
@@ -496,6 +526,60 @@ Account
 ```
 
 The definition of which role makes an account an administrator is owned by Authorization.
+
+### Account Hard-Delete Integration Contract
+
+When `AC_UC_09` physically deletes an Account:
+
+```text
+Account
+    ↓
+DELETE account row
+    ↓
+authorization_account_role.account_id
+    ON DELETE CASCADE
+    ↓
+all role assignments for the deleted Account are removed
+```
+
+At the same time, for role assignments belonging to surviving Accounts:
+
+```text
+authorization_account_role.created_by
+    ON DELETE SET NULL
+```
+
+means:
+
+```text
+deleted creator Account
+    ↓
+surviving role assignment remains
+    ↓
+created_by becomes NULL
+```
+
+This distinction is authoritative:
+
+```text
+account_id
+    = ownership of the role assignment
+    = CASCADE
+
+created_by
+    = optional historical actor reference
+    = SET NULL
+```
+
+Account hard deletion must not delete roles, permissions, or role assignments belonging to other surviving Accounts.
+
+Authorization does not need a separate application-level cleanup call after Account deletion. The database referential actions provide the required cleanup atomically within the Account transaction.
+
+If the Account transaction rolls back, the Authorization role assignments and creator references remain unchanged. If it commits, no role assignment belonging to the deleted Account remains. SQLx provides the transaction boundary needed for this atomic behavior. ([Docs.rs][2])
+
+### Authorization Security Boundary
+
+Authorization continues to evaluate access server-side using the authenticated principal and current server-side role/permission state. It must not trust client-supplied roles or permissions. This remains consistent with the OWASP least-privilege and deny-by-default authorization model. ([OWASP Cheat Sheet Series][3])
 
 ## 8.3 API Request Flow
 
@@ -732,6 +816,12 @@ Authentication
 Authorization
     "WHAT MAY THE CALLER DO?"
 
-Account / Business Domain
-    "WHAT HAPPENS WHEN THE ACTION IS ALLOWED?"
+The business domain answers:
+
+```text
+WHAT HAPPENS WHEN ACCESS IS ALLOWED?
 ```
+
+[1]: https://www.postgresql.org/docs/18/sql-createtable.html?utm_source=chatgpt.com "PostgreSQL: Documentation: 18: CREATE TABLE"
+[2]: https://docs.rs/sqlx/latest/sqlx/struct.Transaction.html?utm_source=chatgpt.com "Transaction in sqlx - Rust"
+[3]: https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html?utm_source=chatgpt.com "Authorization - OWASP Cheat Sheet Series"

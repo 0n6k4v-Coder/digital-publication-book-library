@@ -353,15 +353,15 @@ A successful refresh must invalidate the presented refresh token before the new 
 
 **ID:** `AU_DM_01`
 
-| Column                  | Type          | Null | Constraint              |
-| ----------------------- | ------------- | ---: | ----------------------- |
-| `id`                    | `uuid`        |   No | PK                      |
-| `account_id`            | `uuid`        |   No | References `account.id` |
-| `created_at`            | `timestamptz` |   No |                         |
-| `expires_at`            | `timestamptz` |   No |                         |
-| `last_authenticated_at` | `timestamptz` |   No |                         |
-| `revoked_at`            | `timestamptz` |  Yes |                         |
-| `revocation_reason`     | `text`        |  Yes |                         |
+| Column                  | Type          | Null | Constraint                             |
+| ----------------------- | ------------- | ---: | -------------------------------------- |
+| `id`                    | `uuid`        |   No | PK                                     |
+| `account_id`            | `uuid`        |   No | FK → `account.id`; `ON DELETE CASCADE` |
+| `created_at`            | `timestamptz` |   No |                                        |
+| `expires_at`            | `timestamptz` |   No |                                        |
+| `last_authenticated_at` | `timestamptz` |   No |                                        |
+| `revoked_at`            | `timestamptz` |  Yes |                                        |
+| `revocation_reason`     | `text`        |  Yes |                                        |
 
 Rules:
 
@@ -371,6 +371,8 @@ Rules:
 * `last_authenticated_at` is set when account authentication succeeds.
 * `last_authenticated_at` is not modified by refresh.
 * Each session belongs to exactly one Account.
+* When an Account is hard-deleted, its Authentication sessions are deleted automatically through `ON DELETE CASCADE`.
+* Authentication session deletion is part of the same database transaction as Account hard deletion.
 
 The policy used to calculate `expires_at` is outside this document and must be defined before implementation of session creation.
 
@@ -378,15 +380,15 @@ The policy used to calculate `expires_at` is outside this document and must be d
 
 **ID:** `AU_DM_02`
 
-| Column       | Type          | Null | Constraint                       |
-| ------------ | ------------- | ---: | -------------------------------- |
-| `id`         | `uuid`        |   No | PK                               |
-| `session_id` | `uuid`        |   No | FK → `authentication_session.id` |
-| `token_hash` | `text`        |   No | SHA-256 verifier; unique         |
-| `created_at` | `timestamptz` |   No |                                  |
-| `expires_at` | `timestamptz` |   No |                                  |
-| `used_at`    | `timestamptz` |  Yes |                                  |
-| `revoked_at` | `timestamptz` |  Yes |                                  |
+| Column       | Type          | Null | Constraint                                            |
+| ------------ | ------------- | ---: | ----------------------------------------------------- |
+| `id`         | `uuid`        |   No | PK                                                    |
+| `session_id` | `uuid`        |   No | FK → `authentication_session.id`; `ON DELETE CASCADE` |
+| `token_hash` | `text`        |   No | SHA-256 verifier; unique                              |
+| `created_at` | `timestamptz` |   No |                                                       |
+| `expires_at` | `timestamptz` |   No |                                                       |
+| `used_at`    | `timestamptz` |  Yes |                                                       |
+| `revoked_at` | `timestamptz` |  Yes |                                                       |
 
 Rules:
 
@@ -398,6 +400,7 @@ Rules:
 * A refresh token is invalid when `revoked_at IS NOT NULL`.
 * A refresh token is invalid when its authentication session is revoked or expired.
 * Each newly issued refresh token expires 2592000 seconds after issuance.
+* Deleting an authentication session deletes its refresh-token records through `ON DELETE CASCADE`.
 
 ## 4.3 `authentication_access_token`
 
@@ -420,7 +423,7 @@ Rules:
 * A token is invalid when `expires_at <= current_time`.
 * A token is invalid when its session is revoked or expired.
 * A token is invalid when its account is inactive or soft-deleted.
-* Deleting an authentication session deletes its access-token records.
+* Deleting an authentication session deletes its access-token records through `ON DELETE CASCADE`.
 * Validation performs exact lookup using the server-computed `token_hash`.
 
 ## 4.4 Token Storage Rule
@@ -752,6 +755,49 @@ Authentication does not own:
 * Account password hash storage
 * Account lifecycle
 
+### Account Hard-Delete Contract
+
+Account hard deletion is authoritative for invalidating Authentication state belonging to the deleted Account.
+
+Authentication persistence must therefore define:
+
+```text
+authentication_session.account_id
+    REFERENCES account(id)
+    ON DELETE CASCADE
+```
+
+Authentication token persistence must define:
+
+```text
+authentication_access_token.session_id
+    REFERENCES authentication_session(id)
+    ON DELETE CASCADE
+
+authentication_refresh_token.session_id
+    REFERENCES authentication_session(id)
+    ON DELETE CASCADE
+```
+
+Consequently:
+
+```text
+DELETE account
+    ↓
+CASCADE authentication_session
+    ↓
+CASCADE authentication_access_token
+CASCADE authentication_refresh_token
+```
+
+Authentication must not require a separate post-delete cleanup call from the Account service.
+
+The Account hard-delete transaction is the transaction boundary for these cascades. If the transaction rolls back, Authentication state remains unchanged. If the transaction commits, no session or token record belonging to the deleted Account remains.
+
+This contract is consistent with PostgreSQL's `CASCADE` semantics for dependent records that cannot exist independently. ([PostgreSQL][4])
+
+Authentication does not define or execute the Account administrator-invariant check. Account owns that invariant.
+
 ## 7.2 Authentication → Authorization
 
 Authentication provides:
@@ -802,6 +848,20 @@ Bearer token
 All authentication identity and lifecycle values come from server-side state.
 
 Client-supplied identity, session, role, permission, or authorization data cannot override this state.
+
+### Hard-Delete Invalidation Guarantee
+
+After successful Account hard-delete commit:
+
+```text
+authentication_session row       = absent
+authentication_access_token rows  = absent
+authentication_refresh_token rows = absent
+```
+
+Therefore no Authentication credential belonging to the deleted Account remains usable.
+
+A transaction failure must not produce partial Authentication cleanup. SQLx transactions roll back when they are not successfully committed. ([Docs.rs][2])
 
 ## 7.4 Token Lifecycle
 
@@ -1055,3 +1115,6 @@ The business domain answers:
 ```text
 WHAT HAPPENS WHEN ACCESS IS ALLOWED?
 ```
+
+[2]: https://docs.rs/sqlx/latest/sqlx/struct.Transaction.html?utm_source=chatgpt.com "Transaction in sqlx - Rust"
+[4]: https://www.postgresql.org/docs/18/ddl-constraints.html?utm_source=chatgpt.com "PostgreSQL: Documentation: 18: 5.5. Constraints"
