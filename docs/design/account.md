@@ -31,6 +31,7 @@
 
    * [4.1 `account`](#41-account)
    * [4.2 `account_credentials`](#42-account_credentials)
+   * [4.3 `account_administrator_invariant_lock`](#43-account_administrator_invariant_lock)
 
 5. [Use Cases](#5-use-cases)
 
@@ -269,17 +270,57 @@ SOFT DELETED
 
 ### Lifecycle Rules
 
-| ID                    | Rule                                                                                                       |
-| --------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `AC_DEC_LIFECYCLE_01` | A soft-deleted account must have `status = inactive`.                                                      |
-| `AC_DEC_LIFECYCLE_02` | A soft-deleted account must not authenticate.                                                              |
-| `AC_DEC_LIFECYCLE_03` | Restoring a soft-deleted account changes its status to `inactive`.                                         |
-| `AC_DEC_LIFECYCLE_04` | Hard deletion physically removes the account record.                                                       |
-| `AC_DEC_LIFECYCLE_05` | Hard deletion is an explicit operation.                                                                    |
-| `AC_DEC_LIFECYCLE_06` | Hard deletion never occurs as a side effect of normal updates.                                             |
-| `AC_DEC_LIFECYCLE_07` | At least one active, non-deleted administrator must always remain.                                         |
-| `AC_DEC_LIFECYCLE_08` | Last-administrator protection must be enforced transactionally.                                            |
-| `AC_DEC_LIFECYCLE_09` | For the first administrator, `created_by`, `updated_by`, and `deleted_by` are `NULL` when no actor exists. |
+| ID                    | Rule                                                                                                                                                                                                                                            |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AC_DEC_LIFECYCLE_01` | A soft-deleted account must have `status = inactive`.                                                                                                                                                                                           |
+| `AC_DEC_LIFECYCLE_02` | A soft-deleted account must not authenticate.                                                                                                                                                                                                   |
+| `AC_DEC_LIFECYCLE_03` | Restoring a soft-deleted account changes its status to `inactive`.                                                                                                                                                                              |
+| `AC_DEC_LIFECYCLE_04` | Hard deletion physically removes the account record.                                                                                                                                                                                            |
+| `AC_DEC_LIFECYCLE_05` | Hard deletion is an explicit operation.                                                                                                                                                                                                         |
+| `AC_DEC_LIFECYCLE_06` | Hard deletion never occurs as a side effect of normal updates.                                                                                                                                                                                  |
+| `AC_DEC_LIFECYCLE_07` | At least one active, non-deleted administrator must always remain.                                                                                                                                                                              |
+| `AC_DEC_LIFECYCLE_08` | Last-administrator protection must be enforced transactionally.                                                                                                                                                                                 |
+| `AC_DEC_LIFECYCLE_09` | For the first administrator, `created_by`, `updated_by`, and `deleted_by` are `NULL` when no actor exists.                                                                                                                                      |
+| `AC_DEC_LIFECYCLE_10` | For Account lifecycle invariants, an administrator is an Account with an enabled `account_admin` role assignment as defined by the Authorization domain. Account does not infer administrator status from client-supplied roles or permissions. |
+| `AC_DEC_LIFECYCLE_11` | Hard deletion of an active, non-deleted administrator is permitted only when at least one other active, non-deleted administrator remains after the deletion.                                                                                   |
+| `AC_DEC_LIFECYCLE_12` | Every operation that can change the set of active, non-deleted administrators must execute its invariant check and state change inside one database transaction and must first lock the single administrator-invariant lock row.                |
+| `AC_DEC_LIFECYCLE_13` | After acquiring the administrator-invariant lock, the operation must re-evaluate the target Account, administrator membership, and active-administrator count using current transactional state.                                                |
+| `AC_DEC_LIFECYCLE_14` | Account lifecycle operations that lock multiple Account rows must acquire those locks in deterministic `account.id ASC` order.                                                                                                                  |
+| `AC_DEC_LIFECYCLE_15` | Authorization operations that add or remove the `account_admin` role must acquire the same administrator-invariant lock before evaluating or changing administrator membership.                                                                 |
+| `AC_DEC_LIFECYCLE_16` | Hard deletion must invalidate all Authentication state belonging to the deleted Account and remove all Authorization role assignments belonging to that Account through the defined cross-domain persistence relationships.                     |
+| `AC_DEC_LIFECYCLE_17` | Authentication and Authorization cleanup required by hard deletion must succeed atomically with the Account deletion. If any required database operation fails, the transaction must roll back.                                                 |
+
+### Administrator Invariant Lock
+
+Account persistence owns a singleton serialization table:
+
+```sql
+CREATE TABLE account_administrator_invariant_lock (
+    id SMALLINT PRIMARY KEY,
+    CONSTRAINT account_administrator_invariant_lock_singleton
+        CHECK (id = 1)
+);
+
+INSERT INTO account_administrator_invariant_lock (id)
+VALUES (1);
+```
+
+The table contains exactly one row.
+
+The row exists solely to serialize transactions that can change the set of active, non-deleted administrators.
+
+Every participating transaction must acquire the row with:
+
+```sql
+SELECT id
+FROM account_administrator_invariant_lock
+WHERE id = 1
+FOR UPDATE;
+```
+
+The lock is held until transaction commit or rollback.
+
+The singleton row must not be deleted or updated by application operations.
 
 ### Account Update Rules
 
@@ -341,6 +382,16 @@ account_credentials
 `account_credentials.account_id` is both the primary key and foreign key.
 
 **One Account → Exactly One Credential Set**
+
+## 4.3 `account_administrator_invariant_lock`
+
+**ID:** `AC_DM_03`
+
+| Column | Type       | Null | Constraint           |
+| ------ | ---------- | ---: | -------------------- |
+| `id`   | `smallint` |   No | PK, `CHECK (id = 1)` |
+
+The table contains exactly one singleton row (`id = 1`) used exclusively to serialize operations that can change the set of active, non-deleted administrators.
 
 ---
 
@@ -589,6 +640,39 @@ flowchart LR
     UC --> Account
     Account --> Credentials
 ```
+
+### Rules
+
+1. The request must be authenticated using `Authorization: Bearer <token>`.
+2. The authenticated principal must have the `account:purge` permission.
+3. Authorization must be evaluated server-side using the authenticated principal and Authorization domain state.
+4. The target Account must exist.
+5. The target Account may be active, inactive, or soft-deleted.
+6. Administrator status is determined by the Authorization domain's enabled `account_admin` role assignment.
+7. The operation must execute inside one database transaction.
+8. The transaction must first acquire the administrator-invariant lock.
+9. After acquiring that lock, the operation must re-evaluate the target Account, administrator membership, and active-administrator count.
+10. If the target is an active, non-deleted administrator and deletion would leave no active, non-deleted administrator, the operation must fail with `409 Conflict` and code `LAST_ACTIVE_ADMINISTRATOR`.
+11. If multiple Account rows are locked as part of invariant evaluation, they must be locked in deterministic `account.id ASC` order.
+12. The Account row must be physically deleted.
+13. Account Credentials records must be removed through their defined referential action.
+14. Authentication state bound to the deleted Account must be invalidated as part of the same transaction.
+15. Authorization role assignments belonging to the deleted Account must be removed through their defined referential action.
+16. No authentication session, access token, refresh token, or Authorization role assignment belonging to the deleted Account may remain usable after the transaction commits.
+17. The complete operation must commit atomically.
+18. A failure in the Account deletion or required dependent cleanup must roll back the transaction.
+19. The operation must not return Account, credential, authentication, or authorization data.
+
+### Success
+
+**`204 No Content`**
+
+### Errors
+
+| Status | Code                        | Definition                                                              |
+| ------ | --------------------------- | ----------------------------------------------------------------------- |
+| `404`  | `ACCOUNT_NOT_FOUND`         | The Account does not exist.                                             |
+| `409`  | `LAST_ACTIVE_ADMINISTRATOR` | Hard deletion would leave no active, non-deleted administrator account. |
 
 ## 5.10 Change Email
 
@@ -981,11 +1065,31 @@ Response body: [Account Response](#614-account-response)
 
 `DELETE /admin/accounts/{id}/purge`
 
+### Authorization
+
+The authenticated principal must have:
+
+```text
+account:purge
+```
+
+Authorization must be evaluated server-side using the Authentication-provided `AuthenticatedPrincipal` and Authorization domain state.
+
 ### Rules
 
-* Account must exist.
-* The Account row is physically deleted.
-* The related `account_credentials` row is deleted by `ON DELETE CASCADE`.
+* The `{id}` path parameter must be a valid UUID.
+* The target Account must exist.
+* The target Account may be active, inactive, or soft-deleted.
+* The operation must execute in a single database transaction.
+* The transaction must acquire the administrator-invariant lock before evaluating the last-administrator invariant.
+* The operation must re-evaluate the target Account, administrator membership, and active-administrator count after acquiring that lock.
+* An active, non-deleted administrator must not be hard-deleted when it is the last active, non-deleted administrator.
+* When the invariant would be violated, return `409 Conflict` with code `LAST_ACTIVE_ADMINISTRATOR`.
+* Account-owned dependent records are removed through their defined referential actions.
+* Authentication state belonging to the Account is invalidated as part of the same transaction.
+* Authorization role assignments belonging to the Account are removed through their defined referential action.
+* All required cleanup is atomic with the Account deletion.
+* Any failure rolls back the complete operation.
 
 ### Success
 
@@ -993,9 +1097,10 @@ Response body: [Account Response](#614-account-response)
 
 ### Errors
 
-| Status | Code                |
-| ------ | ------------------- |
-| `404`  | `ACCOUNT_NOT_FOUND` |
+| Status | Code                        | Definition                                                              |
+| ------ | --------------------------- | ----------------------------------------------------------------------- |
+| `404`  | `ACCOUNT_NOT_FOUND`         | The Account does not exist.                                             |
+| `409`  | `LAST_ACTIVE_ADMINISTRATOR` | Hard deletion would leave no active, non-deleted administrator account. |
 
 ## 6.12 Change Email
 
@@ -1248,12 +1353,31 @@ The status-code meanings follow HTTP Semantics defined by RFC 9110.
 | `AC_DEC_CREDENTIAL_05` | Email or password changes update credential timestamp                                                          | 🔴 Not Implemented |                                                                                                                                                                                                |
 | `AC_DEC_CREDENTIAL_06` | Credential changes do not update `account.updated_at`                                                          | 🔴 Not Implemented |                                                                                                                                                                                                |
 
+| `AC_DEC_LIFECYCLE_01`  | Soft-deleted account must have `status = inactive`                                   | 🟢 Implemented     |                                                                                                                                                                                                |
+| `AC_DEC_LIFECYCLE_02`  | Soft-deleted account must not authenticate                                           | 🟡 Partial         | The Admin API Bearer authentication layer rejects soft-deleted accounts, but the account email/password authentication flow is not implemented yet.                                           |
+| `AC_DEC_LIFECYCLE_03`  | Restored account returns to `inactive`                                               | 🟢 Implemented     |                                                                                                                                                                                                |
+| `AC_DEC_LIFECYCLE_04`  | Hard deletion physically removes the account record                                  | 🔴 Not Implemented |                                                                                                                                                                                                |
+| `AC_DEC_LIFECYCLE_05`  | Hard deletion is an explicit operation                                               | 🔴 Not Implemented |                                                                                                                                                                                                |
+| `AC_DEC_LIFECYCLE_06`  | Hard deletion never occurs during normal updates                                     | 🔴 Not Implemented |                                                                                                                                                                                                |
+| `AC_DEC_LIFECYCLE_07`  | At least one active, non-deleted administrator must remain                           | 🟢 Implemented     |                                                                                                                                                                                                |
+| `AC_DEC_LIFECYCLE_08`  | Last-administrator protection must be transactional                                  | 🟢 Implemented     |                                                                                                                                                                                                |
+| `AC_DEC_LIFECYCLE_09`  | First administrator has null actor references when no actor exists                   | 🟢 Implemented     |                                                                                                                                                                                                |
+| `AC_DEC_LIFECYCLE_10`  | Administrator status defined by enabled `account_admin` Authorization role assignment | 🔴 Not Implemented |                                                                                                                                                                                                |
+| `AC_DEC_LIFECYCLE_11`  | Hard deletion of active admin requires at least one remaining active admin           | 🔴 Not Implemented |                                                                                                                                                                                                |
+| `AC_DEC_LIFECYCLE_12`  | Admin-changing operations execute in single transaction locking invariant row        | 🔴 Not Implemented |                                                                                                                                                                                                |
+| `AC_DEC_LIFECYCLE_13`  | Re-evaluate admin count and membership under invariant lock                          | 🔴 Not Implemented |                                                                                                                                                                                                |
+| `AC_DEC_LIFECYCLE_14`  | Multi-row Account locking follows deterministic `account.id ASC` order               | 🔴 Not Implemented |                                                                                                                                                                                                |
+| `AC_DEC_LIFECYCLE_15`  | Authorization `account_admin` changes acquire invariant lock                         | 🔴 Not Implemented |                                                                                                                                                                                                |
+| `AC_DEC_LIFECYCLE_16`  | Hard deletion invalidates Authentication state and removes role assignments          | 🔴 Not Implemented |                                                                                                                                                                                                |
+| `AC_DEC_LIFECYCLE_17`  | Hard deletion cleanup commits atomically or rolls back                               | 🔴 Not Implemented |                                                                                                                                                                                                |
+
 ## 7.4 Data Model
 
-| ID         | Description                 | Status         | Reason |
-| ---------- | --------------------------- | -------------- | ------ |
-| `AC_DM_01` | `account` table             | 🟢 Implemented |        |
-| `AC_DM_02` | `account_credentials` table | 🟢 Implemented |        |
+| ID         | Description                                       | Status             | Reason |
+| ---------- | ------------------------------------------------- | ------------------ | ------ |
+| `AC_DM_01` | `account` table                                   | 🟢 Implemented     |        |
+| `AC_DM_02` | `account_credentials` table                       | 🟢 Implemented     |        |
+| `AC_DM_03` | `account_administrator_invariant_lock` lock table | 🔴 Not Implemented |        |
 
 ## 7.5 Use Cases
 
