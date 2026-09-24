@@ -1,7 +1,9 @@
 use std::sync::Arc;
 
 use secrecy::SecretString;
+use thiserror::Error;
 use tokio::sync::Semaphore;
+use unicode_normalization::UnicodeNormalization;
 use uuid::Uuid;
 
 use crate::shared::{
@@ -15,11 +17,11 @@ use crate::shared::{
 use super::{
     model::{
         CreateAccountRequest, CreatedAccount, ListAccountsQuery, ListAccountsQueryValidationError,
-        ListedAccounts, ViewedAccount,
+        ListedAccounts, UpdateAccountRequest, ViewedAccount,
     },
     repository::{
         AccountRepository, CreateAccountRepositoryError, ListAccountsRepositoryError,
-        ViewAccountRepositoryError,
+        UpdateAccountRepositoryError, ViewAccountRepositoryError,
     },
 };
 
@@ -33,12 +35,12 @@ impl AccountService {
     pub fn new(
         repository: AccountRepository,
         password_policy: PasswordPolicy,
-        password_hash_semaphore: Arc<Semaphore>,
+        password_hash_concurrency: Arc<Semaphore>,
     ) -> Self {
         Self {
             repository,
             password_policy,
-            password_hash_semaphore,
+            password_hash_semaphore: password_hash_concurrency,
         }
     }
 
@@ -106,6 +108,35 @@ impl AccountService {
             .ok_or(AppError::AccountNotFound)
     }
 
+    pub async fn update_account(
+        &self,
+        actor_id: Uuid,
+        account_id: Uuid,
+        request: UpdateAccountRequest,
+    ) -> Result<ViewedAccount, AppError> {
+        let display_name = match request.display_name {
+            Some(None) => None,
+            Some(Some(value)) => {
+                Some(normalize_display_name(&value).map_err(map_display_name_validation)?)
+            }
+            None => {
+                return Err(AppError::Validation(
+                    "The PATCH document must contain at least one supported field.",
+                ))
+            }
+        };
+
+        self.repository
+            .update_display_name(account_id, actor_id, display_name.as_deref())
+            .await
+            .map_err(|error| match error {
+                UpdateAccountRepositoryError::Database(error) => {
+                    crate::shared::error::internal_error(error)
+                }
+            })?
+            .ok_or(AppError::AccountNotFound)
+    }
+
     async fn hash_password(&self, password: SecretString) -> Result<String, AppError> {
         let permit = self
             .password_hash_semaphore
@@ -123,6 +154,26 @@ impl AccountService {
             Ok(Err(_)) | Err(_) => Err(AppError::Internal),
         }
     }
+}
+
+pub fn normalize_display_name(input: &str) -> Result<String, DisplayNameValidationError> {
+    let trimmed = input.trim();
+    let normalized = trimmed.nfc().collect::<String>();
+    let length = normalized.chars().count();
+
+    match length {
+        0 => Err(DisplayNameValidationError::Empty),
+        1..=100 => Ok(normalized),
+        _ => Err(DisplayNameValidationError::TooLong),
+    }
+}
+
+#[derive(Debug, Error, PartialEq, Eq)]
+pub enum DisplayNameValidationError {
+    #[error("display name is empty")]
+    Empty,
+    #[error("display name is too long")]
+    TooLong,
 }
 
 fn map_email_validation(error: EmailValidationError) -> AppError {
@@ -157,6 +208,16 @@ fn map_list_accounts_query_validation(error: ListAccountsQueryValidationError) -
         }
         ListAccountsQueryValidationError::InvalidStatus => {
             AppError::Validation("Status must be active or inactive.")
+        }
+    }
+}
+
+fn map_display_name_validation(error: DisplayNameValidationError) -> AppError {
+    match error {
+        DisplayNameValidationError::Empty | DisplayNameValidationError::TooLong => {
+            AppError::Validation(
+                "Display name must contain between 1 and 100 Unicode scalar values after trimming.",
+            )
         }
     }
 }

@@ -1,12 +1,14 @@
 use axum::{
+    body::to_bytes,
     extract::{
         rejection::{JsonRejection, QueryRejection},
-        FromRequestParts, Path, Query, State,
+        FromRequestParts, Path, Query, Request, State,
     },
     http::{header, request::Parts, HeaderValue, StatusCode},
     response::{IntoResponse, Response},
     Json,
 };
+use serde_json::Value;
 use uuid::Uuid;
 
 use crate::{
@@ -14,6 +16,7 @@ use crate::{
     domains::{
         authentication::model::AuthenticatedPrincipal,
         authorization::{
+            extractor::{AuthorizedAccountCreate, AuthorizedAccountUpdate},
             repository::AuthorizationRepository,
             service::{authorize, ACCOUNT_VIEW_DELETED_PERMISSION, ACCOUNT_VIEW_PERMISSION},
         },
@@ -22,13 +25,18 @@ use crate::{
 };
 
 use super::{
-    model::{AccountListResponse, AccountResponse, CreateAccountRequest, ListAccountsQuery},
+    model::{
+        AccountListResponse, AccountResponse, CreateAccountRequest, ListAccountsQuery,
+        UpdateAccountRequest,
+    },
     repository::AccountRepository,
     service::AccountService,
 };
 
+const MAX_UPDATE_ACCOUNT_BODY_BYTES: usize = 2 * 1024 * 1024;
+
 pub async fn create_account(
-    authorized: crate::domains::authorization::extractor::AuthorizedAccountCreate,
+    authorized: AuthorizedAccountCreate,
     State(state): State<AppState>,
     request: Result<Json<CreateAccountRequest>, JsonRejection>,
 ) -> Result<Response, AppError> {
@@ -145,4 +153,58 @@ pub async fn view_account(
     add_no_store(response.headers_mut());
 
     Ok(response)
+}
+
+pub async fn update_account(
+    AccountId(account_id): AccountId,
+    authorized: AuthorizedAccountUpdate,
+    State(state): State<AppState>,
+    request: Request,
+) -> Result<Response, AppError> {
+    if !has_merge_patch_content_type(&request) {
+        return Err(AppError::UnsupportedMediaType);
+    }
+
+    let body = to_bytes(request.into_body(), MAX_UPDATE_ACCOUNT_BODY_BYTES)
+        .await
+        .map_err(|_| {
+            AppError::InvalidRequest("The request body is malformed or exceeds the allowed size.")
+        })?;
+
+    let value = serde_json::from_slice::<Value>(&body)
+        .map_err(|_| AppError::InvalidRequest("The request body must contain valid JSON."))?;
+
+    let patch = serde_json::from_value::<UpdateAccountRequest>(value).map_err(|_| {
+        AppError::Validation("The PATCH document contains unsupported fields or invalid values.")
+    })?;
+
+    let service = AccountService::new(
+        AccountRepository::new(state.pool.clone()),
+        state.password_policy.clone(),
+        state.password_hash_semaphore.clone(),
+    );
+
+    let account = service
+        .update_account(authorized.account_id(), account_id, patch)
+        .await?;
+
+    let response_body = AccountResponse::from(account);
+
+    let mut response = (StatusCode::OK, Json(response_body)).into_response();
+    add_no_store(response.headers_mut());
+
+    Ok(response)
+}
+
+fn has_merge_patch_content_type(request: &Request) -> bool {
+    request
+        .headers()
+        .get(header::CONTENT_TYPE)
+        .and_then(|value| value.to_str().ok())
+        .and_then(|value| value.split(';').next())
+        .is_some_and(|value| {
+            value
+                .trim()
+                .eq_ignore_ascii_case("application/merge-patch+json")
+        })
 }

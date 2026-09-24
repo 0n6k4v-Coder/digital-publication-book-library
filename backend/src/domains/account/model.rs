@@ -10,6 +10,13 @@ pub struct CreateAccountRequest {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct UpdateAccountRequest {
+    #[serde(default)]
+    pub display_name: Option<Option<String>>,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct ListAccountsQuery {
     #[serde(default = "default_page")]
     pub page: u32,

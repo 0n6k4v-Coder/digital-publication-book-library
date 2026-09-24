@@ -169,6 +169,91 @@ impl AccountRepository {
 
         Ok(row.map(ViewedAccount::from))
     }
+
+    pub async fn update_display_name(
+        &self,
+        account_id: Uuid,
+        actor_id: Uuid,
+        display_name: Option<&str>,
+    ) -> Result<Option<ViewedAccount>, UpdateAccountRepositoryError> {
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .map_err(UpdateAccountRepositoryError::Database)?;
+
+        let current = sqlx::query_as::<_, AccountUpdateTargetRow>(
+            r#"
+            SELECT
+                a.id,
+                ac.email,
+                a.display_name,
+                a.status,
+                a.created_at,
+                a.updated_at,
+                a.deleted_at
+            FROM account AS a
+            INNER JOIN account_credentials AS ac
+                ON ac.account_id = a.id
+            WHERE a.id = $1
+              AND a.deleted_at IS NULL
+            FOR UPDATE OF a
+            "#,
+        )
+        .bind(account_id)
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(UpdateAccountRepositoryError::Database)?;
+
+        let Some(current) = current else {
+            return Ok(None);
+        };
+
+        if current.display_name.as_deref() == display_name {
+            tx.commit()
+                .await
+                .map_err(UpdateAccountRepositoryError::Database)?;
+
+            return Ok(Some(current.into()));
+        }
+
+        let updated = sqlx::query_as::<_, AccountUpdatedRow>(
+            r#"
+            UPDATE account
+            SET
+                display_name = $2,
+                updated_at = CURRENT_TIMESTAMP,
+                updated_by = $3
+            WHERE id = $1
+              AND deleted_at IS NULL
+            RETURNING
+                id,
+                created_at,
+                updated_at,
+                status,
+                deleted_at
+            "#,
+        )
+        .bind(account_id)
+        .bind(display_name)
+        .bind(actor_id)
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(UpdateAccountRepositoryError::Database)?;
+
+        tx.commit()
+            .await
+            .map_err(UpdateAccountRepositoryError::Database)?;
+
+        Ok(Some(ViewedAccount {
+            id: updated.id,
+            email: current.email,
+            status: updated.status,
+            created_at: updated.created_at,
+            updated_at: updated.updated_at,
+            deleted_at: updated.deleted_at,
+        }))
+    }
 }
 
 #[derive(Debug, sqlx::FromRow)]
@@ -200,6 +285,26 @@ struct ViewedAccountRow {
     deleted_at: Option<OffsetDateTime>,
 }
 
+#[derive(Debug, sqlx::FromRow)]
+struct AccountUpdateTargetRow {
+    id: Uuid,
+    email: String,
+    display_name: Option<String>,
+    status: String,
+    created_at: OffsetDateTime,
+    updated_at: OffsetDateTime,
+    deleted_at: Option<OffsetDateTime>,
+}
+
+#[derive(Debug, sqlx::FromRow)]
+struct AccountUpdatedRow {
+    id: Uuid,
+    created_at: OffsetDateTime,
+    updated_at: OffsetDateTime,
+    status: String,
+    deleted_at: Option<OffsetDateTime>,
+}
+
 impl From<ListedAccountRow> for ListedAccount {
     fn from(row: ListedAccountRow) -> Self {
         Self {
@@ -215,6 +320,19 @@ impl From<ListedAccountRow> for ListedAccount {
 
 impl From<ViewedAccountRow> for ViewedAccount {
     fn from(row: ViewedAccountRow) -> Self {
+        Self {
+            id: row.id,
+            email: row.email,
+            status: row.status,
+            created_at: row.created_at,
+            updated_at: row.updated_at,
+            deleted_at: row.deleted_at,
+        }
+    }
+}
+
+impl From<AccountUpdateTargetRow> for ViewedAccount {
+    fn from(row: AccountUpdateTargetRow) -> Self {
         Self {
             id: row.id,
             email: row.email,
@@ -272,3 +390,18 @@ impl std::fmt::Display for ViewAccountRepositoryError {
 }
 
 impl std::error::Error for ViewAccountRepositoryError {}
+
+#[derive(Debug)]
+pub enum UpdateAccountRepositoryError {
+    Database(sqlx::Error),
+}
+
+impl std::fmt::Display for UpdateAccountRepositoryError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Database(error) => write!(f, "{error}"),
+        }
+    }
+}
+
+impl std::error::Error for UpdateAccountRepositoryError {}

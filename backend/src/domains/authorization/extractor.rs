@@ -9,7 +9,7 @@ use crate::{
 
 use super::{
     repository::AuthorizationRepository,
-    service::{authorize, ACCOUNT_CREATE_PERMISSION},
+    service::{authorize, ACCOUNT_CREATE_PERMISSION, ACCOUNT_UPDATE_PERMISSION},
 };
 
 #[derive(Clone, Copy, Debug)]
@@ -36,6 +36,37 @@ impl FromRequestParts<AppState> for AuthorizedAccountCreate {
             &AuthorizationRepository::new(state.pool.clone()),
             &principal,
             ACCOUNT_CREATE_PERMISSION,
+        )
+        .await?;
+
+        Ok(Self { principal })
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct AuthorizedAccountUpdate {
+    principal: AuthenticatedPrincipal,
+}
+
+impl AuthorizedAccountUpdate {
+    pub fn account_id(self) -> uuid::Uuid {
+        self.principal.account_id
+    }
+}
+
+impl FromRequestParts<AppState> for AuthorizedAccountUpdate {
+    type Rejection = AppError;
+
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &AppState,
+    ) -> Result<Self, Self::Rejection> {
+        let principal = authenticate_request(parts, state).await?;
+
+        authorize(
+            &AuthorizationRepository::new(state.pool.clone()),
+            &principal,
+            ACCOUNT_UPDATE_PERMISSION,
         )
         .await?;
 

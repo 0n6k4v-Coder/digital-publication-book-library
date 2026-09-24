@@ -21,6 +21,8 @@ pub enum AppError {
     InvalidRequest(&'static str),
     #[error("validation error: {0}")]
     Validation(&'static str),
+    #[error("unsupported media type")]
+    UnsupportedMediaType,
     #[error("invalid account id")]
     InvalidAccountId,
     #[error("account not found")]
@@ -68,6 +70,13 @@ impl AppError {
                 "Validation failed",
                 *detail,
                 "https://github.com/0n6k4v-Coder/digital-publication-book-library/problems/validation-error",
+            ),
+            Self::UnsupportedMediaType => (
+                StatusCode::UNSUPPORTED_MEDIA_TYPE,
+                "UNSUPPORTED_MEDIA_TYPE",
+                "Unsupported media type",
+                "The request Content-Type must be application/merge-patch+json.",
+                "https://github.com/0n6k4v-Coder/digital-publication-book-library/problems/unsupported-media-type",
             ),
             Self::InvalidAccountId => (
                 StatusCode::BAD_REQUEST,
