@@ -22,7 +22,7 @@ use super::{
     repository::{
         AccountRepository, ActivateAccountRepositoryError, CreateAccountRepositoryError,
         DeactivateAccountRepositoryError, ListAccountsRepositoryError,
-        UpdateAccountRepositoryError, ViewAccountRepositoryError,
+        SoftDeleteAccountRepositoryError, UpdateAccountRepositoryError, ViewAccountRepositoryError,
     },
 };
 
@@ -149,6 +149,17 @@ impl AccountService {
             .map_err(map_deactivate_account_repository_error)
     }
 
+    pub async fn soft_delete_account(
+        &self,
+        actor_id: Uuid,
+        account_id: Uuid,
+    ) -> Result<(), AppError> {
+        self.repository
+            .soft_delete(account_id, actor_id)
+            .await
+            .map_err(map_soft_delete_account_repository_error)
+    }
+
     pub async fn activate_account(
         &self,
         actor_id: Uuid,
@@ -209,6 +220,19 @@ fn map_deactivate_account_repository_error(error: DeactivateAccountRepositoryErr
             AppError::LastActiveAdministrator
         }
         DeactivateAccountRepositoryError::Database(error) => {
+            crate::shared::error::internal_error(error)
+        }
+    }
+}
+
+fn map_soft_delete_account_repository_error(error: SoftDeleteAccountRepositoryError) -> AppError {
+    match error {
+        SoftDeleteAccountRepositoryError::AccountNotFound => AppError::AccountNotFound,
+        SoftDeleteAccountRepositoryError::AccountAlreadyDeleted => AppError::AccountAlreadyDeleted,
+        SoftDeleteAccountRepositoryError::LastActiveAdministrator => {
+            AppError::LastActiveAdministrator
+        }
+        SoftDeleteAccountRepositoryError::Database(error) => {
             crate::shared::error::internal_error(error)
         }
     }
@@ -302,6 +326,28 @@ mod tests {
         assert!(matches!(
             map_deactivate_account_repository_error(
                 DeactivateAccountRepositoryError::AccountNotFound
+            ),
+            AppError::AccountNotFound
+        ));
+    }
+
+    #[test]
+    fn soft_delete_repository_errors_map_to_account_errors() {
+        assert!(matches!(
+            map_soft_delete_account_repository_error(
+                SoftDeleteAccountRepositoryError::AccountAlreadyDeleted
+            ),
+            AppError::AccountAlreadyDeleted
+        ));
+        assert!(matches!(
+            map_soft_delete_account_repository_error(
+                SoftDeleteAccountRepositoryError::LastActiveAdministrator
+            ),
+            AppError::LastActiveAdministrator
+        ));
+        assert!(matches!(
+            map_soft_delete_account_repository_error(
+                SoftDeleteAccountRepositoryError::AccountNotFound
             ),
             AppError::AccountNotFound
         ));

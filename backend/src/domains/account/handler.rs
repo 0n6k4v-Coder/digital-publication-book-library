@@ -18,7 +18,7 @@ use crate::{
         authorization::{
             extractor::{
                 AuthorizedAccountActivate, AuthorizedAccountCreate, AuthorizedAccountDeactivate,
-                AuthorizedAccountUpdate,
+                AuthorizedAccountDelete, AuthorizedAccountUpdate,
             },
             repository::AuthorizationRepository,
             service::{authorize, ACCOUNT_VIEW_DELETED_PERMISSION, ACCOUNT_VIEW_PERMISSION},
@@ -240,6 +240,27 @@ pub async fn activate_account(
     let response_body = AccountResponse::from(account);
 
     let mut response = (StatusCode::OK, Json(response_body)).into_response();
+    add_no_store(response.headers_mut());
+
+    Ok(response)
+}
+
+pub async fn soft_delete_account(
+    AccountId(account_id): AccountId,
+    authorized: AuthorizedAccountDelete,
+    State(state): State<AppState>,
+) -> Result<Response, AppError> {
+    let service = AccountService::new(
+        AccountRepository::new(state.pool.clone()),
+        state.password_policy.clone(),
+        state.password_hash_semaphore.clone(),
+    );
+
+    service
+        .soft_delete_account(authorized.account_id(), account_id)
+        .await?;
+
+    let mut response = StatusCode::NO_CONTENT.into_response();
     add_no_store(response.headers_mut());
 
     Ok(response)

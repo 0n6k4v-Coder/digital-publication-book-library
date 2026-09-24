@@ -164,6 +164,34 @@ pub enum DeactivationValidationError {
 }
 
 #[derive(Debug, PartialEq, Eq)]
+pub struct SoftDeleteState {
+    pub is_active: bool,
+    pub is_deleted: bool,
+    pub is_administrator: bool,
+    pub active_administrator_count: usize,
+}
+
+impl SoftDeleteState {
+    pub fn validate(self) -> Result<(), SoftDeleteValidationError> {
+        if self.is_deleted {
+            return Err(SoftDeleteValidationError::AccountAlreadyDeleted);
+        }
+
+        if self.is_active && self.is_administrator && self.active_administrator_count <= 1 {
+            return Err(SoftDeleteValidationError::LastActiveAdministrator);
+        }
+
+        Ok(())
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum SoftDeleteValidationError {
+    AccountAlreadyDeleted,
+    LastActiveAdministrator,
+}
+
+#[derive(Debug, PartialEq, Eq)]
 pub struct ActivationState {
     pub is_active: bool,
     pub is_deleted: bool,

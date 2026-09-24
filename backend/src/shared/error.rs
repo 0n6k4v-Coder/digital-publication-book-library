@@ -35,6 +35,8 @@ pub enum AppError {
     AccountAlreadyActive,
     #[error("account is soft deleted")]
     AccountSoftDeleted,
+    #[error("account already deleted")]
+    AccountAlreadyDeleted,
     #[error("email already in use")]
     EmailAlreadyInUse,
     #[error("internal server error")]
@@ -127,6 +129,13 @@ impl AppError {
                 "Account is soft deleted",
                 "The requested account is soft-deleted and cannot be activated.",
                 "https://github.com/0n6k4v-Coder/digital-publication-book-library/problems/account-soft-deleted",
+            ),
+            Self::AccountAlreadyDeleted => (
+                StatusCode::CONFLICT,
+                "ACCOUNT_ALREADY_DELETED",
+                "Account already deleted",
+                "The requested account is already soft-deleted.",
+                "https://github.com/0n6k4v-Coder/digital-publication-book-library/problems/account-already-deleted",
             ),
             Self::EmailAlreadyInUse => (
                 StatusCode::CONFLICT,
