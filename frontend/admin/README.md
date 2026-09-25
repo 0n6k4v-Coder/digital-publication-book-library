@@ -28,6 +28,10 @@
 │   ├── /types
 │   ├── App.tsx
 │   └── main.tsx
+├── /tests
+│   ├── /unit
+│   ├── /integration
+│   └── /e2e
 ├── /docker
 │   ├── Dockerfile.test
 │   ├── Dockerfile.dev
@@ -60,6 +64,9 @@
 | `src/types/`                      | TypeScript types                            |
 | `src/App.tsx`                     | Root application component                  |
 | `src/main.tsx`                    | Application entry point                     |
+| `tests/unit/`                     | Unit test suites                            |
+| `tests/integration/`              | Integration test suites                     |
+| `tests/e2e/`                      | End-to-end browser test suites              |
 | `docker/Dockerfile.test`          | Test environment image configuration        |
 | `docker/Dockerfile.dev`           | Development environment image configuration |
 | `docker/Dockerfile.prod`          | Production environment image configuration  |

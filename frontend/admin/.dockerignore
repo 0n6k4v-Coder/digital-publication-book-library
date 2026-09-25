@@ -1,0 +1,39 @@
+# Build output
+dist/
+**/dist/
+node_modules/
+**/node_modules/
+
+# Version control and IDEs
+.git/
+.gitignore
+.dockerignore
+.idea/
+.vscode/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Documentation
+docs/
+README.md
+*.md
+
+# Compose and Docker meta
+compose/
+docker/
+
+# Temporary / Log files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+Thumbs.db
+tmp/
+scratch/
+test-results/
+playwright-report/
+blob-report/
