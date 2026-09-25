@@ -15,7 +15,10 @@ ENV CARGO_TERM_COLOR=always \
 
 COPY Cargo.toml Cargo.lock build.rs ./
 
-RUN cargo fetch --locked
+RUN mkdir -p src \
+    && touch src/lib.rs \
+    && cargo fetch --locked \
+    && rm -rf src
 
 COPY migrations ./migrations
 COPY src ./src
