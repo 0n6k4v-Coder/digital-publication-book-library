@@ -26,7 +26,7 @@ async fn test_pool() -> Option<PgPool> {
 }
 
 async fn run_migrations(pool: &PgPool) {
-    sqlx::migrate!()
+    digital_publication_backend::MIGRATOR
         .run(pool)
         .await
         .expect("run migrations");
@@ -35,12 +35,27 @@ async fn run_migrations(pool: &PgPool) {
 async fn seed_account(pool: &PgPool, status: &str, deleted_at: Option<OffsetDateTime>) -> Uuid {
     sqlx::query_scalar::<_, Uuid>(
         r#"
-        INSERT INTO account (
-            status,
-            deleted_at
+        WITH inserted_account AS (
+            INSERT INTO account (
+                status,
+                deleted_at
+            )
+            VALUES ($1, $2)
+            RETURNING id
         )
-        VALUES ($1, $2)
-        RETURNING id
+        INSERT INTO account_credentials (
+            account_id,
+            email,
+            email_normalized,
+            password_hash
+        )
+        SELECT
+            id,
+            concat('authorization-revocation-', id::text, '@example.com'),
+            concat('authorization-revocation-', id::text, '@example.com'),
+            '$argon2id$v=19$m=19456,t=2,p=1$test$test'
+        FROM inserted_account
+        RETURNING account_id
         "#,
     )
     .bind(status)
