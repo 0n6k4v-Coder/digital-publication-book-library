@@ -32,6 +32,7 @@ function accountsResponse(): Response {
         {
           id: "01900000-0000-7000-8000-000000000001",
           email: "admin@example.com",
+          display_name: "Library Administrator",
           status: "active",
           created_at: "2026-09-23T10:00:00Z",
           updated_at: "2026-09-23T10:00:00Z",
@@ -109,10 +110,11 @@ describe("Admin Accounts integration", () => {
       }),
     ).toBeInTheDocument();
 
-    expect(screen.getByRole("link", { name: "Accounts" })).toHaveAttribute(
-      "aria-current",
-      "page",
-    );
+    expect(
+      screen.getByRole("link", {
+        name: /^Accounts$/,
+      }),
+    ).toHaveAttribute("aria-current", "page");
 
     expect(
       screen.getByRole("cell", {
@@ -196,7 +198,7 @@ describe("Admin Accounts integration", () => {
 
     expect(
       await screen.findByRole("link", {
-        name: "Accounts",
+        name: /^Accounts$/,
       }),
     ).toBeInTheDocument();
 
@@ -204,7 +206,11 @@ describe("Admin Accounts integration", () => {
 
     expect(window.location.pathname).toBe("/admin");
 
-    screen.getByRole("link", { name: "Accounts" }).click();
+    screen
+      .getByRole("link", {
+        name: /^Accounts$/,
+      })
+      .click();
 
     await waitFor(() => {
       expect(window.location.pathname).toBe("/admin/accounts");

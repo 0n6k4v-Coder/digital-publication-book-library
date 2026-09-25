@@ -19,7 +19,10 @@ export function AdminShell({ onLogout, children }: AdminShellProps) {
   const mobileCloseButtonRef = useRef<HTMLButtonElement>(null);
   const hasMountedRef = useRef(false);
 
-  const isAccountsActive = pathname === "/admin/accounts";
+  const isAccountsActive =
+    pathname === "/admin/accounts" ||
+    pathname === "/admin/accounts/create" ||
+    /^\/admin\/accounts\/[^/]+\/edit$/.test(pathname);
   const isAdminHomeActive = pathname === "/admin";
 
   useEffect(() => {

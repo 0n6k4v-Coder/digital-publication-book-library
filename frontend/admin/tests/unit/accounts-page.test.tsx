@@ -1,23 +1,35 @@
 import { render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { AccountsError, accountsService } from "../../src/services/accounts";
 import { AccountsPage } from "../../src/pages/accounts/AccountsPage";
-import { accountsService } from "../../src/services/accounts";
 
-vi.mock("../../src/services/accounts", () => ({
-  accountsService: {
-    list: vi.fn(),
-  },
-  AccountsError: class AccountsError extends Error {
+vi.mock("../../src/services/accounts", () => {
+  class MockAccountsError extends Error {
     readonly code: string;
     readonly status: number;
+    readonly problemCode: string | null;
 
-    constructor(code: string, status: number) {
+    constructor(
+      code: string,
+      status: number,
+      problemCode: string | null = null,
+    ) {
       super(code);
+      this.name = "AccountsError";
       this.code = code;
       this.status = status;
+      this.problemCode = problemCode;
     }
-  },
-}));
+  }
+
+  return {
+    accountsService: {
+      list: vi.fn(),
+      mutate: vi.fn(),
+    },
+    AccountsError: MockAccountsError,
+  };
+});
 
 const mockedList = vi.mocked(accountsService.list);
 
@@ -36,6 +48,7 @@ describe("AccountsPage", () => {
         {
           id: "01900000-0000-7000-8000-000000000001",
           email: "admin@example.com",
+          displayName: null,
           status: "active",
           createdAt: "2026-09-23T10:00:00Z",
           updatedAt: "2026-09-23T10:00:00Z",
@@ -66,7 +79,7 @@ describe("AccountsPage", () => {
     expect(
       screen.getByRole("cell", { name: "admin@example.com" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Active")).toBeInTheDocument();
+    expect(screen.getByRole("cell", { name: "Active" })).toBeInTheDocument();
 
     expect(mockedList).toHaveBeenCalledTimes(1);
   });
@@ -91,12 +104,12 @@ describe("AccountsPage", () => {
   });
 
   it("renders backend authorization failure without inventing a client permission rule", async () => {
-    mockedList.mockRejectedValue(new Error("FORBIDDEN"));
+    mockedList.mockRejectedValue(new AccountsError("FORBIDDEN", 403));
 
     render(<AccountsPage />);
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "We could not load the administrator accounts",
+      "You do not have permission to view administrator accounts.",
     );
   });
 });

@@ -38,7 +38,7 @@ impl AccountRepository {
             r#"
             INSERT INTO account (created_by, updated_by, status, deleted_at)
             VALUES ($1, $1, 'active', NULL)
-            RETURNING id, created_at, updated_at, status, deleted_at
+            RETURNING id, created_at, updated_at, display_name, status, deleted_at
             "#,
         )
         .bind(actor_id)
@@ -80,6 +80,7 @@ impl AccountRepository {
         Ok(CreatedAccount {
             id: account.id,
             email: email.to_owned(),
+            display_name: account.display_name,
             status: account.status,
             created_at: account.created_at,
             updated_at: account.updated_at,
@@ -103,6 +104,7 @@ impl AccountRepository {
             r#"
             SELECT
                 a.id,
+                a.display_name,
                 a.status,
                 a.created_at,
                 a.updated_at,
@@ -159,6 +161,7 @@ impl AccountRepository {
         Ok(ViewedAccount {
             id: current.id,
             email: email.to_owned(),
+            display_name: current.display_name,
             status: current.status,
             created_at: current.created_at,
             updated_at: current.updated_at,
@@ -181,6 +184,7 @@ impl AccountRepository {
             r#"
             SELECT
                 a.id,
+                a.display_name,
                 a.status,
                 a.created_at,
                 a.updated_at,
@@ -258,6 +262,7 @@ impl AccountRepository {
             SELECT
                 a.id,
                 ac.email,
+                a.display_name,
                 a.status,
                 a.created_at,
                 a.updated_at,
@@ -297,6 +302,7 @@ impl AccountRepository {
             SELECT
                 a.id,
                 ac.email,
+                a.display_name,
                 a.status,
                 a.created_at,
                 a.updated_at,
@@ -374,6 +380,7 @@ impl AccountRepository {
               AND deleted_at IS NULL
             RETURNING
                 id,
+                display_name,
                 created_at,
                 updated_at,
                 status,
@@ -394,6 +401,7 @@ impl AccountRepository {
         Ok(Some(ViewedAccount {
             id: updated.id,
             email: current.email,
+            display_name: updated.display_name,
             status: updated.status,
             created_at: updated.created_at,
             updated_at: updated.updated_at,
@@ -503,6 +511,7 @@ impl AccountRepository {
               AND deleted_at IS NULL
             RETURNING
                 id,
+                display_name,
                 created_at,
                 updated_at,
                 status,
@@ -522,6 +531,7 @@ impl AccountRepository {
         Ok(ViewedAccount {
             id: updated.id,
             email: target_email,
+            display_name: updated.display_name,
             status: updated.status,
             created_at: updated.created_at,
             updated_at: updated.updated_at,
@@ -760,6 +770,7 @@ impl AccountRepository {
             r#"
             SELECT
                 ac.email,
+                a.display_name,
                 a.status,
                 a.deleted_at
             FROM account AS a
@@ -803,6 +814,7 @@ impl AccountRepository {
               AND deleted_at IS NULL
             RETURNING
                 id,
+                display_name,
                 created_at,
                 updated_at,
                 status,
@@ -822,6 +834,7 @@ impl AccountRepository {
         Ok(ViewedAccount {
             id: updated.id,
             email: target.email,
+            display_name: updated.display_name,
             status: updated.status,
             created_at: updated.created_at,
             updated_at: updated.updated_at,
@@ -844,6 +857,7 @@ impl AccountRepository {
             r#"
             SELECT
                 ac.email,
+                a.display_name,
                 a.status,
                 a.deleted_at
             FROM account AS a
@@ -884,6 +898,7 @@ impl AccountRepository {
               AND deleted_at IS NOT NULL
             RETURNING
                 id,
+                display_name,
                 created_at,
                 updated_at,
                 status,
@@ -903,6 +918,7 @@ impl AccountRepository {
         Ok(ViewedAccount {
             id: updated.id,
             email: target.email,
+            display_name: updated.display_name,
             status: updated.status,
             created_at: updated.created_at,
             updated_at: updated.updated_at,
@@ -932,6 +948,7 @@ struct AccountRow {
     id: Uuid,
     created_at: OffsetDateTime,
     updated_at: OffsetDateTime,
+    display_name: Option<String>,
     status: String,
     deleted_at: Option<OffsetDateTime>,
 }
@@ -940,6 +957,7 @@ struct AccountRow {
 struct ListedAccountRow {
     id: Uuid,
     email: String,
+    display_name: Option<String>,
     status: String,
     created_at: OffsetDateTime,
     updated_at: OffsetDateTime,
@@ -950,6 +968,7 @@ struct ListedAccountRow {
 struct ViewedAccountRow {
     id: Uuid,
     email: String,
+    display_name: Option<String>,
     status: String,
     created_at: OffsetDateTime,
     updated_at: OffsetDateTime,
@@ -970,6 +989,7 @@ struct AccountUpdateTargetRow {
 #[derive(Debug, sqlx::FromRow)]
 struct AccountCredentialTargetRow {
     id: Uuid,
+    display_name: Option<String>,
     status: String,
     created_at: OffsetDateTime,
     updated_at: OffsetDateTime,
@@ -979,6 +999,7 @@ struct AccountCredentialTargetRow {
 #[derive(Debug, sqlx::FromRow)]
 struct AccountUpdatedRow {
     id: Uuid,
+    display_name: Option<String>,
     created_at: OffsetDateTime,
     updated_at: OffsetDateTime,
     status: String,
@@ -1013,6 +1034,7 @@ struct HardDeleteAccountRow {
 #[derive(Debug, sqlx::FromRow)]
 struct ActivationAccountRow {
     email: String,
+    display_name: Option<String>,
     status: String,
     deleted_at: Option<OffsetDateTime>,
 }
@@ -1022,6 +1044,7 @@ impl From<ListedAccountRow> for ListedAccount {
         Self {
             id: row.id,
             email: row.email,
+            display_name: row.display_name,
             status: row.status,
             created_at: row.created_at,
             updated_at: row.updated_at,
@@ -1035,6 +1058,7 @@ impl From<ViewedAccountRow> for ViewedAccount {
         Self {
             id: row.id,
             email: row.email,
+            display_name: row.display_name,
             status: row.status,
             created_at: row.created_at,
             updated_at: row.updated_at,
@@ -1048,6 +1072,7 @@ impl From<AccountUpdateTargetRow> for ViewedAccount {
         Self {
             id: row.id,
             email: row.email,
+            display_name: row.display_name,
             status: row.status,
             created_at: row.created_at,
             updated_at: row.updated_at,
