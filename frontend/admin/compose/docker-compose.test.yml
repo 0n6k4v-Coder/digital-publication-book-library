@@ -1,0 +1,32 @@
+services:
+  test:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.test
+
+    working_dir: /workspace
+
+    init: true
+
+    environment:
+      CI: "true"
+      PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+      VITE_API_ORIGIN: ""
+
+    volumes:
+      - type: bind
+        source: ..
+        target: /workspace
+      - frontend-admin-node-modules:/workspace/node_modules
+      - frontend-admin-ms-playwright:/ms-playwright
+
+    command:
+      [
+        "sh",
+        "-c",
+        "npm run format:check && npm run typecheck && npm run lint && npm run build && npm run test:unit && npm run test:integration && npm run test:e2e",
+      ]
+
+volumes:
+  frontend-admin-node-modules:
+  frontend-admin-ms-playwright:
