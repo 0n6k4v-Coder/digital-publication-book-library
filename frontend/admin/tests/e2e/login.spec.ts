@@ -9,6 +9,15 @@ const loginResponse = {
 };
 
 test.describe("admin login", () => {
+  test("redirects unauthenticated access to /admin to /login", async ({
+    page,
+  }) => {
+    await page.goto("/admin");
+
+    await expect(page).toHaveURL(/\/login$/);
+    await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
+  });
+
   test("opens /login and completes login, admin shell, and logout", async ({
     page,
   }) => {
