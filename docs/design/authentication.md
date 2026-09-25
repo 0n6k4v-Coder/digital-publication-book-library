@@ -951,40 +951,40 @@ Authentication remains responsible for establishing the authenticated principal.
 
 ## 8.1 Requirements
 
-| ID                 | Status             | Reason |
-| ------------------ | ------------------ | ------ |
-| `AU_REQ_FC_01`     | 🟢 Implemented     |        |
-| `AU_REQ_FC_02`     | 🟢 Implemented     |        |
-| `AU_REQ_FC_03`     | 🟢 Implemented     |        |
-| `AU_REQ_FC_04`     | 🟢 Implemented     |        |
-| `AU_REQ_FC_05`     | 🟢 Implemented     |        |
-| `AU_REQ_FC_06`     | 🟢 Implemented     |        |
-| `AU_REQ_FC_07`     | 🟢 Implemented     |        |
-| `AU_REQ_FC_08`     | 🟢 Implemented     |        |
-| `AU_REQ_FC_09`     | 🟢 Implemented     |        |
-| `AU_REQ_FC_10`     | 🟢 Implemented     |        |
-| `AU_REQ_FC_11`     | 🟢 Implemented     |        |
-| `AU_REQ_FC_12`     | 🟢 Implemented     |        |
-| `AU_REQ_FC_13`     | 🟢 Implemented     |        |
-| `AU_REQ_FC_14`     | 🟢 Implemented     |        |
-| `AU_REQ_FC_15`     | 🟢 Implemented     |        |
-| `AU_REQ_FC_16`     | 🟢 Implemented     |        |
-| `AU_REQ_FC_17`     | 🟢 Implemented     |        |
-| `AU_REQ_FC_18`     | 🟢 Implemented     |        |
-| `AU_REQ_FC_19`     | 🟢 Implemented     |        |
-| `AU_REQ_FC_20`     | 🟢 Implemented     |        |
-| `AU_REQ_FC_21`     | 🟢 Implemented     |        |
-| `AU_REQ_FC_22`     | 🟢 Implemented     |        |
-| `AU_REQ_FC_23`     | 🟢 Implemented     |        |
-| `AU_REQ_FC_24`     | 🟢 Implemented     |        |
-| `AU_REQ_FC_25`     | 🟢 Implemented     |        |
-| `AU_REQ_NON_FC_01` | 🟢 Implemented     |        |
-| `AU_REQ_NON_FC_02` | 🟢 Implemented     |        |
-| `AU_REQ_NON_FC_03` | 🟢 Implemented     |        |
-| `AU_REQ_NON_FC_04` | 🔴 Not Implemented |        |
-| `AU_REQ_NON_FC_05` | 🟢 Implemented     |        |
-| `AU_REQ_NON_FC_06` | 🟢 Implemented     |        |
-| `AU_REQ_NON_FC_07` | 🟢 Implemented     |        |
+| ID                 | Status         | Reason |
+| ------------------ | -------------- | ------ |
+| `AU_REQ_FC_01`     | 🟢 Implemented |        |
+| `AU_REQ_FC_02`     | 🟢 Implemented |        |
+| `AU_REQ_FC_03`     | 🟢 Implemented |        |
+| `AU_REQ_FC_04`     | 🟢 Implemented |        |
+| `AU_REQ_FC_05`     | 🟢 Implemented |        |
+| `AU_REQ_FC_06`     | 🟢 Implemented |        |
+| `AU_REQ_FC_07`     | 🟢 Implemented |        |
+| `AU_REQ_FC_08`     | 🟢 Implemented |        |
+| `AU_REQ_FC_09`     | 🟢 Implemented |        |
+| `AU_REQ_FC_10`     | 🟢 Implemented |        |
+| `AU_REQ_FC_11`     | 🟢 Implemented |        |
+| `AU_REQ_FC_12`     | 🟢 Implemented |        |
+| `AU_REQ_FC_13`     | 🟢 Implemented |        |
+| `AU_REQ_FC_14`     | 🟢 Implemented |        |
+| `AU_REQ_FC_15`     | 🟢 Implemented |        |
+| `AU_REQ_FC_16`     | 🟢 Implemented |        |
+| `AU_REQ_FC_17`     | 🟢 Implemented |        |
+| `AU_REQ_FC_18`     | 🟢 Implemented |        |
+| `AU_REQ_FC_19`     | 🟢 Implemented |        |
+| `AU_REQ_FC_20`     | 🟢 Implemented |        |
+| `AU_REQ_FC_21`     | 🟢 Implemented |        |
+| `AU_REQ_FC_22`     | 🟢 Implemented |        |
+| `AU_REQ_FC_23`     | 🟢 Implemented |        |
+| `AU_REQ_FC_24`     | 🟢 Implemented |        |
+| `AU_REQ_FC_25`     | 🟢 Implemented |        |
+| `AU_REQ_NON_FC_01` | 🟢 Implemented |        |
+| `AU_REQ_NON_FC_02` | 🟢 Implemented |        |
+| `AU_REQ_NON_FC_03` | 🟢 Implemented |        |
+| `AU_REQ_NON_FC_04` | 🟢 Implemented |        |
+| `AU_REQ_NON_FC_05` | 🟢 Implemented |        |
+| `AU_REQ_NON_FC_06` | 🟢 Implemented |        |
+| `AU_REQ_NON_FC_07` | 🟢 Implemented |        |
 
 ## 8.2 Security Decisions
 
