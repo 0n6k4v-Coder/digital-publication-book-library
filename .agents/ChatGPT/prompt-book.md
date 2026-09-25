@@ -233,6 +233,17 @@ Task 8. Generate the final output.
 ```
 
 ```text
+Task 9. Generate the necessary test command(s).
+
+- Refer to the example of our project's test-command style here: https://github.com/0n6k4v-Coder/digital-publication-book-library/blob/backend/backend/README.md
+- Based on your output from Task 8, generate the necessary test command(s) following the same style as the project.
+- Provide each command in a separate code block and specify its test type.
+- Use separate blocks for different test types.  
+```
+
+---
+
+```text
 ### Debugging Workflow
 
 **Task 1: Analyze the Problem**
@@ -263,4 +274,69 @@ Task 8. Generate the final output.
 * Provide the complete final code block for every changed file.
 * Do not provide partial code, diffs, or unnecessary changes.
 * Do not commit or push unless explicitly requested.
+```
+
+```text
+Are they correct or not?
+
+Keep your answer short, honest, and direct. Is this correct?
+- If yes, do nothing.
+- If not, give me a full block of the better version.
+```
+
+---
+
+```text
+Please provide a simple, clear, direct, explicit and concise commit message and an extended description.
+```
+
+---
+
+```text
+Please review the current state of our repository here: https://github.com/0n6k4v-Coder/digital-publication-book-library/tree/backend
+
+Give me the full block for the latest update in Section 7:
+https://github.com/0n6k4v-Coder/digital-publication-book-library/blob/docs/docs/design/account.md
+
+Give me the full block for the latest update in Section 8:
+https://github.com/0n6k4v-Coder/digital-publication-book-library/blob/docs/docs/design/authentication.md
+
+Give me the full block for the latest update in Section 10:
+https://github.com/0n6k4v-Coder/digital-publication-book-library/blob/docs/docs/design/authorization.md
+
+P.S. 1 Give a reason for Partial Implemented status only. Don't give a reason to two other status.
+
+P.S. 2 If there are no change required just say "No Change Required"
+
+You must provide commit message and extended description. Simple, Clear, Direct, Explicit and Concise for each files as well.
+```
+
+---
+
+```text
+I need you to help me fix those blockers you mentioned.
+
+You must conduct thorough research based on the latest relevant industry standards and the latest official documentation for the technology stack.
+
+After that, apply your findings to:
+
+<Fill A Task Here>
+
+What I need to see is the complete block of the relevant section that you’re going to update.
+
+→ Exact Path
+→ Complete Block
+
+If there are multiple parts to update, please separate them into multiple blocks. Do not combine them into a single code fence.
+
+Please ensure that each generated block is clear, concise, well-organized, and implementation-ready—serving as a reliable source of truth without unnecessary explanation.
+
+Relevant Skills:
+- https://github.com/0n6k4v-Coder/skills/blob/master/0n6k4v/nested-fence-formatting/SKILL.md
+```
+
+---
+
+```text
+Please provide the commit command, along with a simple, clear, direct, explicit, and concise commit message and an extended description.
 ```
