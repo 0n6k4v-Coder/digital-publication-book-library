@@ -208,10 +208,7 @@ impl PasswordBlocklist {
                 hashes.contains(&digest)
             }
             BlocklistState::Snapshot { root, manifest } => {
-                match snapshot_contains(root, manifest, password) {
-                    Ok(result) => result,
-                    Err(_) => true,
-                }
+                snapshot_contains(root, manifest, password).unwrap_or(true)
             }
         }
     }
@@ -388,9 +385,7 @@ impl PasswordBlocklist {
             .await
             .map_err(|_| PasswordBlocklistRefreshError::Storage)?;
 
-        if let Err(error) = activate_snapshot_pointer(root, &snapshot_version).await {
-            return Err(error);
-        }
+        activate_snapshot_pointer(root, &snapshot_version).await?;
 
         Ok(snapshot_version)
     }
@@ -843,7 +838,7 @@ async fn build_shard_file(
 
     let prefix_start = shard_id * HIBP_PREFIXES_PER_SHARD;
 
-    for local_prefix in 0..HIBP_PREFIXES_PER_SHARD {
+    for (local_prefix, offset) in offsets.iter_mut().enumerate().take(HIBP_PREFIXES_PER_SHARD) {
         let prefix_number = prefix_start + local_prefix;
         let prefix = format!("{prefix_number:05X}");
 
@@ -856,7 +851,7 @@ async fn build_shard_file(
         suffixes.sort_unstable();
         suffixes.dedup();
 
-        offsets[local_prefix] = data_cursor;
+        *offset = data_cursor;
 
         for suffix in suffixes {
             file.write_all(&suffix).await.map_err(|_| ())?;
