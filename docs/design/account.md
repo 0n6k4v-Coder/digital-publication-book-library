@@ -167,7 +167,7 @@
 | `AC_SEC_DEC_EMAIL_07` | Email syntax                    | Accept only a valid modern email `addr-spec`. Reject display names, comments, obsolete syntax, and domain literals. Use a standards-compliant email parser. |
 | `AC_SEC_DEC_EMAIL_08` | Email length                    | The complete email address must not exceed 254 characters. |
 | `AC_SEC_DEC_EMAIL_09` | Unicode and IDN                 | Support Unicode local-parts and IDN domains. Normalize the domain using IDNA2008 before generating `email_normalized`. |
-| `AC_SEC_DEC_EMAIL_10` | Comparison key | Generate `email_normalized` as `NFD(toCasefold(NFD(local-part))) + "@" + IDNA2008-normalized ASCII domain`. Use `email_normalized` as the unique case-insensitive identity key. |
+| `AC_SEC_DEC_EMAIL_10` | Comparison key                 | Generate `email_normalized` as `NFD(toCasefold(NFD(local-part))) + "@" + IDNA2008-normalized ASCII domain`. Use `email_normalized` as the unique case-insensitive identity key. |
 
 ### 2.2.2 Password
 
@@ -192,7 +192,7 @@
 | -------------------- | ---------------------------- | ---------- |
 | `AC_SEC_DEC_AUTH_01` | Authentication scheme        | The Admin API uses the HTTP `Bearer` authentication scheme defined by RFC 6750. |
 | `AC_SEC_DEC_AUTH_02` | Request credentials          | Authenticated Admin API requests must provide credentials in the HTTP `Authorization` header using the `Bearer` scheme. |
-| `AC_SEC_DEC_AUTH_03` | Authorization header format  | `Authorization: Bearer <token>` |
+| `AC_SEC_DEC_AUTH_03` | Authorization header format | `Authorization: Bearer <token>` |
 | `AC_SEC_DEC_AUTH_04` | Credential location          | Bearer credentials must not be provided in URI query parameters or request bodies. |
 | `AC_SEC_DEC_AUTH_05` | Protection realm             | The Admin API protection realm is `admin-api`. |
 | `AC_SEC_DEC_AUTH_06` | Missing authentication       | A request without authentication credentials must return `401 Unauthorized` with `WWW-Authenticate: Bearer realm="admin-api"`. |
@@ -929,6 +929,25 @@ The account list MUST be returned in a deterministic order:
 }
 ```
 
+Each item in `items` MUST use the authoritative [Account Response](#614-account-response) representation.
+
+The `display_name` field MUST be returned for every Account response and MUST be either:
+
+* a string containing the stored administrator display name, or
+* `null` when no display name has been stored.
+
+The frontend MUST consume the returned value as authoritative and MUST NOT derive, infer, or fabricate a display name from another field.
+
+### Account Data Rules
+
+The response:
+
+* MUST preserve the server-defined `id ASC` ordering.
+* MUST NOT expose `password`.
+* MUST NOT expose `password_hash`.
+* MUST exclude soft-deleted accounts unless `include_deleted=true`.
+* MUST use `Cache-Control: no-store`.
+
 ## 6.5 View Account
 
 ### Request
@@ -1251,12 +1270,29 @@ The API uses the following Account representation:
 {
   "id": "019...",
   "email": "admin@example.com",
+  "display_name": "Library Administrator",
   "status": "active",
   "created_at": "2026-09-23T10:00:00Z",
   "updated_at": "2026-09-23T10:00:00Z",
   "deleted_at": null
 }
 ```
+
+### Fields
+
+| Field           | Type                       | Definition |
+| --------------- | -------------------------- | ---------- |
+| `id`           | UUID string                | Account primary identifier. |
+| `email`        | string                     | Administrator email address. |
+| `display_name` | string or `null`         | Optional administrator display name stored on the Account. |
+| `status`       | string                     | Account lifecycle status: `active` or `inactive`. |
+| `created_at`   | RFC 3339 string            | Account creation timestamp. |
+| `updated_at`   | RFC 3339 string            | Account last-update timestamp. |
+| `deleted_at`   | RFC 3339 string or `null` | Soft-deletion timestamp, or `null` for non-deleted accounts. |
+
+`display_name` is nullable because the Account database field is nullable.
+
+The API MUST return `display_name` on every Account Response. A missing display name is represented as JSON `null`.
 
 The following fields must never be returned:
 
@@ -1266,6 +1302,14 @@ password_hash
 ```
 
 `deleted_at` is `null` for non-deleted accounts.
+
+Account responses are authoritative server representations. Clients MUST NOT derive, infer, or fabricate missing Account fields.
+
+Account API responses MUST use:
+
+```text
+Cache-Control: no-store
+```
 
 ## 6.15 Error Response
 
