@@ -1,0 +1,237 @@
+name: digital-publication-book-library-dev
+
+services:
+  postgres:
+    image: postgres:18.6-bookworm
+
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: digital_publication_dev
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+
+    secrets:
+      - postgres_password
+
+    ports:
+      - "127.0.0.1:5432:5432"
+
+    volumes:
+      - postgres-dev-data:/var/lib/postgresql
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}",
+        ]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+      start_period: 5s
+
+  tls-init:
+    build:
+      context: ./backend
+      dockerfile: docker/Dockerfile.dev
+
+    working_dir: /workspace
+
+    init: true
+
+    volumes:
+      - backend-dev-tls:/workspace/.dev/tls
+
+    command:
+      [
+        "sh",
+        "-ec",
+        "if [ ! -s /workspace/.dev/tls/backend.crt ] || [ ! -s /workspace/.dev/tls/backend.key ]; then openssl req -x509 -newkey rsa:2048 -nodes -sha256 -days 30 -keyout /workspace/.dev/tls/backend.key -out /workspace/.dev/tls/backend.crt -subj '/CN=backend' -addext 'subjectAltName=DNS:backend,DNS:localhost,IP:127.0.0.1'; fi",
+      ]
+
+  bootstrap:
+    build:
+      context: ./backend
+      dockerfile: docker/Dockerfile.dev
+
+    working_dir: /workspace
+
+    init: true
+
+    restart: "no"
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    secrets:
+      - postgres_password
+      - dev_admin_password
+
+    environment:
+      DEV_ADMIN_EMAIL: ${DEV_ADMIN_EMAIL:?DEV_ADMIN_EMAIL is required}
+      DEV_ADMIN_PASSWORD_FILE: /run/secrets/dev_admin_password
+
+    volumes:
+      - backend-dev-cargo-target:/workspace/target
+      - backend-dev-cargo-registry:/usr/local/cargo/registry
+
+    command:
+      [
+        "sh",
+        "-ec",
+        "export DATABASE_URL=\"postgres://postgres:$$(cat /run/secrets/postgres_password)@postgres:5432/digital_publication_dev\"; exec /workspace/target/debug/dev_bootstrap",
+      ]
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: docker/Dockerfile.dev
+
+    working_dir: /workspace
+
+    init: true
+
+    depends_on:
+      tls-init:
+        condition: service_completed_successfully
+      bootstrap:
+        condition: service_completed_successfully
+
+    secrets:
+      - postgres_password
+
+    environment:
+      BIND_ADDR: 0.0.0.0:3000
+      DATABASE_MAX_CONNECTIONS: "10"
+      TLS_CERT_PATH: /workspace/.dev/tls/backend.crt
+      TLS_KEY_PATH: /workspace/.dev/tls/backend.key
+
+    ports:
+      - "127.0.0.1:3000:3000"
+
+    volumes:
+      - backend-dev-tls:/workspace/.dev/tls
+      - backend-dev-cargo-target:/workspace/target
+      - backend-dev-cargo-registry:/usr/local/cargo/registry
+
+    command:
+      [
+        "sh",
+        "-ec",
+        "export DATABASE_URL=\"postgres://postgres:$$(cat /run/secrets/postgres_password)@postgres:5432/digital_publication_dev\"; exec /workspace/target/debug/dev_server",
+      ]
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "test \"$$(curl -k -s -o /dev/null -w '%{http_code}' https://127.0.0.1:3000/auth/login)\" = '405'",
+        ]
+      interval: 3s
+      timeout: 5s
+      retries: 15
+      start_period: 5s
+
+    develop:
+      watch:
+        - action: rebuild
+          path: ./backend/src
+
+        - action: rebuild
+          path: ./backend/migrations
+
+        - action: rebuild
+          path: ./backend/Cargo.toml
+
+        - action: rebuild
+          path: ./backend/Cargo.lock
+
+        - action: rebuild
+          path: ./backend/build.rs
+
+  frontend:
+    build:
+      context: ./frontend/admin
+      dockerfile: docker/Dockerfile.dev
+
+    working_dir: /workspace
+
+    init: true
+
+    depends_on:
+      backend:
+        condition: service_healthy
+
+    environment:
+      NODE_ENV: development
+      VITE_API_ORIGIN: ""
+      BACKEND_PROXY_TARGET: https://backend:3000
+
+    ports:
+      - "127.0.0.1:5173:5173"
+
+    volumes:
+      - frontend-admin-dev-node-modules:/workspace/node_modules
+
+    command:
+      [
+        "npm",
+        "run",
+        "dev",
+        "--",
+        "--host",
+        "0.0.0.0",
+      ]
+
+    develop:
+      watch:
+        - action: sync
+          path: ./frontend/admin/src
+          target: /workspace/src
+          initial_sync: true
+
+        - action: sync
+          path: ./frontend/admin/public
+          target: /workspace/public
+          initial_sync: true
+
+        - action: sync
+          path: ./frontend/admin/index.html
+          target: /workspace/index.html
+          initial_sync: true
+
+        - action: sync
+          path: ./frontend/admin/vite.config.ts
+          target: /workspace/vite.config.ts
+          initial_sync: true
+
+        - action: sync
+          path: ./frontend/admin/tsconfig.json
+          target: /workspace/tsconfig.json
+          initial_sync: true
+
+        - action: rebuild
+          path: ./frontend/admin/package.json
+
+        - action: rebuild
+          path: ./frontend/admin/package-lock.json
+
+secrets:
+  postgres_password:
+    environment: POSTGRES_DEV_PASSWORD
+
+  dev_admin_password:
+    environment: DEV_ADMIN_PASSWORD
+
+volumes:
+  postgres-dev-data:
+
+  backend-dev-tls:
+
+  backend-dev-cargo-target:
+
+  backend-dev-cargo-registry:
+
+  frontend-admin-dev-node-modules:
