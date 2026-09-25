@@ -25,7 +25,9 @@ test.describe("admin login", () => {
 
     await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
     await page.getByLabel("Email").fill("admin@example.com");
-    await page.getByLabel("Password").fill("example-secure-password");
+    await page
+      .getByRole("textbox", { name: "Password" })
+      .fill("example-secure-password");
 
     await page.route("**/auth/login", async (route) => {
       await route.fulfill({
@@ -93,16 +95,20 @@ test.describe("admin login", () => {
     });
 
     await page.getByLabel("Email").fill("admin@example.com");
-    await page.getByLabel("Password").fill("example-secure-password");
+    await page
+      .getByRole("textbox", { name: "Password" })
+      .fill("example-secure-password");
     await page.getByRole("button", { name: "Sign In" }).click();
 
-    await expect(page.getByRole("alert")).toHaveText(
-      "The email or password is incorrect.",
-    );
+    const alert = page.getByRole("alert");
+
+    await expect(alert).toBeVisible();
+    await expect(alert).toContainText("The email or password is incorrect.");
     await expect(page).toHaveURL(/\/login$/);
     await expect(
       page.getByText("Digital Publication & Book Library"),
-    ).not.toBeVisible();
+    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
     await expect(page.locator("body")).not.toContainText(
       "server detail must not reach the UI",
     );

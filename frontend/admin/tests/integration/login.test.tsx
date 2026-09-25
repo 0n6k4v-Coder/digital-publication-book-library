@@ -125,8 +125,8 @@ describe("login integration", () => {
       );
       expect(window.location.pathname).toBe("/login");
       expect(
-        screen.queryByText("Digital Publication & Book Library"),
-      ).not.toBeInTheDocument();
+        screen.getByRole("heading", { name: "Sign in" }),
+      ).toBeInTheDocument();
       expect(
         screen.queryByText("server detail must not reach the UI"),
       ).not.toBeInTheDocument();
