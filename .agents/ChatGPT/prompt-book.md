@@ -348,3 +348,16 @@ According to this docs: https://github.com/0n6k4v-Coder/digital-publication-book
 
 Provide a step-by-step runbook for setting up the `/frontend/admin/*` directory so it’s ready for future implementation.
 ```
+
+---
+
+```text
+Please review the current state of our repository here: https://github.com/0n6k4v-Coder/digital-publication-book-library/tree/frontend/frontend/admin
+
+Give me the full block for the latest update in Section :
+
+P.S. 1: Provide a reason only when necessary. Do not force a justification for every item.
+P.S. 2: If there are no change required just say "No Change Required"
+
+You must provide commit message and extended description. Simple, Clear, Direct, Explicit and Concise for each files as well.
+```
