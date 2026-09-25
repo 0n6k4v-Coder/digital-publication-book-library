@@ -31,9 +31,12 @@ async fn start_server(app: Router) -> (SocketAddr, tokio::task::JoinHandle<()>) 
     let address = listener.local_addr().expect("read test server address");
 
     let task = tokio::spawn(async move {
-        axum::serve(listener, app)
-            .await
-            .expect("serve test application");
+        axum::serve(
+            listener,
+            app.into_make_service_with_connect_info::<SocketAddr>(),
+        )
+        .await
+        .expect("serve test application");
     });
 
     (address, task)

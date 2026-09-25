@@ -1,11 +1,13 @@
 use std::{
     io::{self, Write},
+    net::SocketAddr,
     num::NonZeroUsize,
     sync::{Arc, Mutex},
 };
 
 use axum::{
     body::Body,
+    extract::connect_info::MockConnectInfo,
     http::{header, Request, StatusCode},
 };
 use digital_publication_backend::{
@@ -50,6 +52,7 @@ fn test_router() -> axum::Router {
         Arc::new(blocklist),
         NonZeroUsize::new(2).expect("non-zero semaphore size"),
     ))
+    .layer(MockConnectInfo(SocketAddr::from(([127, 0, 0, 1], 0))))
 }
 
 #[tokio::test]
