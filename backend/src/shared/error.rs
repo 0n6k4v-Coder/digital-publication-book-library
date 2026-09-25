@@ -250,11 +250,8 @@ pub struct ProblemDetails {
     pub code: &'static str,
 }
 
-pub fn internal_error<E>(error: E) -> AppError
-where
-    E: std::fmt::Display,
-{
-    error!(error = %error, "account request failed unexpectedly");
+pub fn internal_error<E>(_error: E) -> AppError {
+    error!("request failed unexpectedly");
     AppError::Internal
 }
 
