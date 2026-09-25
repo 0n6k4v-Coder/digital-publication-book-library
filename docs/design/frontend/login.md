@@ -270,143 +270,143 @@ The frontend must follow the Authentication domain security contract.
 
 ### Status Values
 
-| Status         | Meaning                                            |
-| -------------- | -------------------------------------------------- |
-| ⚪ Not Started  | Criteria has not been implemented or verified     |
-| 🟡 In Progress | Implementation is in progress                      |
-| 🟢 Implemented | Implementation is complete and verified            |
-| 🔴 Blocked     | Implementation cannot proceed because of a blocker |
+| Status         | Meaning                                                |
+| -------------- | ------------------------------------------------------ |
+| ⚪ Not Started  | Criteria has not been implemented or verified          |
+| 🟡 In Progress | Implementation exists but verification is not complete |
+| 🟢 Implemented | Implementation is complete and verified                |
+| 🔴 Blocked     | Implementation cannot proceed because of a blocker     |
 
-## Route
+## Routes
 
-| ID                  | Criteria                                                            | Status        | Reason |
-| ------------------- | ------------------------------------------------------------------- | ------------- | ------ |
-| `FE_LOGIN_ROUTE_01` | `/login` displays the Admin Login page for unauthenticated users    | ⚪ Not Started |        |
-| `FE_LOGIN_ROUTE_02` | Authenticated users accessing `/login` are redirected to `/admin`   | ⚪ Not Started |        |
-| `FE_LOGIN_ROUTE_03` | Unauthenticated users accessing `/admin` are redirected to `/login` | ⚪ Not Started |        |
+| ID                  | Criteria                                                            | Status         | Reason                                                                       |
+| ------------------- | ------------------------------------------------------------------- | -------------- | ---------------------------------------------------------------------------- |
+| `FE_LOGIN_ROUTE_01` | `/login` displays the Admin Login page for unauthenticated users    | 🟢 Implemented | `frontend/admin/src/App.tsx`, `frontend/admin/src/pages/login/LoginPage.tsx` |
+| `FE_LOGIN_ROUTE_02` | Authenticated users accessing `/login` are redirected to `/admin`   | 🟢 Implemented | `frontend/admin/src/App.tsx`, `frontend/admin/src/services/navigation.ts`    |
+| `FE_LOGIN_ROUTE_03` | Unauthenticated users accessing `/admin` are redirected to `/login` | 🟢 Implemented | `frontend/admin/src/App.tsx`, `frontend/admin/src/services/navigation.ts`    |
 
 ## Requirements
 
-| ID            | Criteria                                                                                      | Status        | Reason |
-| ------------- | --------------------------------------------------------------------------------------------- | ------------- | ------ |
-| `FE_LOGIN_01` | Display the Admin Login page at `/login`                                                      | ⚪ Not Started |        |
-| `FE_LOGIN_02` | Accept an email address and password                                                          | ⚪ Not Started |        |
-| `FE_LOGIN_03` | Submit credentials to `POST /auth/login`                                                      | ⚪ Not Started |        |
-| `FE_LOGIN_04` | Show a loading state while authentication is in progress                                      | ⚪ Not Started |        |
-| `FE_LOGIN_05` | Show validation errors for invalid required input                                             | ⚪ Not Started |        |
-| `FE_LOGIN_06` | Show a generic authentication error for invalid credentials                                   | ⚪ Not Started |        |
-| `FE_LOGIN_07` | Show a generic rate-limit error for `429 AUTHENTICATION_RATE_LIMITED`                         | ⚪ Not Started |        |
-| `FE_LOGIN_08` | Establish authenticated client state and navigate to `/admin` after successful authentication | ⚪ Not Started |        |
-| `FE_LOGIN_09` | Do not expose authentication tokens in the UI                                                 | ⚪ Not Started |        |
-| `FE_LOGIN_10` | Do not log passwords, access tokens, or refresh tokens                                        | ⚪ Not Started |        |
+| ID            | Criteria                                                                                      | Status         | Reason                                                                                                           |
+| ------------- | --------------------------------------------------------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `FE_LOGIN_01` | Display the Admin Login page at `/login`                                                      | 🟢 Implemented | `frontend/admin/src/pages/login/LoginPage.tsx`                                                                   |
+| `FE_LOGIN_02` | Accept an email address and password                                                          | 🟢 Implemented | `frontend/admin/src/pages/login/LoginPage.tsx`                                                                   |
+| `FE_LOGIN_03` | Submit credentials to `POST /auth/login`                                                      | 🟢 Implemented | `frontend/admin/src/services/auth.ts`                                                                            |
+| `FE_LOGIN_04` | Show a loading state while authentication is in progress                                      | 🟢 Implemented | `frontend/admin/src/pages/login/LoginPage.tsx`                                                                   |
+| `FE_LOGIN_05` | Show validation errors for invalid required input                                             | 🟢 Implemented | `frontend/admin/src/pages/login/LoginPage.tsx`                                                                   |
+| `FE_LOGIN_06` | Show a generic authentication error for invalid credentials                                   | 🟢 Implemented | `frontend/admin/src/pages/login/LoginPage.tsx`, `frontend/admin/src/services/auth.ts`                            |
+| `FE_LOGIN_07` | Show a generic rate-limit error for `429 AUTHENTICATION_RATE_LIMITED`                         | 🟢 Implemented | `frontend/admin/src/pages/login/LoginPage.tsx`, `frontend/admin/src/services/auth.ts`                            |
+| `FE_LOGIN_08` | Establish authenticated client state and navigate to `/admin` after successful authentication | 🟢 Implemented | `frontend/admin/src/services/auth.ts`, `frontend/admin/src/App.tsx`, `frontend/admin/src/services/navigation.ts` |
+| `FE_LOGIN_09` | Do not expose authentication tokens in the UI                                                 | 🟢 Implemented | `frontend/admin/src/services/auth.ts`, `frontend/admin/src/pages/login/LoginPage.tsx`                            |
+| `FE_LOGIN_10` | Do not log passwords, access tokens, or refresh tokens                                        | 🟢 Implemented | No console logging or token-storage references found in frontend source                                          |
 
 ## UI
 
-| ID               | Criteria                                                                                 | Status        | Reason |
-| ---------------- | ---------------------------------------------------------------------------------------- | ------------- | ------ |
-| `FE_LOGIN_UI_01` | Email field is implemented                                                               | ⚪ Not Started |        |
-| `FE_LOGIN_UI_02` | Password field is implemented                                                            | ⚪ Not Started |        |
-| `FE_LOGIN_UI_03` | Sign In action is implemented                                                            | ⚪ Not Started |        |
-| `FE_LOGIN_UI_04` | Basic required-field validation is implemented                                           | ⚪ Not Started |        |
-| `FE_LOGIN_UI_05` | Authentication rules remain server-side                                                  | ⚪ Not Started |        |
-| `FE_LOGIN_UI_06` | No password-policy validation is added that could prevent a valid authentication request | ⚪ Not Started |        |
+| ID               | Criteria                                                                                 | Status         | Reason                                                                                |
+| ---------------- | ---------------------------------------------------------------------------------------- | -------------- | ------------------------------------------------------------------------------------- |
+| `FE_LOGIN_UI_01` | Email field is implemented                                                               | 🟢 Implemented | `frontend/admin/src/pages/login/LoginPage.tsx`                                        |
+| `FE_LOGIN_UI_02` | Password field is implemented                                                            | 🟢 Implemented | `frontend/admin/src/pages/login/LoginPage.tsx`                                        |
+| `FE_LOGIN_UI_03` | Sign In action is implemented                                                            | 🟢 Implemented | `frontend/admin/src/pages/login/LoginPage.tsx`                                        |
+| `FE_LOGIN_UI_04` | Basic required-field validation is implemented                                           | 🟢 Implemented | `frontend/admin/src/pages/login/LoginPage.tsx`                                        |
+| `FE_LOGIN_UI_05` | Authentication rules remain server-side                                                  | 🟢 Implemented | `frontend/admin/src/pages/login/LoginPage.tsx`, `frontend/admin/src/services/auth.ts` |
+| `FE_LOGIN_UI_06` | No password-policy validation is added that could prevent a valid authentication request | 🟢 Implemented | `frontend/admin/src/pages/login/LoginPage.tsx`                                        |
 
 ## API Contract
 
-| ID                    | Criteria                                                                        | Status        | Reason |
-| --------------------- | ------------------------------------------------------------------------------- | ------------- | ------ |
-| `FE_LOGIN_API_01`     | Frontend authentication service owns the received authentication state          | ⚪ Not Started |        |
-| `FE_LOGIN_API_02`     | Raw authentication tokens are never rendered, logged, or exposed through the UI | ⚪ Not Started |        |
-| `FE_LOGIN_API_ERR_01` | `400 INVALID_REQUEST` is handled correctly                                      | ⚪ Not Started |        |
-| `FE_LOGIN_API_ERR_02` | `401 INVALID_CREDENTIALS` is handled with a generic authentication error        | ⚪ Not Started |        |
-| `FE_LOGIN_API_ERR_03` | `429 AUTHENTICATION_RATE_LIMITED` is handled with a generic rate-limit error    | ⚪ Not Started |        |
-| `FE_LOGIN_API_SEC_01` | Frontend does not distinguish whether an account exists                         | ⚪ Not Started |        |
+| ID                    | Criteria                                                                        | Status         | Reason                                                                                |
+| --------------------- | ------------------------------------------------------------------------------- | -------------- | ------------------------------------------------------------------------------------- |
+| `FE_LOGIN_API_01`     | Frontend authentication service owns the received authentication state          | 🟢 Implemented | `frontend/admin/src/services/auth.ts`                                                 |
+| `FE_LOGIN_API_02`     | Raw authentication tokens are never rendered, logged, or exposed through the UI | 🟢 Implemented | `frontend/admin/src/services/auth.ts`, `frontend/admin/src/pages/login/LoginPage.tsx` |
+| `FE_LOGIN_API_ERR_01` | `400 INVALID_REQUEST` is handled correctly                                      | 🟢 Implemented | `frontend/admin/src/services/auth.ts`, `frontend/admin/src/pages/login/LoginPage.tsx` |
+| `FE_LOGIN_API_ERR_02` | `401 INVALID_CREDENTIALS` is handled with a generic authentication error        | 🟢 Implemented | `frontend/admin/src/services/auth.ts`, `frontend/admin/src/pages/login/LoginPage.tsx` |
+| `FE_LOGIN_API_ERR_03` | `429 AUTHENTICATION_RATE_LIMITED` is handled with a generic rate-limit error    | 🟢 Implemented | `frontend/admin/src/services/auth.ts`, `frontend/admin/src/pages/login/LoginPage.tsx` |
+| `FE_LOGIN_API_SEC_01` | Frontend does not distinguish whether an account exists                         | 🟢 Implemented | `frontend/admin/src/pages/login/LoginPage.tsx`, `frontend/admin/src/services/auth.ts` |
 
 ## UI States
 
-| ID                  | Criteria                                                                | Status        | Reason |
-| ------------------- | ----------------------------------------------------------------------- | ------------- | ------ |
-| `FE_LOGIN_STATE_01` | Initial state shows the empty login form                                | ⚪ Not Started |        |
-| `FE_LOGIN_STATE_02` | Editing state allows credential entry                                   | ⚪ Not Started |        |
-| `FE_LOGIN_STATE_03` | Submitting state disables submission and shows loading state            | ⚪ Not Started |        |
-| `FE_LOGIN_STATE_04` | Invalid Request state displays the validation/request error             | ⚪ Not Started |        |
-| `FE_LOGIN_STATE_05` | Invalid Credentials state displays the generic authentication error     | ⚪ Not Started |        |
-| `FE_LOGIN_STATE_06` | Rate Limited state displays the generic rate-limit error                | ⚪ Not Started |        |
-| `FE_LOGIN_STATE_07` | Success state establishes authenticated state and navigates to `/admin` | ⚪ Not Started |        |
-| `FE_LOGIN_STATE_08` | Duplicate submissions are prevented while authentication is pending     | ⚪ Not Started |        |
+| ID                  | Criteria                                                                | Status         | Reason                                                                                |
+| ------------------- | ----------------------------------------------------------------------- | -------------- | ------------------------------------------------------------------------------------- |
+| `FE_LOGIN_STATE_01` | Initial state shows the empty login form                                | 🟢 Implemented | `frontend/admin/src/pages/login/LoginPage.tsx`                                        |
+| `FE_LOGIN_STATE_02` | Editing state allows credential entry                                   | 🟢 Implemented | `frontend/admin/src/pages/login/LoginPage.tsx`                                        |
+| `FE_LOGIN_STATE_03` | Submitting state disables submission and shows loading state            | 🟢 Implemented | `frontend/admin/src/pages/login/LoginPage.tsx`                                        |
+| `FE_LOGIN_STATE_04` | Invalid Request state displays the validation/request error             | 🟢 Implemented | `frontend/admin/src/pages/login/LoginPage.tsx`                                        |
+| `FE_LOGIN_STATE_05` | Invalid Credentials state displays the generic authentication error     | 🟢 Implemented | `frontend/admin/src/pages/login/LoginPage.tsx`                                        |
+| `FE_LOGIN_STATE_06` | Rate Limited state displays the generic rate-limit error                | 🟢 Implemented | `frontend/admin/src/pages/login/LoginPage.tsx`                                        |
+| `FE_LOGIN_STATE_07` | Success state establishes authenticated state and navigates to `/admin` | 🟢 Implemented | `frontend/admin/src/services/auth.ts`, `frontend/admin/src/App.tsx`                   |
+| `FE_LOGIN_STATE_08` | Duplicate submissions are prevented while authentication is pending     | 🟢 Implemented | `frontend/admin/src/pages/login/LoginPage.tsx`, `frontend/admin/src/services/auth.ts` |
 
 ## Security
 
-| ID                | Criteria                                                                       | Status        | Reason |
-| ----------------- | ------------------------------------------------------------------------------ | ------------- | ------ |
-| `FE_LOGIN_SEC_01` | Use HTTPS                                                                      | ⚪ Not Started |        |
-| `FE_LOGIN_SEC_02` | Send credentials only to `POST /auth/login`                                    | ⚪ Not Started |        |
-| `FE_LOGIN_SEC_03` | Do not send tokens in query parameters                                         | ⚪ Not Started |        |
-| `FE_LOGIN_SEC_04` | Do not send tokens to unrelated endpoints                                      | ⚪ Not Started |        |
-| `FE_LOGIN_SEC_05` | Never log passwords                                                            | ⚪ Not Started |        |
-| `FE_LOGIN_SEC_06` | Never log access tokens                                                        | ⚪ Not Started |        |
-| `FE_LOGIN_SEC_07` | Never log refresh tokens                                                       | ⚪ Not Started |        |
-| `FE_LOGIN_SEC_08` | Never display tokens                                                           | ⚪ Not Started |        |
-| `FE_LOGIN_SEC_09` | Do not expose authentication credentials through error messages                | ⚪ Not Started |        |
-| `FE_LOGIN_SEC_10` | Do not reveal whether an account exists                                        | ⚪ Not Started |        |
-| `FE_LOGIN_SEC_11` | Treat the backend as the authority for authentication                          | ⚪ Not Started |        |
-| `FE_LOGIN_SEC_12` | Treat `401 Unauthorized` as unauthenticated                                    | ⚪ Not Started |        |
-| `FE_LOGIN_SEC_13` | Do not implement authentication or account-state rules independently in the UI | ⚪ Not Started |        |
+| ID                | Criteria                                                                       | Status         | Reason                                                                                       |
+| ----------------- | ------------------------------------------------------------------------------ | -------------- | -------------------------------------------------------------------------------------------- |
+| `FE_LOGIN_SEC_01` | Use HTTPS                                                                      | 🟢 Implemented | `frontend/admin/src/services/auth.ts` enforces HTTPS for production requests                 |
+| `FE_LOGIN_SEC_02` | Send credentials only to `POST /auth/login`                                    | 🟢 Implemented | `frontend/admin/src/services/auth.ts`                                                        |
+| `FE_LOGIN_SEC_03` | Do not send tokens in query parameters                                         | 🟢 Implemented | `frontend/admin/src/services/auth.ts`                                                        |
+| `FE_LOGIN_SEC_04` | Do not send tokens to unrelated endpoints                                      | 🟢 Implemented | Bearer token is used only by `/auth/logout`                                                  |
+| `FE_LOGIN_SEC_05` | Never log passwords                                                            | 🟢 Implemented | No password logging found                                                                    |
+| `FE_LOGIN_SEC_06` | Never log access tokens                                                        | 🟢 Implemented | No access-token logging found                                                                |
+| `FE_LOGIN_SEC_07` | Never log refresh tokens                                                       | 🟢 Implemented | No refresh-token logging found                                                               |
+| `FE_LOGIN_SEC_08` | Never display tokens                                                           | 🟢 Implemented | Tokens remain inside `authService` state                                                     |
+| `FE_LOGIN_SEC_09` | Do not expose authentication credentials through error messages                | 🟢 Implemented | UI maps backend errors to generic messages                                                   |
+| `FE_LOGIN_SEC_10` | Do not reveal whether an account exists                                        | 🟢 Implemented | Invalid-credential UI is generic                                                             |
+| `FE_LOGIN_SEC_11` | Treat the backend as the authority for authentication                          | 🟢 Implemented | Authentication state is established from backend response                                    |
+| `FE_LOGIN_SEC_12` | Treat `401 Unauthorized` as unauthenticated                                    | 🟢 Implemented | `401` logout clears client authentication state; route guard redirects unauthenticated users |
+| `FE_LOGIN_SEC_13` | Do not implement authentication or account-state rules independently in the UI | 🟢 Implemented | UI performs only basic required-field validation                                             |
 
 ## Accessibility
 
-| ID                 | Criteria                                                                         | Status        | Reason |
-| ------------------ | -------------------------------------------------------------------------------- | ------------- | ------ |
-| `FE_LOGIN_A11Y_01` | Use a visible label for each form field                                          | ⚪ Not Started |        |
-| `FE_LOGIN_A11Y_02` | Associate validation errors with their fields when applicable                    | ⚪ Not Started |        |
-| `FE_LOGIN_A11Y_03` | Support keyboard submission                                                      | ⚪ Not Started |        |
-| `FE_LOGIN_A11Y_04` | Provide visible focus states                                                     | ⚪ Not Started |        |
-| `FE_LOGIN_A11Y_05` | Use semantic form controls                                                       | ⚪ Not Started |        |
-| `FE_LOGIN_A11Y_06` | Communicate loading and error states to assistive technologies where appropriate | ⚪ Not Started |        |
-| `FE_LOGIN_A11Y_07` | Keep the Sign In action accessible while the form is usable                      | ⚪ Not Started |        |
+| ID                 | Criteria                                                                         | Status         | Reason                                                |
+| ------------------ | -------------------------------------------------------------------------------- | -------------- | ----------------------------------------------------- |
+| `FE_LOGIN_A11Y_01` | Use a visible label for each form field                                          | 🟢 Implemented | `frontend/admin/src/pages/login/LoginPage.tsx`        |
+| `FE_LOGIN_A11Y_02` | Associate validation errors with their fields when applicable                    | 🟢 Implemented | `aria-describedby`, `aria-invalid` in `LoginPage.tsx` |
+| `FE_LOGIN_A11Y_03` | Support keyboard submission                                                      | 🟢 Implemented | Semantic `<form>` submission                          |
+| `FE_LOGIN_A11Y_04` | Provide visible focus states                                                     | 🟢 Implemented | `frontend/admin/src/styles/index.css`                 |
+| `FE_LOGIN_A11Y_05` | Use semantic form controls                                                       | 🟢 Implemented | Semantic form, label, input, and button elements      |
+| `FE_LOGIN_A11Y_06` | Communicate loading and error states to assistive technologies where appropriate | 🟢 Implemented | `role="status"`, `aria-live`, and `role="alert"`      |
+| `FE_LOGIN_A11Y_07` | Keep the Sign In action accessible while the form is usable                      | 🟢 Implemented | Accessible submit button and pending state            |
 
 ## Testing — Unit
 
-| ID                      | Criteria                                                      | Status        | Reason |
-| ----------------------- | ------------------------------------------------------------- | ------------- | ------ |
-| `FE_LOGIN_TEST_UNIT_01` | Login form renders correctly                                  | ⚪ Not Started |        |
-| `FE_LOGIN_TEST_UNIT_02` | Required-field validation works                               | ⚪ Not Started |        |
-| `FE_LOGIN_TEST_UNIT_03` | Loading state is displayed correctly                          | ⚪ Not Started |        |
-| `FE_LOGIN_TEST_UNIT_04` | Error states are rendered correctly                           | ⚪ Not Started |        |
-| `FE_LOGIN_TEST_UNIT_05` | Submit action is disabled while authentication is in progress | ⚪ Not Started |        |
+| ID                      | Criteria                                                      | Status         | Reason                                                                                    |
+| ----------------------- | ------------------------------------------------------------- | -------------- | ----------------------------------------------------------------------------------------- |
+| `FE_LOGIN_TEST_UNIT_01` | Login form renders correctly                                  | 🟡 In Progress | Test exists in `frontend/admin/tests/unit/login.test.tsx`; execution result not available |
+| `FE_LOGIN_TEST_UNIT_02` | Required-field validation works                               | 🟡 In Progress | Test exists in `frontend/admin/tests/unit/login.test.tsx`; execution result not available |
+| `FE_LOGIN_TEST_UNIT_03` | Loading state is displayed correctly                          | 🟡 In Progress | Test exists in `frontend/admin/tests/unit/login.test.tsx`; execution result not available |
+| `FE_LOGIN_TEST_UNIT_04` | Error states are rendered correctly                           | 🟡 In Progress | Test exists in `frontend/admin/tests/unit/login.test.tsx`; execution result not available |
+| `FE_LOGIN_TEST_UNIT_05` | Submit action is disabled while authentication is in progress | 🟡 In Progress | Test exists in `frontend/admin/tests/unit/login.test.tsx`; execution result not available |
 
 ## Testing — Integration
 
-| ID                     | Criteria                                               | Status        | Reason |
-| ---------------------- | ------------------------------------------------------ | ------------- | ------ |
-| `FE_LOGIN_TEST_INT_01` | Form submission works correctly                        | ⚪ Not Started |        |
-| `FE_LOGIN_TEST_INT_02` | `POST /auth/login` request is sent correctly           | ⚪ Not Started |        |
-| `FE_LOGIN_TEST_INT_03` | Successful authentication is handled correctly         | ⚪ Not Started |        |
-| `FE_LOGIN_TEST_INT_04` | `400 INVALID_REQUEST` is handled correctly             | ⚪ Not Started |        |
-| `FE_LOGIN_TEST_INT_05` | `401 INVALID_CREDENTIALS` is handled correctly         | ⚪ Not Started |        |
-| `FE_LOGIN_TEST_INT_06` | `429 AUTHENTICATION_RATE_LIMITED` is handled correctly | ⚪ Not Started |        |
-| `FE_LOGIN_TEST_INT_07` | Successful authentication navigates to `/admin`        | ⚪ Not Started |        |
-| `FE_LOGIN_TEST_INT_08` | Authenticated client state is created correctly        | ⚪ Not Started |        |
+| ID                     | Criteria                                               | Status         | Reason                                                                                           |
+| ---------------------- | ------------------------------------------------------ | -------------- | ------------------------------------------------------------------------------------------------ |
+| `FE_LOGIN_TEST_INT_01` | Form submission works correctly                        | 🟡 In Progress | Test exists in `frontend/admin/tests/integration/login.test.tsx`; execution result not available |
+| `FE_LOGIN_TEST_INT_02` | `POST /auth/login` request is sent correctly           | 🟡 In Progress | Test exists in `frontend/admin/tests/integration/login.test.tsx`; execution result not available |
+| `FE_LOGIN_TEST_INT_03` | Successful authentication is handled correctly         | 🟡 In Progress | Test exists in `frontend/admin/tests/integration/login.test.tsx`; execution result not available |
+| `FE_LOGIN_TEST_INT_04` | `400 INVALID_REQUEST` is handled correctly             | 🟡 In Progress | Test exists in `frontend/admin/tests/integration/login.test.tsx`; execution result not available |
+| `FE_LOGIN_TEST_INT_05` | `401 INVALID_CREDENTIALS` is handled correctly         | 🟡 In Progress | Test exists in `frontend/admin/tests/integration/login.test.tsx`; execution result not available |
+| `FE_LOGIN_TEST_INT_06` | `429 AUTHENTICATION_RATE_LIMITED` is handled correctly | 🟡 In Progress | Test exists in `frontend/admin/tests/integration/login.test.tsx`; execution result not available |
+| `FE_LOGIN_TEST_INT_07` | Successful authentication navigates to `/admin`        | 🟡 In Progress | Test exists in `frontend/admin/tests/integration/login.test.tsx`; execution result not available |
+| `FE_LOGIN_TEST_INT_08` | Authenticated client state is created correctly        | 🟡 In Progress | Test exists in `frontend/admin/tests/integration/login.test.tsx`; execution result not available |
 
 ## Testing — E2E
 
-| ID                     | Criteria                                         | Status        | Reason |
-| ---------------------- | ------------------------------------------------ | ------------- | ------ |
-| `FE_LOGIN_TEST_E2E_01` | User can open `/login`                           | ⚪ Not Started |        |
-| `FE_LOGIN_TEST_E2E_02` | User can enter valid credentials                 | ⚪ Not Started |        |
-| `FE_LOGIN_TEST_E2E_03` | User can submit the Login form                   | ⚪ Not Started |        |
-| `FE_LOGIN_TEST_E2E_04` | Successful login displays the Admin Shell        | ⚪ Not Started |        |
-| `FE_LOGIN_TEST_E2E_05` | Logout returns the user to `/login`              | ⚪ Not Started |        |
-| `FE_LOGIN_TEST_E2E_06` | Invalid credentials do not enter the Admin Shell | ⚪ Not Started |        |
+| ID                     | Criteria                                         | Status         | Reason                                                                                  |
+| ---------------------- | ------------------------------------------------ | -------------- | --------------------------------------------------------------------------------------- |
+| `FE_LOGIN_TEST_E2E_01` | User can open `/login`                           | 🟡 In Progress | Test exists in `frontend/admin/tests/e2e/login.spec.ts`; execution result not available |
+| `FE_LOGIN_TEST_E2E_02` | User can enter valid credentials                 | 🟡 In Progress | Test exists in `frontend/admin/tests/e2e/login.spec.ts`; execution result not available |
+| `FE_LOGIN_TEST_E2E_03` | User can submit the Login form                   | 🟡 In Progress | Test exists in `frontend/admin/tests/e2e/login.spec.ts`; execution result not available |
+| `FE_LOGIN_TEST_E2E_04` | Successful login displays the Admin Shell        | 🟡 In Progress | Test exists in `frontend/admin/tests/e2e/login.spec.ts`; execution result not available |
+| `FE_LOGIN_TEST_E2E_05` | Logout returns the user to `/login`              | 🟡 In Progress | Test exists in `frontend/admin/tests/e2e/login.spec.ts`; execution result not available |
+| `FE_LOGIN_TEST_E2E_06` | Invalid credentials do not enter the Admin Shell | 🟡 In Progress | Test exists in `frontend/admin/tests/e2e/login.spec.ts`; execution result not available |
 
 ## Testing — Manual
 
-| ID                        | Criteria                                                 | Status        | Reason |
-| ------------------------- | -------------------------------------------------------- | ------------- | ------ |
-| `FE_LOGIN_TEST_MANUAL_01` | Visual layout is correct                                 | ⚪ Not Started |        |
-| `FE_LOGIN_TEST_MANUAL_02` | Keyboard interaction works correctly                     | ⚪ Not Started |        |
-| `FE_LOGIN_TEST_MANUAL_03` | Loading behavior is correct                              | ⚪ Not Started |        |
-| `FE_LOGIN_TEST_MANUAL_04` | Error messages are correct                               | ⚪ Not Started |        |
-| `FE_LOGIN_TEST_MANUAL_05` | Responsive behavior is correct                           | ⚪ Not Started |        |
-| `FE_LOGIN_TEST_MANUAL_06` | Accessibility behavior is correct                        | ⚪ Not Started |        |
-| `FE_LOGIN_TEST_MANUAL_07` | Successful transition to the Admin Shell works correctly | ⚪ Not Started |        |
+| ID                        | Criteria                                                 | Status        | Reason                                        |
+| ------------------------- | -------------------------------------------------------- | ------------- | --------------------------------------------- |
+| `FE_LOGIN_TEST_MANUAL_01` | Visual layout is correct                                 | ⚪ Not Started | No manual verification evidence in repository |
+| `FE_LOGIN_TEST_MANUAL_02` | Keyboard interaction works correctly                     | ⚪ Not Started | No manual verification evidence in repository |
+| `FE_LOGIN_TEST_MANUAL_03` | Loading behavior is correct                              | ⚪ Not Started | No manual verification evidence in repository |
+| `FE_LOGIN_TEST_MANUAL_04` | Error messages are correct                               | ⚪ Not Started | No manual verification evidence in repository |
+| `FE_LOGIN_TEST_MANUAL_05` | Responsive behavior is correct                           | ⚪ Not Started | No manual verification evidence in repository |
+| `FE_LOGIN_TEST_MANUAL_06` | Accessibility behavior is correct                        | ⚪ Not Started | No manual verification evidence in repository |
+| `FE_LOGIN_TEST_MANUAL_07` | Successful transition to the Admin Shell works correctly | ⚪ Not Started | No manual verification evidence in repository |
