@@ -10,7 +10,11 @@ interface ListAccountsOptions {
 }
 
 type AccountsErrorCode =
-  "UNAUTHORIZED" | "FORBIDDEN" | "INVALID_RESPONSE" | "NETWORK" | "UNKNOWN";
+  | "UNAUTHORIZED"
+  | "FORBIDDEN"
+  | "INVALID_RESPONSE"
+  | "NETWORK"
+  | "UNKNOWN";
 
 const apiOrigin = (import.meta.env.VITE_API_ORIGIN ?? "")
   .trim()
@@ -75,6 +79,7 @@ function parseAccount(value: unknown): AdministratorAccount | null {
   if (
     !isString(value.id) ||
     !isString(value.email) ||
+    !(value.display_name === null || isString(value.display_name)) ||
     !isAccountStatus(value.status) ||
     !isString(value.created_at) ||
     !isString(value.updated_at) ||
@@ -86,6 +91,7 @@ function parseAccount(value: unknown): AdministratorAccount | null {
   return {
     id: value.id,
     email: value.email,
+    displayName: value.display_name,
     status: value.status,
     createdAt: value.created_at,
     updatedAt: value.updated_at,

@@ -3,6 +3,7 @@ export type AccountStatus = "active" | "inactive";
 export interface AdministratorAccount {
   id: string;
   email: string;
+  displayName: string | null;
   status: AccountStatus;
   createdAt: string;
   updatedAt: string;
