@@ -61,26 +61,37 @@ async fn reset(pool: &PgPool) {
 }
 
 async fn seed_account(pool: &PgPool, email: &str, password: &str) -> Uuid {
-    let account_id = sqlx::query_scalar::<_, Uuid>(
-        "INSERT INTO account (status, deleted_at) VALUES ('active', NULL) RETURNING id",
-    )
-    .fetch_one(pool)
-    .await
-    .unwrap();
     let email = normalize_email(email).unwrap();
     let password_hash = hash_password(SecretString::from(password.to_owned())).unwrap();
-    sqlx::query(
-        "INSERT INTO account_credentials (account_id, email, email_normalized, password_hash) \
-         VALUES ($1, $2, $3, $4)",
+
+    sqlx::query_scalar::<_, Uuid>(
+        r#"
+        WITH inserted_account AS (
+            INSERT INTO account (status, deleted_at)
+            VALUES ('active', NULL)
+            RETURNING id
+        )
+        INSERT INTO account_credentials (
+            account_id,
+            email,
+            email_normalized,
+            password_hash
+        )
+        SELECT
+            id,
+            $1,
+            $2,
+            $3
+        FROM inserted_account
+        RETURNING account_id
+        "#,
     )
-    .bind(account_id)
     .bind(email.canonical)
     .bind(email.normalized)
     .bind(password_hash)
-    .execute(pool)
+    .fetch_one(pool)
     .await
-    .unwrap();
-    account_id
+    .unwrap()
 }
 
 async fn seed_failed_attempts(pool: &PgPool, email_key: &str, source_ip_key: &str, count: usize) {

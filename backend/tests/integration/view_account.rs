@@ -25,7 +25,7 @@ async fn test_pool() -> Option<PgPool> {
     Some(
         PgPool::connect(&database_url)
             .await
-            .expect("connect to TEST_DATABASE_URL"),
+            .expect("connect to test database"),
     )
 }
 
@@ -35,38 +35,35 @@ async fn seed_account(
     status: &str,
     deleted_at: Option<time::OffsetDateTime>,
 ) -> Uuid {
-    let account_id = sqlx::query_scalar::<_, Uuid>(
+    sqlx::query_scalar::<_, Uuid>(
         r#"
-        INSERT INTO account (status, deleted_at)
-        VALUES ($1, $2)
-        RETURNING id
-        "#,
-    )
-    .bind(status)
-    .bind(deleted_at)
-    .fetch_one(pool)
-    .await
-    .expect("seed account");
-
-    sqlx::query(
-        r#"
+        WITH inserted_account AS (
+            INSERT INTO account (status, deleted_at)
+            VALUES ($1, $2)
+            RETURNING id
+        )
         INSERT INTO account_credentials (
             account_id,
             email,
             email_normalized,
             password_hash
         )
-        VALUES ($1, $2, $2, $3)
+        SELECT
+            id,
+            $3,
+            $3,
+            $4
+        FROM inserted_account
+        RETURNING account_id
         "#,
     )
-    .bind(account_id)
+    .bind(status)
+    .bind(deleted_at)
     .bind(email)
     .bind("$argon2id$v=19$m=19456,t=2,p=1$test$test")
-    .execute(pool)
+    .fetch_one(pool)
     .await
-    .expect("seed account credentials");
-
-    account_id
+    .expect("seed account")
 }
 
 async fn seed_access_token(pool: &PgPool, account_id: Uuid, role_name: Option<&str>) -> String {
@@ -185,7 +182,7 @@ async fn views_a_non_deleted_account_and_hides_credentials() {
         return;
     };
 
-    sqlx::migrate!()
+    digital_publication_backend::MIGRATOR
         .run(&pool)
         .await
         .expect("run migrations");
@@ -244,7 +241,7 @@ async fn returns_account_not_found_for_missing_and_soft_deleted_accounts() {
         return;
     };
 
-    sqlx::migrate!()
+    digital_publication_backend::MIGRATOR
         .run(&pool)
         .await
         .expect("run migrations");
@@ -348,7 +345,7 @@ async fn rejects_authenticated_principal_without_account_view_permission() {
         return;
     };
 
-    sqlx::migrate!()
+    digital_publication_backend::MIGRATOR
         .run(&pool)
         .await
         .expect("run migrations");
