@@ -1,5 +1,10 @@
 import { authService } from "./auth";
 import type {
+  AccountListQuery,
+  AccountStatusFilter,
+} from "../types/account-query";
+import { DEFAULT_ACCOUNT_LIST_QUERY } from "../types/account-query";
+import type {
   AccountListResponse,
   AccountStatus,
   AdministratorAccount,
@@ -9,12 +14,23 @@ interface ListAccountsOptions {
   signal?: AbortSignal;
 }
 
+export type AccountMutation = "deactivate" | "activate" | "restore";
+
 type AccountsErrorCode =
   | "UNAUTHORIZED"
   | "FORBIDDEN"
-  | "INVALID_RESPONSE"
+  | "NOT_FOUND"
+  | "CONFLICT"
+  | "VALIDATION"
+  | "UNSUPPORTED_MEDIA_TYPE"
+  | "SERVER"
   | "NETWORK"
+  | "INVALID_RESPONSE"
   | "UNKNOWN";
+
+interface ProblemDetails {
+  code: string | null;
+}
 
 const apiOrigin = (import.meta.env.VITE_API_ORIGIN ?? "")
   .trim()
@@ -23,12 +39,18 @@ const apiOrigin = (import.meta.env.VITE_API_ORIGIN ?? "")
 export class AccountsError extends Error {
   readonly code: AccountsErrorCode;
   readonly status: number;
+  readonly problemCode: string | null;
 
-  constructor(code: AccountsErrorCode, status: number) {
+  constructor(
+    code: AccountsErrorCode,
+    status: number,
+    problemCode: string | null = null,
+  ) {
     super(code);
     this.name = "AccountsError";
     this.code = code;
     this.status = status;
+    this.problemCode = problemCode;
   }
 }
 
@@ -68,6 +90,10 @@ function isString(value: unknown): value is string {
 }
 
 function isAccountStatus(value: unknown): value is AccountStatus {
+  return value === "active" || value === "inactive";
+}
+
+function isAccountStatusFilter(value: unknown): value is AccountStatusFilter {
   return value === "active" || value === "inactive";
 }
 
@@ -111,6 +137,7 @@ function parseAccountListResponse(value: unknown): AccountListResponse {
     !Number.isInteger(value.total) ||
     value.page < 1 ||
     value.page_size < 1 ||
+    value.page_size > 100 ||
     value.total < 0
   ) {
     throw new AccountsError("INVALID_RESPONSE", 200);
@@ -130,49 +157,128 @@ function parseAccountListResponse(value: unknown): AccountListResponse {
   };
 }
 
+function buildListSearch(query: AccountListQuery): string {
+  const params = new URLSearchParams();
+  params.set("page", String(Math.max(1, query.page)));
+  params.set("page_size", String(Math.min(100, Math.max(1, query.pageSize))));
+
+  if (query.status !== null && isAccountStatusFilter(query.status)) {
+    params.set("status", query.status);
+  }
+
+  if (query.includeDeleted) {
+    params.set("include_deleted", "true");
+  }
+
+  return params.toString();
+}
+
+async function readProblemDetails(response: Response): Promise<ProblemDetails> {
+  const contentType = response.headers.get("content-type") ?? "";
+
+  if (!contentType.toLowerCase().includes("application/problem+json")) {
+    return { code: null };
+  }
+
+  try {
+    const body: unknown = await response.json();
+
+    if (
+      isRecord(body) &&
+      typeof body.code === "string" &&
+      body.code.length > 0
+    ) {
+      return { code: body.code };
+    }
+  } catch {
+    return { code: null };
+  }
+
+  return { code: null };
+}
+
+async function toAccountsError(response: Response): Promise<AccountsError> {
+  const { code: problemCode } = await readProblemDetails(response);
+
+  if (response.status === 401) {
+    authService.clearClientState();
+    return new AccountsError("UNAUTHORIZED", 401, problemCode);
+  }
+
+  if (response.status === 403) {
+    return new AccountsError("FORBIDDEN", 403, problemCode);
+  }
+
+  if (response.status === 404) {
+    return new AccountsError("NOT_FOUND", 404, problemCode);
+  }
+
+  if (response.status === 409) {
+    return new AccountsError("CONFLICT", 409, problemCode);
+  }
+
+  if (response.status === 415) {
+    return new AccountsError("UNSUPPORTED_MEDIA_TYPE", 415, problemCode);
+  }
+
+  if (response.status === 400 || response.status === 422) {
+    return new AccountsError("VALIDATION", response.status, problemCode);
+  }
+
+  if (response.status >= 500) {
+    return new AccountsError("SERVER", response.status, problemCode);
+  }
+
+  return new AccountsError("UNKNOWN", response.status, problemCode);
+}
+
+async function request(
+  pathname: string,
+  init: RequestInit = {},
+): Promise<Response> {
+  const authorization = authService.getAuthorizationHeader();
+
+  if (authorization === null) {
+    throw new AccountsError("UNAUTHORIZED", 401);
+  }
+
+  const headers = new Headers(init.headers);
+  headers.set("Accept", "application/json, application/problem+json");
+  headers.set("Authorization", authorization);
+
+  let response: Response;
+
+  try {
+    response = await fetch(buildApiUrl(pathname), {
+      ...init,
+      headers,
+      cache: "no-store",
+    });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw error;
+    }
+
+    throw new AccountsError("NETWORK", 0);
+  }
+
+  if (!response.ok) {
+    throw await toAccountsError(response);
+  }
+
+  return response;
+}
+
 export const accountsService = {
-  async list(options: ListAccountsOptions = {}): Promise<AccountListResponse> {
-    const authorization = authService.getAuthorizationHeader();
-
-    if (authorization === null) {
-      throw new AccountsError("UNAUTHORIZED", 401);
-    }
-
-    let response: Response;
-
-    try {
-      response = await fetch(
-        buildApiUrl("/admin/accounts?page=1&page_size=20"),
-        {
-          method: "GET",
-          headers: {
-            Accept: "application/json",
-            Authorization: authorization,
-          },
-          cache: "no-store",
-          signal: options.signal,
-        },
-      );
-    } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError") {
-        throw error;
-      }
-
-      throw new AccountsError("NETWORK", 0);
-    }
-
-    if (response.status === 401) {
-      authService.clearClientState();
-      throw new AccountsError("UNAUTHORIZED", 401);
-    }
-
-    if (response.status === 403) {
-      throw new AccountsError("FORBIDDEN", 403);
-    }
-
-    if (!response.ok) {
-      throw new AccountsError("UNKNOWN", response.status);
-    }
+  async list(
+    query: AccountListQuery = DEFAULT_ACCOUNT_LIST_QUERY,
+    options: ListAccountsOptions = {},
+  ): Promise<AccountListResponse> {
+    const search = buildListSearch(query);
+    const response = await request(`/admin/accounts?${search}`, {
+      method: "GET",
+      signal: options.signal,
+    });
 
     let body: unknown;
 
@@ -183,5 +289,17 @@ export const accountsService = {
     }
 
     return parseAccountListResponse(body);
+  },
+
+  async mutate(action: AccountMutation, accountId: string): Promise<void> {
+    const endpoints: Record<AccountMutation, string> = {
+      deactivate: `/admin/accounts/${encodeURIComponent(accountId)}/deactivate`,
+      activate: `/admin/accounts/${encodeURIComponent(accountId)}/activate`,
+      restore: `/admin/accounts/${encodeURIComponent(accountId)}/restore`,
+    };
+
+    await request(endpoints[action], {
+      method: "POST",
+    });
   },
 };

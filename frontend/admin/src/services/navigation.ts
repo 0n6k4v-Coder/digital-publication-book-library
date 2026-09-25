@@ -14,21 +14,36 @@ export function getPathname(): string {
   return normalizePathname(window.location.pathname);
 }
 
-export function navigate(
-  pathname: AppRoute,
+export function navigateTo(
+  destination: string,
   options: { replace?: boolean } = {},
 ): void {
-  if (getPathname() === pathname) {
+  if (!destination.startsWith("/")) {
+    throw new Error(
+      "Client navigation destinations must be same-origin paths.",
+    );
+  }
+
+  const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+
+  if (current === destination) {
     return;
   }
 
   if (options.replace === true) {
-    window.history.replaceState({}, "", pathname);
+    window.history.replaceState({}, "", destination);
   } else {
-    window.history.pushState({}, "", pathname);
+    window.history.pushState({}, "", destination);
   }
 
   window.dispatchEvent(new PopStateEvent("popstate"));
+}
+
+export function navigate(
+  pathname: AppRoute,
+  options: { replace?: boolean } = {},
+): void {
+  navigateTo(pathname, options);
 }
 
 export function usePathname(): string {

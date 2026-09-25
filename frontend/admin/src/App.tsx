@@ -1,5 +1,6 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { AdminShell } from "./layouts/AdminShell";
+import { AccountRoutePlaceholderPage } from "./pages/accounts/AccountRoutePlaceholderPage";
 import { AccountsPage } from "./pages/accounts/AccountsPage";
 import { LoginPage } from "./pages/login/LoginPage";
 import { authService } from "./services/auth";
@@ -13,8 +14,17 @@ function RouteTransition() {
   );
 }
 
+function isAccountEditRoute(pathname: string): boolean {
+  return /^\/admin\/accounts\/[^/]+\/edit$/.test(pathname);
+}
+
 function isAdminRoute(pathname: string): boolean {
-  return pathname === "/admin" || pathname === "/admin/accounts";
+  return (
+    pathname === "/admin" ||
+    pathname === "/admin/accounts" ||
+    pathname === "/admin/accounts/create" ||
+    isAccountEditRoute(pathname)
+  );
 }
 
 export default function App() {
@@ -48,6 +58,16 @@ export default function App() {
       return;
     }
 
+    if (pathname === "/admin/accounts/create") {
+      document.title = "Create Account | Admin Application";
+      return;
+    }
+
+    if (isAccountEditRoute(pathname)) {
+      document.title = "Edit Account | Admin Application";
+      return;
+    }
+
     if (pathname === "/admin") {
       document.title = "Admin Application";
       return;
@@ -68,6 +88,22 @@ export default function App() {
     return (
       <AdminShell onLogout={authService.logout}>
         <AccountsPage />
+      </AdminShell>
+    );
+  }
+
+  if (pathname === "/admin/accounts/create") {
+    return (
+      <AdminShell onLogout={authService.logout}>
+        <AccountRoutePlaceholderPage mode="create" />
+      </AdminShell>
+    );
+  }
+
+  if (isAccountEditRoute(pathname)) {
+    return (
+      <AdminShell onLogout={authService.logout}>
+        <AccountRoutePlaceholderPage mode="edit" />
       </AdminShell>
     );
   }
