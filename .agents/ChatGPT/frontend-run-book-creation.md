@@ -21,16 +21,24 @@ Implement production-ready frontend features that follow the project's design do
 
 * `/frontend/admin`
 
-## Frontend Design
+## Frontend Application Design
 
-* Admin Application structure and technology stack:
+* Admin Application:
   https://github.com/0n6k4v-Coder/digital-publication-book-library/blob/frontend/frontend/admin/README.md
+
+## Frontend Feature Design
+
+* Login:
+  https://github.com/0n6k4v-Coder/digital-publication-book-library/blob/docs/docs/design/frontend/login.md
+
+* Admin Shell:
+  https://github.com/0n6k4v-Coder/digital-publication-book-library/blob/docs/docs/design/frontend/admin-shell.md
 
 ## Product Requirements
 
 * https://github.com/0n6k4v-Coder/digital-publication-book-library/blob/docs/docs/requirements.md
 
-## Backend Design Documents
+## Backend Design
 
 * Account:
   https://github.com/0n6k4v-Coder/digital-publication-book-library/blob/docs/docs/design/account.md
@@ -51,17 +59,21 @@ Implement production-ready frontend features that follow the project's design do
 
 Use each document according to its responsibility.
 
-* `frontend/admin/README.md` is the source of truth for Admin Application structure, frontend technology stack, testing strategy, and frontend conventions.
+* The relevant frontend feature design document is the primary source of truth for frontend behavior.
+* `frontend/admin/README.md` is the source of truth for Admin Application structure, technology stack, testing strategy, and frontend conventions.
 * `requirements.md` is the source of truth for product scope and feature boundaries.
-* `account.md` is the source of truth for Account domain behavior, API contract, security requirements, and business rules.
-* `authentication.md` is the source of truth for Authentication behavior, API contract, session behavior, token behavior, and security requirements.
-* `authorization.md` is the source of truth for Authorization behavior, roles, permissions, and authorization contracts.
-* Existing repository code is authoritative for established frontend implementation conventions.
-* Backend API contracts are authoritative for request, response, status, and error behavior.
-* Do not duplicate backend business rules in the frontend.
+* `account.md` is the source of truth for Account business rules and Account API behavior.
+* `authentication.md` is the source of truth for Authentication behavior, authentication API contracts, sessions, tokens, and authentication security.
+* `authorization.md` is the source of truth for roles, permissions, and authorization behavior.
+* Existing repository code is the source of truth for established frontend implementation conventions.
+* Backend API contracts are authoritative for requests, responses, status codes, and error behavior.
+* Frontend design documents must not redefine backend business or security rules.
+* Do not duplicate backend business logic in the frontend.
 * Do not invent undefined business, API, authentication, authorization, or security behavior.
 
 When an objective crosses domain boundaries, all applicable source-of-truth documents must be satisfied together.
+
+When applicable source-of-truth documents conflict, do not invent a resolution. Report the conflict as a design blocker.
 ```
 
 ```text
