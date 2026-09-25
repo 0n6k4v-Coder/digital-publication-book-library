@@ -1,61 +1,35 @@
 ```text
-# Role
-
-You are a Senior Frontend Engineer and Software Architect specializing in React, Vite, TypeScript, Native CSS, API integration, authentication, authorization, accessibility, testing, and production-ready web applications.
-
-Implement production-ready frontend features that follow the project's design documents, frontend architecture, backend API contracts, security requirements, testing strategy, and repository conventions.
-```
-
-```text
 # Context
 
-## Working Repository
+Working Repository:
+- https://github.com/0n6k4v-Coder/digital-publication-book-library
 
-* https://github.com/0n6k4v-Coder/digital-publication-book-library
+Working Branch:
+- https://github.com/0n6k4v-Coder/digital-publication-book-library/tree/frontend
 
-## Working Branch
+Target Application: `/frontend/admin`
 
-* https://github.com/0n6k4v-Coder/digital-publication-book-library/tree/frontend
+Frontend Application Design:
+- https://github.com/0n6k4v-Coder/digital-publication-book-library/blob/frontend/frontend/admin/README.md
 
-## Target Application
+Frontend Feature Design:
+- https://github.com/0n6k4v-Coder/digital-publication-book-library/blob/docs/docs/design/frontend/login.md
+- https://github.com/0n6k4v-Coder/digital-publication-book-library/blob/docs/docs/design/frontend/admin-shell.md
 
-* `/frontend/admin`
+Product Requirements:
+- https://github.com/0n6k4v-Coder/digital-publication-book-library/blob/docs/docs/requirements.md
 
-## Frontend Application Design
+Backend Design:
+- https://github.com/0n6k4v-Coder/digital-publication-book-library/blob/docs/docs/design/account.md
+- https://github.com/0n6k4v-Coder/digital-publication-book-library/blob/docs/docs/design/authentication.md
+- https://github.com/0n6k4v-Coder/digital-publication-book-library/blob/docs/docs/design/authorization.md
 
-* Admin Application:
-  https://github.com/0n6k4v-Coder/digital-publication-book-library/blob/frontend/frontend/admin/README.md
-
-## Frontend Feature Design
-
-* Login:
-  https://github.com/0n6k4v-Coder/digital-publication-book-library/blob/docs/docs/design/frontend/login.md
-
-* Admin Shell:
-  https://github.com/0n6k4v-Coder/digital-publication-book-library/blob/docs/docs/design/frontend/admin-shell.md
-
-## Product Requirements
-
-* https://github.com/0n6k4v-Coder/digital-publication-book-library/blob/docs/docs/requirements.md
-
-## Backend Design
-
-* Account:
-  https://github.com/0n6k4v-Coder/digital-publication-book-library/blob/docs/docs/design/account.md
-
-* Authentication:
-  https://github.com/0n6k4v-Coder/digital-publication-book-library/blob/docs/docs/design/authentication.md
-
-* Authorization:
-  https://github.com/0n6k4v-Coder/digital-publication-book-library/blob/docs/docs/design/authorization.md
-
-## Backend Structure and API Context
-
-* https://github.com/0n6k4v-Coder/digital-publication-book-library/blob/backend/backend/README.md
+Backend Structure and API Context:
+- https://github.com/0n6k4v-Coder/digital-publication-book-library/blob/backend/backend/README.md
 ```
 
 ```text
-# Source of Truth
+Source of Truth
 
 Use each document according to its responsibility.
 
