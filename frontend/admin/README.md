@@ -13,6 +13,7 @@
 5. [Docker Command](#docker-command)
 
    1. [Docker Test Profile Command](#docker-test-profile-command)
+   2. [Docker Dev Profile Command](#docker-dev-profile-command)
 
 ---
 
@@ -190,4 +191,30 @@ Full Frontend Test Profile
 ```bash
 docker compose -f frontend/admin/compose/docker-compose.test.yml run --rm test sh -c \
 'npm run format:check && npm run typecheck && npm run lint && npm run build && npm run test:unit && npm run test:integration && npm run test:e2e'
+```
+
+## 5.2 Docker Dev Profile Command
+
+Start Development Environment
+
+```bash
+docker compose -f frontend/admin/compose/docker-compose.dev.yml up --build --watch dev
+````
+
+Open Admin Application
+
+```text
+http://127.0.0.1:5173/login
+```
+
+Stop Development Environment
+
+```bash
+docker compose -f frontend/admin/compose/docker-compose.dev.yml down
+```
+
+Clean Development Environment
+
+```bash
+docker compose -f frontend/admin/compose/docker-compose.dev.yml down --volumes --remove-orphans
 ```
