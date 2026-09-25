@@ -27,7 +27,7 @@ async fn test_pool() -> Option<PgPool> {
     Some(
         PgPool::connect(&database_url)
             .await
-            .expect("connect to TEST_DATABASE_URL"),
+            .expect("connect to test database"),
     )
 }
 
@@ -39,46 +39,43 @@ async fn seed_account(
     updated_by: Option<Uuid>,
     deleted_by: Option<Uuid>,
 ) -> Uuid {
-    let account_id = sqlx::query_scalar::<_, Uuid>(
+    sqlx::query_scalar::<_, Uuid>(
         r#"
-        INSERT INTO account (
-            status,
-            deleted_at,
-            created_by,
-            updated_by,
-            deleted_by
+        WITH inserted_account AS (
+            INSERT INTO account (
+                status,
+                deleted_at,
+                created_by,
+                updated_by,
+                deleted_by
+            )
+            VALUES ($1, $2, $3, $3, $4)
+            RETURNING id
         )
-        VALUES ($1, $2, $3, $3, $4)
-        RETURNING id
-        "#,
-    )
-    .bind(status)
-    .bind(deleted_at)
-    .bind(updated_by)
-    .bind(deleted_by)
-    .fetch_one(pool)
-    .await
-    .expect("seed account");
-
-    sqlx::query(
-        r#"
         INSERT INTO account_credentials (
             account_id,
             email,
             email_normalized,
             password_hash
         )
-        VALUES ($1, $2, $2, $3)
+        SELECT
+            id,
+            $5,
+            $5,
+            $6
+        FROM inserted_account
+        RETURNING account_id
         "#,
     )
-    .bind(account_id)
+    .bind(status)
+    .bind(deleted_at)
+    .bind(updated_by)
+    .bind(deleted_by)
     .bind(email)
     .bind("$argon2id$v=19$m=19456,t=2,p=1$test$test")
-    .execute(pool)
+    .fetch_one(pool)
     .await
-    .expect("seed account credentials");
-
-    account_id
+    .expect("seed account")
 }
 
 async fn assign_role(pool: &PgPool, account_id: Uuid, role_name: &str) {
@@ -256,10 +253,7 @@ async fn assert_problem(response: Response, expected_status: StatusCode) -> Valu
         response.headers()[header::CONTENT_TYPE],
         "application/problem+json"
     );
-    assert_eq!(
-        response.headers()[header::CACHE_CONTROL],
-        "no-store"
-    );
+    assert_eq!(response.headers()[header::CACHE_CONTROL], "no-store");
 
     let body = to_bytes(response.into_body(), 32 * 1024)
         .await
@@ -332,6 +326,7 @@ async fn soft_deletes_account_and_invalidates_existing_authentication() {
         None,
     )
     .await;
+
     assign_role(&pool, target_id, "account_admin").await;
 
     let target_token = seed_access_token(&pool, target_id).await;
@@ -355,6 +350,7 @@ async fn soft_deletes_account_and_invalidates_existing_authentication() {
     let body = to_bytes(response.into_body(), 1024)
         .await
         .expect("read empty soft-delete response");
+
     assert!(body.is_empty());
 
     let after = snapshot(&pool, target_id).await;
@@ -370,12 +366,13 @@ async fn soft_deletes_account_and_invalidates_existing_authentication() {
     assert_eq!(after.updated_by, Some(admin_id));
     assert!(after.updated_at > before.updated_at);
 
-    let role_count =
-        sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM authorization_account_role WHERE account_id = $1")
-            .bind(target_id)
-            .fetch_one(&pool)
-            .await
-            .expect("check retained authorization role");
+    let role_count = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM authorization_account_role WHERE account_id = $1",
+    )
+    .bind(target_id)
+    .fetch_one(&pool)
+    .await
+    .expect("check retained authorization role");
 
     assert_eq!(role_count, 1);
 
@@ -426,6 +423,7 @@ async fn soft_deletes_account_and_invalidates_existing_authentication() {
         None,
     )
     .await;
+
     assign_role(&pool, inactive_target_id, "account_admin").await;
 
     let response = app(pool.clone())
@@ -439,6 +437,7 @@ async fn soft_deletes_account_and_invalidates_existing_authentication() {
     assert_eq!(response.status(), StatusCode::NO_CONTENT);
 
     let inactive_state = snapshot(&pool, inactive_target_id).await;
+
     assert_eq!(inactive_state.status, "inactive");
     assert!(inactive_state.deleted_at.is_some());
     assert_eq!(inactive_state.deleted_by, Some(admin_id));
@@ -594,6 +593,7 @@ async fn rejects_unauthenticated_unauthorized_invalid_and_conflicting_requests()
     assert_eq!(last_admin_after.updated_by, last_admin_before.updated_by);
 
     let target_after = snapshot(&pool, target_id).await;
+
     assert_eq!(target_after.status, target_before.status);
     assert_eq!(target_after.deleted_at, target_before.deleted_at);
 
