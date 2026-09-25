@@ -37,35 +37,31 @@ async fn seed_principal(
 ) -> (Uuid, String) {
     let account_id = sqlx::query_scalar::<_, Uuid>(
         r#"
-        INSERT INTO account (status, deleted_at)
-        VALUES ('active', NULL)
-        RETURNING id
-        "#,
-    )
-    .fetch_one(pool)
-    .await
-    .expect("seed principal account");
-
-    let email = format!("seed-{account_id}@example.com");
-
-    sqlx::query(
-        r#"
+        WITH inserted_account AS (
+            INSERT INTO account (status, deleted_at)
+            VALUES ('active', NULL)
+            RETURNING id
+        )
         INSERT INTO account_credentials (
             account_id,
             email,
             email_normalized,
             password_hash
         )
-        VALUES ($1, $2, $3, $4)
+        SELECT
+            id,
+            $1,
+            $1,
+            $2
+        FROM inserted_account
+        RETURNING account_id
         "#,
     )
-    .bind(account_id)
-    .bind(&email)
-    .bind(&email)
+    .bind(format!("seed-{}@example.com", Uuid::new_v4()))
     .bind("$argon2id$v=19$m=19456,t=2,p=1$test$test")
-    .execute(pool)
+    .fetch_one(pool)
     .await
-    .expect("seed principal credentials");
+    .expect("seed principal account");
 
     let session_id = sqlx::query_scalar::<_, Uuid>(
         r#"
@@ -207,9 +203,12 @@ async fn create_account_end_to_end() {
         .await
         .expect("run migrations");
 
-    let (admin_id, token) = seed_principal(&pool, "account_admin").await;
+    let (admin_id, token) =
+        seed_principal(&pool, "account_admin").await;
 
-    let (address, server) = start_server(test_router(pool.clone())).await;
+    let (address, server) =
+        start_server(test_router(pool.clone())).await;
+
     let email = format!("e2e-{}@example.com", Uuid::new_v4());
     let password = "an extremely secure password";
 
@@ -243,42 +242,56 @@ async fn create_account_end_to_end() {
         .await
         .expect("decode account response");
 
-    assert!(response_body.get("id").and_then(Value::as_str).is_some());
+    assert!(response_body
+        .get("id")
+        .and_then(Value::as_str)
+        .is_some());
+
     assert_eq!(
         response_body.get("email").and_then(Value::as_str),
         Some(email.as_str())
     );
+
     assert_eq!(
         response_body.get("status").and_then(Value::as_str),
         Some("active")
     );
-    assert!(response_body.get("deleted_at").is_some_and(Value::is_null));
+
+    assert!(
+        response_body
+            .get("deleted_at")
+            .is_some_and(Value::is_null)
+    );
+
     assert!(response_body.get("password").is_none());
     assert!(response_body.get("password_hash").is_none());
 
     let account_id = Uuid::parse_str(
-        response_body["id"].as_str().expect("account id"),
+        response_body["id"]
+            .as_str()
+            .expect("account id"),
     )
     .expect("valid UUID");
 
-    let stored = sqlx::query_as::<_, (Uuid, String, String, Uuid, Uuid)>(
-        r#"
-        SELECT
-            a.id,
-            a.status,
-            ac.password_hash,
-            a.created_by,
-            a.updated_by
-        FROM account AS a
-        INNER JOIN account_credentials AS ac
-            ON ac.account_id = a.id
-        WHERE a.id = $1
-        "#,
-    )
-    .bind(account_id)
-    .fetch_one(&pool)
-    .await
-    .expect("fetch created account");
+    let stored =
+        sqlx::query_as::<_, (Uuid, String, String, Uuid, Uuid)>(
+            r#"
+            SELECT
+                a.id,
+                a.status,
+                ac.password_hash,
+                a.created_by,
+                a.updated_by
+            FROM account AS a
+            INNER JOIN account_credentials AS ac
+                ON ac.account_id = a.id
+            WHERE a.id = $1
+            "#,
+        )
+        .bind(account_id)
+        .fetch_one(&pool)
+        .await
+        .expect("fetch created account");
 
     assert_eq!(stored.0, account_id);
     assert_eq!(stored.1, "active");
@@ -301,10 +314,13 @@ async fn unauthenticated_create_account_end_to_end_returns_401() {
         .await
         .expect("run migrations");
 
-    let (address, server) = start_server(test_router(pool)).await;
+    let (address, server) =
+        start_server(test_router(pool)).await;
 
     let response = Client::new()
-        .post(format!("http://{address}/admin/accounts?access_token=query-or-body-token"))
+        .post(format!(
+            "http://{address}/admin/accounts?access_token=query-or-body-token"
+        ))
         .header("content-type", "application/json")
         .json(&json!({
             "email": "admin@example.com",
@@ -315,7 +331,11 @@ async fn unauthenticated_create_account_end_to_end_returns_401() {
         .await
         .expect("send unauthenticated request");
 
-    assert_eq!(response.status(), reqwest::StatusCode::UNAUTHORIZED);
+    assert_eq!(
+        response.status(),
+        reqwest::StatusCode::UNAUTHORIZED
+    );
+
     assert_eq!(
         response
             .headers()
@@ -323,6 +343,7 @@ async fn unauthenticated_create_account_end_to_end_returns_401() {
             .and_then(|value| value.to_str().ok()),
         Some(r#"Bearer realm="admin-api""#)
     );
+
     assert_eq!(
         response
             .headers()
@@ -330,6 +351,7 @@ async fn unauthenticated_create_account_end_to_end_returns_401() {
             .and_then(|value| value.to_str().ok()),
         Some("application/problem+json")
     );
+
     assert_eq!(
         response
             .headers()
@@ -352,7 +374,8 @@ async fn invalid_bearer_authentication_returns_401_with_invalid_token_challenge(
         .await
         .expect("run migrations");
 
-    let (address, server) = start_server(test_router(pool)).await;
+    let (address, server) =
+        start_server(test_router(pool)).await;
 
     let response = Client::new()
         .post(format!("http://{address}/admin/accounts"))
@@ -366,7 +389,11 @@ async fn invalid_bearer_authentication_returns_401_with_invalid_token_challenge(
         .await
         .expect("send invalid-authentication request");
 
-    assert_eq!(response.status(), reqwest::StatusCode::UNAUTHORIZED);
+    assert_eq!(
+        response.status(),
+        reqwest::StatusCode::UNAUTHORIZED
+    );
+
     assert_eq!(
         response
             .headers()
@@ -374,6 +401,7 @@ async fn invalid_bearer_authentication_returns_401_with_invalid_token_challenge(
             .and_then(|value| value.to_str().ok()),
         Some(r#"Bearer realm="admin-api", error="invalid_token""#)
     );
+
     assert_eq!(
         response
             .headers()
@@ -381,6 +409,7 @@ async fn invalid_bearer_authentication_returns_401_with_invalid_token_challenge(
             .and_then(|value| value.to_str().ok()),
         Some("application/problem+json")
     );
+
     assert_eq!(
         response
             .headers()
@@ -403,8 +432,11 @@ async fn authenticated_principal_without_account_create_permission_returns_403()
         .await
         .expect("run migrations");
 
-    let (viewer_id, token) = seed_principal(&pool, "account_viewer").await;
-    let (address, server) = start_server(test_router(pool.clone())).await;
+    let (viewer_id, token) =
+        seed_principal(&pool, "account_viewer").await;
+
+    let (address, server) =
+        start_server(test_router(pool.clone())).await;
 
     let response = Client::new()
         .post(format!("http://{address}/admin/accounts"))
@@ -419,6 +451,7 @@ async fn authenticated_principal_without_account_create_permission_returns_403()
         .expect("send forbidden request");
 
     assert_eq!(response.status(), reqwest::StatusCode::FORBIDDEN);
+
     assert_eq!(
         response
             .headers()
@@ -426,6 +459,7 @@ async fn authenticated_principal_without_account_create_permission_returns_403()
             .and_then(|value| value.to_str().ok()),
         Some("application/problem+json")
     );
+
     assert_eq!(
         response
             .headers()
@@ -433,6 +467,7 @@ async fn authenticated_principal_without_account_create_permission_returns_403()
             .and_then(|value| value.to_str().ok()),
         Some("no-store")
     );
+
     assert!(response.headers().get("www-authenticate").is_none());
 
     let created = sqlx::query_scalar::<_, i64>(
@@ -460,8 +495,12 @@ async fn malformed_json_and_blocklisted_password_remain_account_validation_error
         .await
         .expect("run migrations");
 
-    let (admin_id, token) = seed_principal(&pool, "account_admin").await;
-    let (address, server) = start_server(test_router(pool.clone())).await;
+    let (admin_id, token) =
+        seed_principal(&pool, "account_admin").await;
+
+    let (address, server) =
+        start_server(test_router(pool.clone())).await;
+
     let client = Client::new();
 
     let malformed = client
@@ -473,7 +512,11 @@ async fn malformed_json_and_blocklisted_password_remain_account_validation_error
         .await
         .expect("send malformed-json request");
 
-    assert_eq!(malformed.status(), reqwest::StatusCode::BAD_REQUEST);
+    assert_eq!(
+        malformed.status(),
+        reqwest::StatusCode::BAD_REQUEST
+    );
+
     assert_eq!(
         malformed
             .headers()
@@ -482,13 +525,19 @@ async fn malformed_json_and_blocklisted_password_remain_account_validation_error
         Some("application/problem+json")
     );
 
-    let blocked = SecretString::from("password-password".to_owned());
+    let blocked = SecretString::from(
+        "password-password".to_owned(),
+    );
+
     let response = client
         .post(format!("http://{address}/admin/accounts"))
         .header("content-type", "application/json")
         .header("authorization", format!("Bearer {token}"))
         .json(&json!({
-            "email": format!("blocked-{}@example.com", Uuid::new_v4()),
+            "email": format!(
+                "blocked-{}@example.com",
+                Uuid::new_v4()
+            ),
             "password": blocked.expose_secret()
         }))
         .send()
@@ -499,6 +548,7 @@ async fn malformed_json_and_blocklisted_password_remain_account_validation_error
         response.status(),
         reqwest::StatusCode::UNPROCESSABLE_ENTITY
     );
+
     assert_eq!(
         response
             .headers()
