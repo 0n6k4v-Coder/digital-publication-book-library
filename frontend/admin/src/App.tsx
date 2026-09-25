@@ -1,5 +1,6 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { AdminShell } from "./layouts/AdminShell";
+import { AccountsPage } from "./pages/accounts/AccountsPage";
 import { LoginPage } from "./pages/login/LoginPage";
 import { authService } from "./services/auth";
 import { navigate, usePathname } from "./services/navigation";
@@ -12,8 +13,13 @@ function RouteTransition() {
   );
 }
 
+function isAdminRoute(pathname: string): boolean {
+  return pathname === "/admin" || pathname === "/admin/accounts";
+}
+
 export default function App() {
   const pathname = usePathname();
+
   const isAuthenticated = useSyncExternalStore(
     authService.subscribe,
     authService.getSnapshot,
@@ -22,9 +28,9 @@ export default function App() {
   const redirectTarget =
     pathname === "/login" && isAuthenticated
       ? "/admin"
-      : pathname === "/admin" && !isAuthenticated
+      : isAdminRoute(pathname) && !isAuthenticated
         ? "/login"
-        : pathname !== "/login" && pathname !== "/admin"
+        : pathname !== "/login" && !isAdminRoute(pathname)
           ? isAuthenticated
             ? "/admin"
             : "/login"
@@ -32,9 +38,23 @@ export default function App() {
 
   useEffect(() => {
     if (redirectTarget !== null) {
-      navigate(redirectTarget);
+      navigate(redirectTarget, { replace: true });
     }
   }, [redirectTarget]);
+
+  useEffect(() => {
+    if (pathname === "/admin/accounts") {
+      document.title = "Accounts | Admin Application";
+      return;
+    }
+
+    if (pathname === "/admin") {
+      document.title = "Admin Application";
+      return;
+    }
+
+    document.title = "Sign in | Admin Application";
+  }, [pathname]);
 
   if (redirectTarget !== null) {
     return <RouteTransition />;
@@ -42,6 +62,14 @@ export default function App() {
 
   if (pathname === "/login") {
     return <LoginPage onLogin={authService.login} />;
+  }
+
+  if (pathname === "/admin/accounts") {
+    return (
+      <AdminShell onLogout={authService.logout}>
+        <AccountsPage />
+      </AdminShell>
+    );
   }
 
   if (pathname === "/admin") {

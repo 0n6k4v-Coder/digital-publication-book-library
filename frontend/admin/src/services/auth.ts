@@ -208,6 +208,14 @@ export const authService = {
     return authenticationSession !== null;
   },
 
+  getAuthorizationHeader(): string | null {
+    if (authenticationSession === null) {
+      return null;
+    }
+
+    return `${authenticationSession.tokenType} ${authenticationSession.accessToken}`;
+  },
+
   async login(credentials: LoginCredentials): Promise<void> {
     if (authenticationSession !== null) {
       return;

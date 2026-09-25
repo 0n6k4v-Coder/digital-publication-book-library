@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from "react";
 
-export type AppRoute = "/login" | "/admin";
+export type AppRoute = "/login" | "/admin" | "/admin/accounts";
 
 function normalizePathname(pathname: string): string {
   if (pathname.length > 1 && pathname.endsWith("/")) {
@@ -14,12 +14,20 @@ export function getPathname(): string {
   return normalizePathname(window.location.pathname);
 }
 
-export function navigate(pathname: AppRoute): void {
+export function navigate(
+  pathname: AppRoute,
+  options: { replace?: boolean } = {},
+): void {
   if (getPathname() === pathname) {
     return;
   }
 
-  window.history.replaceState({}, "", pathname);
+  if (options.replace === true) {
+    window.history.replaceState({}, "", pathname);
+  } else {
+    window.history.pushState({}, "", pathname);
+  }
+
   window.dispatchEvent(new PopStateEvent("popstate"));
 }
 
