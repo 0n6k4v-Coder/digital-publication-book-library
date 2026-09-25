@@ -340,3 +340,11 @@ Relevant Skills:
 ```text
 Please provide the commit command, along with a simple, clear, direct, explicit, and concise commit message and an extended description.
 ```
+
+---
+
+```text
+According to this docs: https://github.com/0n6k4v-Coder/digital-publication-book-library/blob/frontend/frontend/admin/README.md
+
+Provide a step-by-step runbook for setting up the `/frontend/admin/*` directory so it’s ready for future implementation.
+```
