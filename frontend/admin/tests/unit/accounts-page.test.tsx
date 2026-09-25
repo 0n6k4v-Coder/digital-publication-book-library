@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AccountsPage } from "../../src/pages/accounts/AccountsPage";
 import { accountsService } from "../../src/services/accounts";
@@ -49,11 +49,9 @@ describe("AccountsPage", () => {
 
     render(<AccountsPage />);
 
-    expect(
-      screen.getByRole("status", {
-        name: "Loading administrator accounts…",
-      }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Loading administrator accounts…",
+    );
 
     expect(
       await screen.findByRole("heading", {

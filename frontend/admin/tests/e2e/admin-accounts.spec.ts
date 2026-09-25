@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 const loginResponse = {
   access_token: "opaque-access-token",
@@ -24,9 +24,7 @@ const accountsResponse = {
   total: 1,
 };
 
-async function authenticate(
-  page: Parameters<typeof test>[0]["page"],
-): Promise<void> {
+async function authenticate(page: Page): Promise<void> {
   await page.goto("/login");
 
   await page.route("**/auth/login", async (route) => {
@@ -99,12 +97,9 @@ test.describe("admin accounts", () => {
 
     await expect(page.getByRole("button", { name: "Logout" })).toBeVisible();
 
-    await expect(
-      page.getByRole("link", {
-        name: "Accounts",
-        current: "page",
-      }),
-    ).toBeVisible();
+    const accountsLink = page.getByRole("link", { name: "Accounts" });
+
+    await expect(accountsLink).toHaveAttribute("aria-current", "page");
 
     await expect(
       page.getByRole("cell", {
@@ -159,10 +154,6 @@ test.describe("admin accounts", () => {
         });
       });
 
-      await page.getByRole("link", { name: "Accounts" }).click();
-
-      await expect(page).toHaveURL(/\/admin\/accounts$/);
-
       const menuButton = page.getByRole("button", {
         name: "Open admin navigation",
       });
@@ -170,11 +161,16 @@ test.describe("admin accounts", () => {
       await menuButton.click();
 
       await expect(menuButton).toHaveAttribute("aria-expanded", "true");
-      await expect(
-        page.getByRole("button", {
-          name: "Close admin navigation",
-        }),
-      ).toBeVisible();
+
+      await page.getByRole("link", { name: "Accounts" }).click();
+
+      await expect(page).toHaveURL(/\/admin\/accounts$/);
+
+      await expect(menuButton).toHaveAttribute("aria-expanded", "false");
+
+      await menuButton.click();
+
+      await expect(menuButton).toHaveAttribute("aria-expanded", "true");
 
       await page
         .getByRole("button", { name: "Dismiss admin navigation" })

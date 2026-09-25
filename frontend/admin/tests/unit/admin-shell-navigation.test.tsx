@@ -66,7 +66,7 @@ describe("AdminShell navigation", () => {
     await user.click(menuButton);
 
     expect(
-      screen.getByRole("button", { name: "Close admin navigation" }),
+      screen.getByRole("button", { name: "Close admin sidebar" }),
     ).toBeInTheDocument();
 
     expect(menuButton).toHaveAttribute("aria-expanded", "true");

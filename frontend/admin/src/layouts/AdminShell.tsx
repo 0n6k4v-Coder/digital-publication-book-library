@@ -153,7 +153,7 @@ export function AdminShell({ onLogout, children }: AdminShellProps) {
             ref={mobileCloseButtonRef}
             className="admin-sidebar__close"
             type="button"
-            aria-label="Close admin navigation"
+            aria-label="Close admin sidebar"
             onClick={closeMobileNavigation}
           >
             Close
