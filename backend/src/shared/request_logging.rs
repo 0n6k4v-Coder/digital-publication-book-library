@@ -26,7 +26,7 @@ pub fn request_log_route(request: &Request) -> &str {
 /// inspected or emitted here.
 pub async fn log_request(request: Request, next: Next) -> Response {
     let method = request.method().clone();
-    let route = request_log_route(&request);
+    let route = request_log_route(&request).to_owned();
     let started_at = Instant::now();
 
     let response = next.run(request).await;
