@@ -199,7 +199,7 @@ Start Development Environment
 
 ```bash
 docker compose -f frontend/admin/compose/docker-compose.dev.yml up --build --watch dev
-````
+```
 
 Open Admin Application
 

@@ -1,0 +1,57 @@
+services:
+  dev:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dev
+
+    working_dir: /workspace
+
+    init: true
+
+    environment:
+      NODE_ENV: development
+      VITE_API_ORIGIN: ""
+
+    ports:
+      - "127.0.0.1:5173:5173"
+
+    volumes:
+      - frontend-admin-dev-node-modules:/workspace/node_modules
+
+    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+
+    develop:
+      watch:
+        - action: sync
+          path: ../src
+          target: /workspace/src
+          initial_sync: true
+
+        - action: sync
+          path: ../public
+          target: /workspace/public
+          initial_sync: true
+
+        - action: sync
+          path: ../index.html
+          target: /workspace/index.html
+          initial_sync: true
+
+        - action: sync
+          path: ../vite.config.ts
+          target: /workspace/vite.config.ts
+          initial_sync: true
+
+        - action: sync
+          path: ../tsconfig.json
+          target: /workspace/tsconfig.json
+          initial_sync: true
+
+        - action: rebuild
+          path: ../package.json
+
+        - action: rebuild
+          path: ../package-lock.json
+
+volumes:
+  frontend-admin-dev-node-modules:
