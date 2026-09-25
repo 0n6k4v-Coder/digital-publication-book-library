@@ -1,4 +1,5 @@
 use axum::{
+    middleware,
     routing::{delete, get, patch, post},
     Router,
 };
@@ -33,5 +34,8 @@ pub fn build_router(state: AppState) -> Router {
         .route("/admin/accounts/{id}/deactivate", post(deactivate_account))
         .route("/admin/accounts/{id}/activate", post(activate_account))
         .route("/admin/accounts/{id}/restore", post(restore_account))
+        .layer(middleware::from_fn(
+            crate::shared::request_logging::log_request,
+        ))
         .with_state(state)
 }
