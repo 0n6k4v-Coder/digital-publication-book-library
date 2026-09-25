@@ -100,9 +100,10 @@ test.describe("admin login", () => {
       .fill("example-secure-password");
     await page.getByRole("button", { name: "Sign In" }).click();
 
-    await expect(page.getByRole("alert")).toHaveText(
-      "The email or password is incorrect.",
-    );
+    const alert = page.getByRole("alert");
+
+    await expect(alert).toBeVisible();
+    await expect(alert).toContainText("The email or password is incorrect.");
     await expect(page).toHaveURL(/\/login$/);
     await expect(
       page.getByText("Digital Publication & Book Library"),
