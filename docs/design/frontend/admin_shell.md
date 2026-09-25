@@ -119,22 +119,16 @@ The following areas are outside this document:
 | `FE_SHELL_UI_04` | Application Identity | Display Admin Application identity        |
 | `FE_SHELL_UI_05` | Accounts Navigation  | Provide navigation to `/admin/accounts`   |
 | `FE_SHELL_UI_06` | Logout Action        | Display the Logout action                 |
-| `FE_SHELL_UI_07` | Active Navigation    | Clearly indicate the active Admin feature |
-
-The Admin Shell contains:
+| `FE_SHELL_UI_07` | Active Navigation    | Indicate the active Admin feature         |
 
 ```text
 ┌─────────────────────────────────────────────────────────────┐
-│                                                             │
 │ Sidebar                     Main Content                    │
 │                                                             │
 │ Admin Application           Routed Admin Feature            │
-│                                                             │
 │ Accounts                                                    │
 │                                                             │
-│                                                             │
 │ Logout                                                      │
-│                                                             │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -146,17 +140,35 @@ The Admin Shell contains:
 | `FE_SHELL_UI_09` | Navigate to `/admin/accounts`                    |
 | `FE_SHELL_UI_10` | Indicate Accounts as active on `/admin/accounts` |
 | `FE_SHELL_UI_11` | Keep Logout separate from feature navigation     |
-| `FE_SHELL_UI_12` | Support keyboard navigation                      |
-| `FE_SHELL_UI_13` | Provide visible focus states                     |
+| `FE_SHELL_UI_12` | Support keyboard navigation and visible focus    |
 
 ## Main Content
 
 | ID               | Requirement                                               |
 | ---------------- | --------------------------------------------------------- |
-| `FE_SHELL_UI_14` | Provide a stable container for routed Admin feature pages |
-| `FE_SHELL_UI_15` | Render Account List content for `/admin/accounts`         |
-| `FE_SHELL_UI_16` | Preserve the Admin Shell while the feature page changes   |
-| `FE_SHELL_UI_17` | Keep feature-specific business logic outside the shell    |
+| `FE_SHELL_UI_13` | Provide a stable container for routed Admin feature pages |
+| `FE_SHELL_UI_14` | Render Account List content for `/admin/accounts`         |
+| `FE_SHELL_UI_15` | Preserve the Admin Shell while the feature page changes   |
+| `FE_SHELL_UI_16` | Keep feature-specific business logic outside the shell    |
+
+## Responsive Layout
+
+| Viewport       | Sidebar                              | Main Content         |
+| -------------- | ------------------------------------ | -------------------- |
+| `≥ 1280px`     | Persistent fixed-width sidebar       | Remaining width      |
+| `768px–1279px` | Persistent reduced-width sidebar     | Remaining width      |
+| `< 768px`      | Collapsible sidebar via menu control | Full available width |
+
+Responsive requirements:
+
+| ID                 | Requirement                                                              |
+| ------------------ | ------------------------------------------------------------------------ |
+| `FE_SHELL_RESP_01` | Prevent unintended horizontal page scrolling                             |
+| `FE_SHELL_RESP_02` | Preserve active navigation state at every viewport size                  |
+| `FE_SHELL_RESP_03` | Keep Sidebar navigation keyboard accessible                              |
+| `FE_SHELL_RESP_04` | Allow mobile navigation to be dismissed without leaving the current page |
+| `FE_SHELL_RESP_05` | Allow feature pages to manage their own internal responsive behavior     |
+| `FE_SHELL_RESP_06` | Preserve authentication and authorization behavior across viewport sizes |
 
 ---
 
@@ -300,7 +312,7 @@ The Admin Shell must follow the Authentication and Authorization domain contract
 | `FE_SHELL_A11Y_04` | Support keyboard navigation                                 |
 | `FE_SHELL_A11Y_05` | Provide visible focus states                                |
 | `FE_SHELL_A11Y_06` | Communicate the Logout pending state appropriately          |
-| `FE_SHELL_A11Y_07` | Maintain usable layout behavior on supported viewport sizes |
+| `FE_SHELL_A11Y_07` | Layout remains usable across desktop (`≥ 1280px`), tablet (`768px–1279px`), and mobile (`< 768px`) viewports |
 
 ---
 
@@ -407,17 +419,38 @@ The Admin Shell must follow the Authentication and Authorization domain contract
 
 ## Layout
 
-| ID               | Criteria                                       | Status         | Reason |
-| ---------------- | ---------------------------------------------- | -------------- | ------ |
-| `FE_SHELL_UI_01` | Admin Shell is implemented                     | 🟢 Implemented |        |
-| `FE_SHELL_UI_02` | Sidebar is rendered                            | 🟢 Implemented |        |
-| `FE_SHELL_UI_03` | Main Content supports routed feature content   | 🟡 In Progress |        |
-| `FE_SHELL_UI_04` | Admin Application identity is displayed        | 🟢 Implemented |        |
-| `FE_SHELL_UI_05` | Accounts navigation is displayed               | 🟡 In Progress |        |
-| `FE_SHELL_UI_06` | Logout action is displayed                     | 🟢 Implemented |        |
-| `FE_SHELL_UI_07` | Active navigation state is displayed           | 🟡 In Progress |        |
-| `FE_SHELL_UI_08` | Accounts navigation links to `/admin/accounts` | 🟡 In Progress |        |
-| `FE_SHELL_UI_09` | Account List renders inside Main Content       | 🟡 In Progress |        |
+| ID               | Criteria                                             | Status         | Reason |
+| ---------------- | ---------------------------------------------------- | -------------- | ------ |
+| `FE_SHELL_UI_01` | Admin Shell is implemented                           | 🟢 Implemented |        |
+| `FE_SHELL_UI_02` | Sidebar is rendered                                  | 🟢 Implemented |        |
+| `FE_SHELL_UI_03` | Main Content supports routed feature content         | 🟡 In Progress |        |
+| `FE_SHELL_UI_04` | Admin Application identity is displayed              | 🟢 Implemented |        |
+| `FE_SHELL_UI_05` | Accounts navigation is displayed                     | 🟡 In Progress |        |
+| `FE_SHELL_UI_06` | Logout action is displayed                           | 🟢 Implemented |        |
+| `FE_SHELL_UI_07` | Active navigation state is displayed                 | 🟡 In Progress |        |
+| `FE_SHELL_UI_08` | Accounts navigation links to `/admin/accounts`       | 🟡 In Progress |        |
+| `FE_SHELL_UI_09` | Accounts navigation is active on `/admin/accounts`   | 🟡 In Progress |        |
+| `FE_SHELL_UI_10` | Logout remains separate from feature navigation      | 🟢 Implemented |        |
+| `FE_SHELL_UI_11` | Sidebar supports keyboard navigation and focus       | 🟢 Implemented |        |
+| `FE_SHELL_UI_12` | Feature pages render inside Main Content             | 🟡 In Progress |        |
+| `FE_SHELL_UI_13` | Main Content provides a stable routed container      | 🟡 In Progress |        |
+| `FE_SHELL_UI_14` | Account List renders at `/admin/accounts`            | 🟡 In Progress |        |
+| `FE_SHELL_UI_15` | Shell remains while feature page changes             | 🟡 In Progress |        |
+| `FE_SHELL_UI_16` | Feature business logic remains outside the shell     | 🟢 Implemented |        |
+
+## Responsive Layout
+
+| ID | Criteria | Status | Reason |
+| --- | --- | --- | --- |
+| `FE_SHELL_RESP_01` | Desktop uses a persistent fixed-width Sidebar | 🟡 In Progress | |
+| `FE_SHELL_RESP_02` | Tablet uses a persistent reduced-width Sidebar | 🟡 In Progress | |
+| `FE_SHELL_RESP_03` | Mobile uses a collapsible Sidebar | 🟡 In Progress | |
+| `FE_SHELL_RESP_04` | Unintended horizontal page scrolling is prevented | 🟡 In Progress | |
+| `FE_SHELL_RESP_05` | Active navigation state is preserved across viewport sizes | 🟡 In Progress | |
+| `FE_SHELL_RESP_06` | Sidebar navigation remains keyboard accessible across viewport sizes | 🟡 In Progress | |
+| `FE_SHELL_RESP_07` | Mobile navigation can be dismissed without leaving the current page | 🟡 In Progress | |
+| `FE_SHELL_RESP_08` | Feature pages manage their own internal responsive behavior | 🟢 Implemented | |
+| `FE_SHELL_RESP_09` | Authentication and authorization behavior is unchanged across viewport sizes | 🟢 Implemented | |
 
 ## Authentication Behavior
 
