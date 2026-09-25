@@ -17,7 +17,8 @@ use digital_publication_backend::{
 static TEST_DATABASE_LOCK: Mutex<()> = Mutex::const_new(());
 
 async fn connect_database() -> PgPool {
-    let database_url = env::var("TEST_DATABASE_URL").expect("TEST_DATABASE_URL must be set");
+    let database_url =
+        env::var("TEST_DATABASE_URL").expect("TEST_DATABASE_URL must be set");
 
     PgPool::connect(&database_url)
         .await
@@ -30,48 +31,44 @@ async fn seed_account(
     status: &str,
     deleted_at: Option<OffsetDateTime>,
 ) -> Uuid {
-    let account_id = sqlx::query_scalar::<_, Uuid>(
+    sqlx::query_scalar::<_, Uuid>(
         r#"
-        INSERT INTO account (status, deleted_at)
-        VALUES ($1, $2)
-        RETURNING id
-        "#,
-    )
-    .bind(status)
-    .bind(deleted_at)
-    .fetch_one(pool)
-    .await
-    .expect("seed account");
-
-    sqlx::query(
-        r#"
+        WITH inserted_account AS (
+            INSERT INTO account (status, deleted_at)
+            VALUES ($1, $2)
+            RETURNING id
+        )
         INSERT INTO account_credentials (
             account_id,
             email,
             email_normalized,
             password_hash
         )
-        VALUES ($1, $2, $2, $3)
+        SELECT
+            id,
+            $3,
+            $3,
+            $4
+        FROM inserted_account
+        RETURNING account_id
         "#,
     )
-    .bind(account_id)
+    .bind(status)
+    .bind(deleted_at)
     .bind(email)
     .bind("$argon2id$v=19$m=19456,t=2,p=1$test$test")
-    .execute(pool)
+    .fetch_one(pool)
     .await
-    .expect("seed account credentials");
-
-    account_id
+    .expect("seed account")
 }
 
 async fn assign_role(pool: &PgPool, account_id: Uuid, role_name: &str) {
-    let role_id = sqlx::query_scalar::<_, Uuid>(
-        "SELECT id FROM authorization_role WHERE name = $1",
-    )
-    .bind(role_name)
-    .fetch_one(pool)
-    .await
-    .expect("find authorization role");
+    let role_id =
+        sqlx::query_scalar::<_, Uuid>("SELECT id FROM authorization_role WHERE name = $1")
+            .bind(role_name)
+            .fetch_one(pool)
+            .await
+            .expect("find authorization role");
 
     sqlx::query(
         r#"
@@ -213,7 +210,10 @@ async fn cleanup_accounts(pool: &PgPool, account_ids: &[Uuid]) {
 }
 
 fn test_router(pool: PgPool) -> Router {
-    let blocklist = PasswordBlocklist::from_hashes("test", Vec::<[u8; 20]>::new());
+    let blocklist = PasswordBlocklist::from_hashes(
+        "test",
+        Vec::<[u8; 20]>::new(),
+    );
 
     build_router(AppState::new(
         pool,
@@ -279,7 +279,9 @@ async fn deactivate_account_end_to_end() {
         None,
     )
     .await;
+
     assign_role(&pool, target_id, "account_admin").await;
+
     let target_token = seed_access_token(&pool, target_id).await;
 
     let other_admin_id = seed_account(
@@ -289,6 +291,7 @@ async fn deactivate_account_end_to_end() {
         None,
     )
     .await;
+
     assign_role(&pool, other_admin_id, "account_admin").await;
 
     let (address, server) = start_server(test_router(pool.clone())).await;
@@ -318,18 +321,22 @@ async fn deactivate_account_end_to_end() {
         Some("no-store")
     );
 
-    let response_body: Value = response.json().await.expect("decode account response");
+    let response_body: Value = response
+        .json()
+        .await
+        .expect("decode account response");
 
     assert_eq!(response_body["id"], target_id.to_string());
     assert_eq!(response_body["status"], "inactive");
     assert!(response_body.get("password").is_none());
     assert!(response_body.get("password_hash").is_none());
 
-    let stored_status = sqlx::query_scalar::<_, String>("SELECT status FROM account WHERE id = $1")
-        .bind(target_id)
-        .fetch_one(&pool)
-        .await
-        .expect("read deactivated account");
+    let stored_status =
+        sqlx::query_scalar::<_, String>("SELECT status FROM account WHERE id = $1")
+            .bind(target_id)
+            .fetch_one(&pool)
+            .await
+            .expect("read deactivated account");
 
     let updated_by =
         sqlx::query_scalar::<_, Option<Uuid>>("SELECT updated_by FROM account WHERE id = $1")
@@ -356,10 +363,15 @@ async fn deactivate_account_end_to_end() {
             .and_then(|value| value.to_str().ok()),
         Some(r#"Bearer realm="admin-api", error="invalid_token""#)
     );
+
     assert_problem(response, reqwest::StatusCode::UNAUTHORIZED).await;
 
     server.abort();
-    cleanup_accounts(&pool, &[target_id, other_admin_id, admin_id]).await;
+    cleanup_accounts(
+        &pool,
+        &[target_id, other_admin_id, admin_id],
+    )
+    .await;
 }
 
 #[tokio::test]
@@ -392,6 +404,7 @@ async fn deactivate_account_authentication_authorization_and_conflicts_end_to_en
         None,
     )
     .await;
+
     assign_role(&pool, other_admin_id, "account_admin").await;
 
     let (address, server) = start_server(test_router(pool.clone())).await;
@@ -413,6 +426,7 @@ async fn deactivate_account_authentication_authorization_and_conflicts_end_to_en
             .and_then(|value| value.to_str().ok()),
         Some(r#"Bearer realm="admin-api""#)
     );
+
     assert_problem(response, reqwest::StatusCode::UNAUTHORIZED).await;
 
     let response = client
@@ -432,6 +446,7 @@ async fn deactivate_account_authentication_authorization_and_conflicts_end_to_en
             .and_then(|value| value.to_str().ok()),
         Some(r#"Bearer realm="admin-api", error="invalid_token""#)
     );
+
     assert_problem(response, reqwest::StatusCode::UNAUTHORIZED).await;
 
     let response = client
@@ -446,11 +461,12 @@ async fn deactivate_account_authentication_authorization_and_conflicts_end_to_en
     let body = assert_problem(response, reqwest::StatusCode::FORBIDDEN).await;
     assert_eq!(body["code"], "FORBIDDEN");
 
-    let target_status = sqlx::query_scalar::<_, String>("SELECT status FROM account WHERE id = $1")
-        .bind(target_id)
-        .fetch_one(&pool)
-        .await
-        .expect("read target status");
+    let target_status =
+        sqlx::query_scalar::<_, String>("SELECT status FROM account WHERE id = $1")
+            .bind(target_id)
+            .fetch_one(&pool)
+            .await
+            .expect("read target status");
 
     assert_eq!(target_status, "active");
 
@@ -550,11 +566,12 @@ async fn deactivate_account_rejects_last_active_administrator_end_to_end() {
     let body = assert_problem(response, reqwest::StatusCode::CONFLICT).await;
     assert_eq!(body["code"], "LAST_ACTIVE_ADMINISTRATOR");
 
-    let status = sqlx::query_scalar::<_, String>("SELECT status FROM account WHERE id = $1")
-        .bind(admin_id)
-        .fetch_one(&pool)
-        .await
-        .expect("read last administrator state");
+    let status =
+        sqlx::query_scalar::<_, String>("SELECT status FROM account WHERE id = $1")
+            .bind(admin_id)
+            .fetch_one(&pool)
+            .await
+            .expect("read last administrator state");
 
     assert_eq!(status, "active");
 

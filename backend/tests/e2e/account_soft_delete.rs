@@ -17,7 +17,8 @@ use digital_publication_backend::{
 static TEST_DATABASE_LOCK: Mutex<()> = Mutex::const_new(());
 
 async fn connect_database() -> PgPool {
-    let database_url = env::var("TEST_DATABASE_URL").expect("TEST_DATABASE_URL must be set");
+    let database_url =
+        env::var("TEST_DATABASE_URL").expect("TEST_DATABASE_URL must be set");
 
     PgPool::connect(&database_url)
         .await
@@ -32,46 +33,43 @@ async fn seed_account(
     updated_by: Option<Uuid>,
     deleted_by: Option<Uuid>,
 ) -> Uuid {
-    let account_id = sqlx::query_scalar::<_, Uuid>(
+    sqlx::query_scalar::<_, Uuid>(
         r#"
-        INSERT INTO account (
-            status,
-            deleted_at,
-            created_by,
-            updated_by,
-            deleted_by
+        WITH inserted_account AS (
+            INSERT INTO account (
+                status,
+                deleted_at,
+                created_by,
+                updated_by,
+                deleted_by
+            )
+            VALUES ($1, $2, $3, $3, $4)
+            RETURNING id
         )
-        VALUES ($1, $2, $3, $3, $4)
-        RETURNING id
-        "#,
-    )
-    .bind(status)
-    .bind(deleted_at)
-    .bind(updated_by)
-    .bind(deleted_by)
-    .fetch_one(pool)
-    .await
-    .expect("seed account");
-
-    sqlx::query(
-        r#"
         INSERT INTO account_credentials (
             account_id,
             email,
             email_normalized,
             password_hash
         )
-        VALUES ($1, $2, $2, $3)
+        SELECT
+            id,
+            $5,
+            $5,
+            $6
+        FROM inserted_account
+        RETURNING account_id
         "#,
     )
-    .bind(account_id)
+    .bind(status)
+    .bind(deleted_at)
+    .bind(updated_by)
+    .bind(deleted_by)
     .bind(email)
     .bind("$argon2id$v=19$m=19456,t=2,p=1$test$test")
-    .execute(pool)
+    .fetch_one(pool)
     .await
-    .expect("seed account credentials");
-
-    account_id
+    .expect("seed account")
 }
 
 async fn assign_role(pool: &PgPool, account_id: Uuid, role_name: &str) {
@@ -224,7 +222,8 @@ async fn cleanup_accounts(pool: &PgPool, account_ids: &[Uuid]) {
 }
 
 fn test_router(pool: PgPool) -> Router {
-    let blocklist = PasswordBlocklist::from_hashes("test", Vec::<[u8; 20]>::new());
+    let blocklist =
+        PasswordBlocklist::from_hashes("test", Vec::<[u8; 20]>::new());
 
     build_router(AppState::new(
         pool,
@@ -318,6 +317,7 @@ async fn soft_delete_account_end_to_end() {
         None,
     )
     .await;
+
     assign_role(&pool, target_id, "account_admin").await;
 
     let target_token = seed_access_token(&pool, target_id).await;
@@ -379,10 +379,10 @@ async fn soft_delete_account_end_to_end() {
             .and_then(|value| value.to_str().ok()),
         Some(r#"Bearer realm="admin-api", error="invalid_token""#)
     );
+
     assert_problem(response, reqwest::StatusCode::UNAUTHORIZED).await;
 
     server.abort();
-
     cleanup_accounts(&pool, &[target_id, admin_id]).await;
 }
 
@@ -398,8 +398,10 @@ async fn soft_delete_account_authentication_authorization_and_conflicts_end_to_e
         .await
         .expect("run migrations");
 
-    let (admin_id, admin_token) = seed_principal(&pool, "account_admin").await;
-    let (viewer_id, viewer_token) = seed_principal(&pool, "account_viewer").await;
+    let (admin_id, admin_token) =
+        seed_principal(&pool, "account_admin").await;
+    let (viewer_id, viewer_token) =
+        seed_principal(&pool, "account_viewer").await;
 
     let target_id = seed_account(
         &pool,
@@ -415,7 +417,9 @@ async fn soft_delete_account_authentication_authorization_and_conflicts_end_to_e
     let client = Client::new();
 
     let response = client
-        .delete(format!("http://{address}/admin/accounts/{target_id}"))
+        .delete(format!(
+            "http://{address}/admin/accounts/{target_id}"
+        ))
         .send()
         .await
         .expect("send unauthenticated request");
@@ -431,7 +435,9 @@ async fn soft_delete_account_authentication_authorization_and_conflicts_end_to_e
     assert_problem(response, reqwest::StatusCode::UNAUTHORIZED).await;
 
     let response = client
-        .delete(format!("http://{address}/admin/accounts/{target_id}"))
+        .delete(format!(
+            "http://{address}/admin/accounts/{target_id}"
+        ))
         .bearer_auth("invalid-e2e-soft-delete-token")
         .send()
         .await
@@ -448,7 +454,9 @@ async fn soft_delete_account_authentication_authorization_and_conflicts_end_to_e
     assert_problem(response, reqwest::StatusCode::UNAUTHORIZED).await;
 
     let response = client
-        .delete(format!("http://{address}/admin/accounts/{target_id}"))
+        .delete(format!(
+            "http://{address}/admin/accounts/{target_id}"
+        ))
         .bearer_auth(&viewer_token)
         .send()
         .await
@@ -466,7 +474,8 @@ async fn soft_delete_account_authentication_authorization_and_conflicts_end_to_e
         .await
         .expect("send invalid-account-id request");
 
-    let body = assert_problem(response, reqwest::StatusCode::BAD_REQUEST).await;
+    let body =
+        assert_problem(response, reqwest::StatusCode::BAD_REQUEST).await;
     assert_eq!(body["code"], "INVALID_ACCOUNT_ID");
 
     let missing_id = Uuid::new_v4();
@@ -480,7 +489,8 @@ async fn soft_delete_account_authentication_authorization_and_conflicts_end_to_e
         .await
         .expect("send missing-account request");
 
-    let body = assert_problem(response, reqwest::StatusCode::NOT_FOUND).await;
+    let body =
+        assert_problem(response, reqwest::StatusCode::NOT_FOUND).await;
     assert_eq!(body["code"], "ACCOUNT_NOT_FOUND");
 
     let deleted_id = seed_account(
@@ -494,25 +504,31 @@ async fn soft_delete_account_authentication_authorization_and_conflicts_end_to_e
     .await;
 
     let response = client
-        .delete(format!("http://{address}/admin/accounts/{deleted_id}"))
+        .delete(format!(
+            "http://{address}/admin/accounts/{deleted_id}"
+        ))
         .bearer_auth(&admin_token)
         .send()
         .await
         .expect("send already-deleted request");
 
-    let body = assert_problem(response, reqwest::StatusCode::CONFLICT).await;
+    let body =
+        assert_problem(response, reqwest::StatusCode::CONFLICT).await;
     assert_eq!(body["code"], "ACCOUNT_ALREADY_DELETED");
 
     let before = snapshot(&pool, admin_id).await;
 
     let response = client
-        .delete(format!("http://{address}/admin/accounts/{admin_id}"))
+        .delete(format!(
+            "http://{address}/admin/accounts/{admin_id}"
+        ))
         .bearer_auth(&admin_token)
         .send()
         .await
         .expect("send last-administrator request");
 
-    let body = assert_problem(response, reqwest::StatusCode::CONFLICT).await;
+    let body =
+        assert_problem(response, reqwest::StatusCode::CONFLICT).await;
     assert_eq!(body["code"], "LAST_ACTIVE_ADMINISTRATOR");
 
     let after = snapshot(&pool, admin_id).await;

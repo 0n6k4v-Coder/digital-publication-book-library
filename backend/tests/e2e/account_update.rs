@@ -34,17 +34,32 @@ async fn seed_account(
     created_by: Option<Uuid>,
     updated_by: Option<Uuid>,
 ) -> Uuid {
-    let account_id = sqlx::query_scalar::<_, Uuid>(
+    sqlx::query_scalar::<_, Uuid>(
         r#"
-        INSERT INTO account (
-            status,
-            display_name,
-            deleted_at,
-            created_by,
-            updated_by
+        WITH inserted_account AS (
+            INSERT INTO account (
+                status,
+                display_name,
+                deleted_at,
+                created_by,
+                updated_by
+            )
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING id
         )
-        VALUES ($1, $2, $3, $4, $5)
-        RETURNING id
+        INSERT INTO account_credentials (
+            account_id,
+            email,
+            email_normalized,
+            password_hash
+        )
+        SELECT
+            id,
+            $6,
+            $6,
+            $7
+        FROM inserted_account
+        RETURNING account_id
         "#,
     )
     .bind(status)
@@ -52,29 +67,11 @@ async fn seed_account(
     .bind(deleted_at)
     .bind(created_by)
     .bind(updated_by)
-    .fetch_one(pool)
-    .await
-    .expect("seed account");
-
-    sqlx::query(
-        r#"
-        INSERT INTO account_credentials (
-            account_id,
-            email,
-            email_normalized,
-            password_hash
-        )
-        VALUES ($1, $2, $2, $3)
-        "#,
-    )
-    .bind(account_id)
     .bind(email)
     .bind("$argon2id$v=19$m=19456,t=2,p=1$test$test")
-    .execute(pool)
+    .fetch_one(pool)
     .await
-    .expect("seed account credentials");
-
-    account_id
+    .expect("seed account")
 }
 
 async fn seed_principal(pool: &PgPool, role_name: &str) -> (Uuid, String) {
@@ -182,7 +179,8 @@ async fn cleanup_accounts(pool: &PgPool, account_ids: &[Uuid]) {
 }
 
 fn test_router(pool: PgPool) -> Router {
-    let blocklist = PasswordBlocklist::from_hashes("test", Vec::<[u8; 20]>::new());
+    let blocklist =
+        PasswordBlocklist::from_hashes("test", Vec::<[u8; 20]>::new());
 
     build_router(AppState::new(
         pool,
@@ -244,7 +242,8 @@ async fn update_account_end_to_end() {
         .await
         .expect("run migrations");
 
-    let (admin_id, admin_token) = seed_principal(&pool, "account_admin").await;
+    let (admin_id, admin_token) =
+        seed_principal(&pool, "account_admin").await;
 
     let target_id = seed_account(
         &pool,
@@ -257,11 +256,15 @@ async fn update_account_end_to_end() {
     )
     .await;
 
-    let (address, server) = start_server(test_router(pool.clone())).await;
+    let (address, server) =
+        start_server(test_router(pool.clone())).await;
+
     let client = Client::new();
 
     let response = client
-        .patch(format!("http://{address}/admin/accounts/{target_id}"))
+        .patch(format!(
+            "http://{address}/admin/accounts/{target_id}"
+        ))
         .bearer_auth(&admin_token)
         .header("content-type", "application/merge-patch+json")
         .body(r#"{"display_name":"  Cafe\u0301  "}"#)
@@ -285,7 +288,10 @@ async fn update_account_end_to_end() {
         Some("no-store")
     );
 
-    let response_body: Value = response.json().await.expect("decode account response");
+    let response_body: Value = response
+        .json()
+        .await
+        .expect("decode account response");
 
     assert_eq!(response_body["id"], target_id.to_string());
     assert!(response_body.get("password").is_none());
@@ -302,7 +308,9 @@ async fn update_account_end_to_end() {
     assert_eq!(stored_name.as_deref(), Some("Café"));
 
     let response = client
-        .patch(format!("http://{address}/admin/accounts/{target_id}"))
+        .patch(format!(
+            "http://{address}/admin/accounts/{target_id}"
+        ))
         .bearer_auth(&admin_token)
         .header("content-type", "application/merge-patch+json")
         .body(r#"{"display_name":null}"#)
@@ -338,8 +346,10 @@ async fn update_account_authentication_and_authorization_end_to_end() {
         .await
         .expect("run migrations");
 
-    let (admin_id, admin_token) = seed_principal(&pool, "account_admin").await;
-    let (viewer_id, viewer_token) = seed_principal(&pool, "account_viewer").await;
+    let (admin_id, admin_token) =
+        seed_principal(&pool, "account_admin").await;
+    let (viewer_id, viewer_token) =
+        seed_principal(&pool, "account_viewer").await;
 
     let target_id = seed_account(
         &pool,
@@ -352,11 +362,15 @@ async fn update_account_authentication_and_authorization_end_to_end() {
     )
     .await;
 
-    let (address, server) = start_server(test_router(pool.clone())).await;
+    let (address, server) =
+        start_server(test_router(pool.clone())).await;
+
     let client = Client::new();
 
     let response = client
-        .patch(format!("http://{address}/admin/accounts/{target_id}"))
+        .patch(format!(
+            "http://{address}/admin/accounts/{target_id}"
+        ))
         .header("content-type", "application/merge-patch+json")
         .body(r#"{"display_name":"Changed"}"#)
         .send()
@@ -373,10 +387,14 @@ async fn update_account_authentication_and_authorization_end_to_end() {
     );
 
     let response = client
-        .patch(format!("http://{address}/admin/accounts/{target_id}"))
+        .patch(format!(
+            "http://{address}/admin/accounts/{target_id}"
+        ))
         .bearer_auth(&viewer_token)
         .header("content-type", "application/merge-patch+json")
-        .body(r#"{"display_name":"Changed","roles":["account_admin"],"permissions":["account:update"]}"#)
+        .body(
+            r#"{"display_name":"Changed","roles":["account_admin"],"permissions":["account:update"]}"#,
+        )
         .send()
         .await
         .expect("send unauthorized request");
@@ -386,7 +404,9 @@ async fn update_account_authentication_and_authorization_end_to_end() {
     assert_problem(response, reqwest::StatusCode::FORBIDDEN).await;
 
     let response = client
-        .patch(format!("http://{address}/admin/accounts/{target_id}"))
+        .patch(format!(
+            "http://{address}/admin/accounts/{target_id}"
+        ))
         .bearer_auth("invalid-e2e-update-token")
         .header("content-type", "application/merge-patch+json")
         .body(r#"{"display_name":"Changed"}"#)
@@ -404,7 +424,9 @@ async fn update_account_authentication_and_authorization_end_to_end() {
     );
 
     let response = client
-        .patch(format!("http://{address}/admin/accounts/{target_id}"))
+        .patch(format!(
+            "http://{address}/admin/accounts/{target_id}"
+        ))
         .bearer_auth(&admin_token)
         .header("content-type", "application/json")
         .body(r#"{"display_name":"Changed"}"#)
@@ -412,10 +434,18 @@ async fn update_account_authentication_and_authorization_end_to_end() {
         .await
         .expect("send wrong-content-type request");
 
-    assert_problem(response, reqwest::StatusCode::UNSUPPORTED_MEDIA_TYPE).await;
+    assert_problem(
+        response,
+        reqwest::StatusCode::UNSUPPORTED_MEDIA_TYPE,
+    )
+    .await;
 
     server.abort();
-    cleanup_accounts(&pool, &[target_id, admin_id, viewer_id]).await;
+    cleanup_accounts(
+        &pool,
+        &[target_id, admin_id, viewer_id],
+    )
+    .await;
 }
 
 #[tokio::test]
@@ -430,11 +460,15 @@ async fn update_account_validation_end_to_end() {
         .await
         .expect("run migrations");
 
-    let (admin_id, admin_token) = seed_principal(&pool, "account_admin").await;
+    let (admin_id, admin_token) =
+        seed_principal(&pool, "account_admin").await;
 
     let target_id = seed_account(
         &pool,
-        &format!("e2e-validation-target-{}@example.com", Uuid::new_v4()),
+        &format!(
+            "e2e-validation-target-{}@example.com",
+            Uuid::new_v4()
+        ),
         Some("Initial"),
         "active",
         None,
@@ -443,7 +477,9 @@ async fn update_account_validation_end_to_end() {
     )
     .await;
 
-    let (address, server) = start_server(test_router(pool.clone())).await;
+    let (address, server) =
+        start_server(test_router(pool.clone())).await;
+
     let client = Client::new();
 
     for body in [
@@ -454,42 +490,72 @@ async fn update_account_validation_end_to_end() {
         r#"{"display_name":123}"#,
     ] {
         let response = client
-            .patch(format!("http://{address}/admin/accounts/{target_id}"))
+            .patch(format!(
+                "http://{address}/admin/accounts/{target_id}"
+            ))
             .bearer_auth(&admin_token)
-            .header("content-type", "application/merge-patch+json")
+            .header(
+                "content-type",
+                "application/merge-patch+json",
+            )
             .body(body)
             .send()
             .await
             .expect("send validation request");
 
-        assert_problem(response, reqwest::StatusCode::UNPROCESSABLE_ENTITY).await;
+        assert_problem(
+            response,
+            reqwest::StatusCode::UNPROCESSABLE_ENTITY,
+        )
+        .await;
     }
 
     let response = client
-        .patch(format!("http://{address}/admin/accounts/{target_id}"))
+        .patch(format!(
+            "http://{address}/admin/accounts/{target_id}"
+        ))
         .bearer_auth(&admin_token)
-        .header("content-type", "application/merge-patch+json")
+        .header(
+            "content-type",
+            "application/merge-patch+json",
+        )
         .body(r#"{"display_name":"Changed""#)
         .send()
         .await
         .expect("send malformed-json request");
 
-    assert_problem(response, reqwest::StatusCode::BAD_REQUEST).await;
+    assert_problem(
+        response,
+        reqwest::StatusCode::BAD_REQUEST,
+    )
+    .await;
 
     let response = client
-        .patch(format!("http://{address}/admin/accounts/not-a-uuid"))
+        .patch(format!(
+            "http://{address}/admin/accounts/not-a-uuid"
+        ))
         .bearer_auth(&admin_token)
-        .header("content-type", "application/merge-patch+json")
+        .header(
+            "content-type",
+            "application/merge-patch+json",
+        )
         .body(r#"{"display_name":"Changed"}"#)
         .send()
         .await
         .expect("send invalid-id request");
 
-    assert_problem(response, reqwest::StatusCode::BAD_REQUEST).await;
+    assert_problem(
+        response,
+        reqwest::StatusCode::BAD_REQUEST,
+    )
+    .await;
 
     let deleted_id = seed_account(
         &pool,
-        &format!("e2e-deleted-{}@example.com", Uuid::new_v4()),
+        &format!(
+            "e2e-deleted-{}@example.com",
+            Uuid::new_v4()
+        ),
         Some("Deleted"),
         "inactive",
         Some(OffsetDateTime::now_utc()),
@@ -499,16 +565,29 @@ async fn update_account_validation_end_to_end() {
     .await;
 
     let response = client
-        .patch(format!("http://{address}/admin/accounts/{deleted_id}"))
+        .patch(format!(
+            "http://{address}/admin/accounts/{deleted_id}"
+        ))
         .bearer_auth(&admin_token)
-        .header("content-type", "application/merge-patch+json")
+        .header(
+            "content-type",
+            "application/merge-patch+json",
+        )
         .body(r#"{"display_name":"Changed"}"#)
         .send()
         .await
         .expect("send deleted-account request");
 
-    assert_problem(response, reqwest::StatusCode::NOT_FOUND).await;
+    assert_problem(
+        response,
+        reqwest::StatusCode::NOT_FOUND,
+    )
+    .await;
 
     server.abort();
-    cleanup_accounts(&pool, &[target_id, deleted_id, admin_id]).await;
+    cleanup_accounts(
+        &pool,
+        &[target_id, deleted_id, admin_id],
+    )
+    .await;
 }

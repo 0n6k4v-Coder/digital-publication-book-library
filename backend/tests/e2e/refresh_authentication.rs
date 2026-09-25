@@ -16,11 +16,9 @@ use sqlx::PgPool;
 use tokio::{net::TcpListener, sync::Mutex};
 use uuid::Uuid;
 
-static TEST_DATABASE_LOCK: Mutex<()> =
-    Mutex::const_new(());
+static TEST_DATABASE_LOCK: Mutex<()> = Mutex::const_new(());
 
-const TEST_PASSWORD: &str =
-    "an extremely secure password";
+const TEST_PASSWORD: &str = "an extremely secure password";
 
 async fn database() -> PgPool {
     PgPool::connect(
@@ -32,26 +30,20 @@ async fn database() -> PgPool {
 }
 
 async fn reset(pool: &PgPool) {
-    sqlx::query(
-        "DELETE FROM authentication_login_attempt",
-    )
-    .execute(pool)
-    .await
-    .unwrap();
+    sqlx::query("DELETE FROM authentication_login_attempt")
+        .execute(pool)
+        .await
+        .unwrap();
 
-    sqlx::query(
-        "DELETE FROM authorization_account_role",
-    )
-    .execute(pool)
-    .await
-    .unwrap();
+    sqlx::query("DELETE FROM authorization_account_role")
+        .execute(pool)
+        .await
+        .unwrap();
 
-    sqlx::query(
-        "DELETE FROM authentication_session",
-    )
-    .execute(pool)
-    .await
-    .unwrap();
+    sqlx::query("DELETE FROM authentication_session")
+        .execute(pool)
+        .await
+        .unwrap();
 
     sqlx::query("DELETE FROM account")
         .execute(pool)
@@ -63,41 +55,42 @@ async fn seed_account(
     pool: &PgPool,
     email: &str,
 ) -> Uuid {
-    let account_id =
-        sqlx::query_scalar::<_, Uuid>(
-            "INSERT INTO account \
-             (status, deleted_at) \
-             VALUES ('active', NULL) \
-             RETURNING id",
-        )
-        .fetch_one(pool)
-        .await
-        .unwrap();
-
     let email = normalize_email(email).unwrap();
 
     let password_hash =
         hash_password(
-            SecretString::from(
-                TEST_PASSWORD.to_owned(),
-            ),
+            SecretString::from(TEST_PASSWORD.to_owned()),
         )
         .unwrap();
 
-    sqlx::query(
-        "INSERT INTO account_credentials \
-         (account_id, email, email_normalized, password_hash) \
-         VALUES ($1, $2, $3, $4)",
+    sqlx::query_scalar::<_, Uuid>(
+        r#"
+        WITH inserted_account AS (
+            INSERT INTO account (status, deleted_at)
+            VALUES ('active', NULL)
+            RETURNING id
+        )
+        INSERT INTO account_credentials (
+            account_id,
+            email,
+            email_normalized,
+            password_hash
+        )
+        SELECT
+            id,
+            $1,
+            $2,
+            $3
+        FROM inserted_account
+        RETURNING account_id
+        "#,
     )
-    .bind(account_id)
     .bind(email.canonical)
     .bind(email.normalized)
     .bind(password_hash)
-    .execute(pool)
+    .fetch_one(pool)
     .await
-    .unwrap();
-
-    account_id
+    .unwrap()
 }
 
 fn test_router(pool: PgPool) -> Router {
@@ -110,8 +103,7 @@ fn test_router(pool: PgPool) -> Router {
     build_router(AppState::new(
         pool,
         Arc::new(blocklist),
-        std::num::NonZeroUsize::new(2)
-            .unwrap(),
+        std::num::NonZeroUsize::new(2).unwrap(),
     ))
 }
 

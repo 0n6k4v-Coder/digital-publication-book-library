@@ -31,45 +31,42 @@ async fn seed_account(
     created_by: Option<Uuid>,
     updated_by: Option<Uuid>,
 ) -> Uuid {
-    let account_id = sqlx::query_scalar::<_, Uuid>(
+    sqlx::query_scalar::<_, Uuid>(
         r#"
-        INSERT INTO account (
-            status,
-            deleted_at,
-            created_by,
-            updated_by
+        WITH inserted_account AS (
+            INSERT INTO account (
+                status,
+                deleted_at,
+                created_by,
+                updated_by
+            )
+            VALUES ($1, $2, $3, $4)
+            RETURNING id
         )
-        VALUES ($1, $2, $3, $4)
-        RETURNING id
-        "#,
-    )
-    .bind(status)
-    .bind(deleted_at)
-    .bind(created_by)
-    .bind(updated_by)
-    .fetch_one(pool)
-    .await
-    .expect("seed account");
-
-    sqlx::query(
-        r#"
         INSERT INTO account_credentials (
             account_id,
             email,
             email_normalized,
             password_hash
         )
-        VALUES ($1, $2, $2, $3)
+        SELECT
+            id,
+            $5,
+            $5,
+            $6
+        FROM inserted_account
+        RETURNING account_id
         "#,
     )
-    .bind(account_id)
+    .bind(status)
+    .bind(deleted_at)
+    .bind(created_by)
+    .bind(updated_by)
     .bind(email)
     .bind("$argon2id$v=19$m=19456,t=2,p=1$test$test")
-    .execute(pool)
+    .fetch_one(pool)
     .await
-    .expect("seed account credentials");
-
-    account_id
+    .expect("seed account")
 }
 
 async fn assign_role_as(
@@ -213,10 +210,8 @@ async fn cleanup_accounts(pool: &PgPool, account_ids: &[Uuid]) {
 }
 
 fn test_router(pool: PgPool) -> axum::Router {
-    let blocklist = PasswordBlocklist::from_hashes(
-        "test",
-        Vec::<[u8; 20]>::new(),
-    );
+    let blocklist =
+        PasswordBlocklist::from_hashes("test", Vec::<[u8; 20]>::new());
 
     build_router(AppState::new(
         pool,
@@ -336,7 +331,8 @@ async fn hard_delete_account_end_to_end() {
     )
     .await;
 
-    let (address, server) = start_server(test_router(pool.clone())).await;
+    let (address, server) =
+        start_server(test_router(pool.clone())).await;
 
     let response = Client::new()
         .delete(format!(
@@ -369,6 +365,7 @@ async fn hard_delete_account_end_to_end() {
     .fetch_one(&pool)
     .await
     .expect("check target account");
+
     assert!(!target_exists);
 
     let survivor_creator = sqlx::query_scalar::<_, Option<Uuid>>(
@@ -440,7 +437,8 @@ async fn hard_delete_account_end_to_end_enforces_authz_and_last_admin_rule() {
     let (viewer_id, viewer_token) =
         seed_principal(&pool, "account_viewer").await;
 
-    let (address, server) = start_server(test_router(pool.clone())).await;
+    let (address, server) =
+        start_server(test_router(pool.clone())).await;
 
     let response = Client::new()
         .delete(format!(
@@ -458,6 +456,7 @@ async fn hard_delete_account_end_to_end_enforces_authz_and_last_admin_rule() {
             .and_then(|value| value.to_str().ok()),
         Some(r#"Bearer realm="admin-api""#)
     );
+
     assert_problem(response, reqwest::StatusCode::UNAUTHORIZED).await;
 
     let response = Client::new()
@@ -488,6 +487,7 @@ async fn hard_delete_account_end_to_end_enforces_authz_and_last_admin_rule() {
         reqwest::StatusCode::CONFLICT,
     )
     .await;
+
     assert_eq!(body["code"], "LAST_ACTIVE_ADMINISTRATOR");
 
     let response = Client::new()
@@ -500,11 +500,13 @@ async fn hard_delete_account_end_to_end_enforces_authz_and_last_admin_rule() {
         .expect("send invalid-account-id request");
 
     assert_eq!(response.status(), reqwest::StatusCode::BAD_REQUEST);
+
     let body = assert_problem(
         response,
         reqwest::StatusCode::BAD_REQUEST,
     )
     .await;
+
     assert_eq!(body["code"], "INVALID_ACCOUNT_ID");
 
     let response = Client::new()
@@ -518,11 +520,13 @@ async fn hard_delete_account_end_to_end_enforces_authz_and_last_admin_rule() {
         .expect("send missing-account request");
 
     assert_eq!(response.status(), reqwest::StatusCode::NOT_FOUND);
+
     let body = assert_problem(
         response,
         reqwest::StatusCode::NOT_FOUND,
     )
     .await;
+
     assert_eq!(body["code"], "ACCOUNT_NOT_FOUND");
 
     cleanup_accounts(&pool, &[admin_id, viewer_id]).await;

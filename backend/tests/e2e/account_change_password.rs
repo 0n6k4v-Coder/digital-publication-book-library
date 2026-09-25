@@ -25,7 +25,8 @@ fn sha1_hash(password: &str) -> [u8; 20] {
 }
 
 async fn connect_database() -> PgPool {
-    let database_url = env::var("TEST_DATABASE_URL").expect("TEST_DATABASE_URL must be set");
+    let database_url =
+        env::var("TEST_DATABASE_URL").expect("TEST_DATABASE_URL must be set");
 
     PgPool::connect(&database_url)
         .await
@@ -39,41 +40,38 @@ async fn seed_account(
     deleted_at: Option<OffsetDateTime>,
     password: &str,
 ) -> Uuid {
-    let account_id = sqlx::query_scalar::<_, Uuid>(
+    sqlx::query_scalar::<_, Uuid>(
         r#"
-        INSERT INTO account (status, deleted_at)
-        VALUES ($1, $2)
-        RETURNING id
-        "#,
-    )
-    .bind(status)
-    .bind(deleted_at)
-    .fetch_one(pool)
-    .await
-    .expect("seed account");
-
-    let password_hash =
-        hash_password(SecretString::from(password.to_owned())).expect("hash seed password");
-
-    sqlx::query(
-        r#"
+        WITH inserted_account AS (
+            INSERT INTO account (status, deleted_at)
+            VALUES ($1, $2)
+            RETURNING id
+        )
         INSERT INTO account_credentials (
             account_id,
             email,
             email_normalized,
             password_hash
         )
-        VALUES ($1, $2, $2, $3)
+        SELECT
+            id,
+            $3,
+            $3,
+            $4
+        FROM inserted_account
+        RETURNING account_id
         "#,
     )
-    .bind(account_id)
+    .bind(status)
+    .bind(deleted_at)
     .bind(email)
-    .bind(password_hash)
-    .execute(pool)
+    .bind(
+        hash_password(SecretString::from(password.to_owned()))
+            .expect("hash seed password"),
+    )
+    .fetch_one(pool)
     .await
-    .expect("seed account credentials");
-
-    account_id
+    .expect("seed account")
 }
 
 async fn seed_principal(pool: &PgPool, role_name: &str) -> (Uuid, String) {
@@ -204,7 +202,11 @@ async fn start_server(app: Router) -> (SocketAddr, tokio::task::JoinHandle<()>) 
     (address, task)
 }
 
-async fn assert_problem(response: Response, expected_status: reqwest::StatusCode, code: &str) {
+async fn assert_problem(
+    response: Response,
+    expected_status: reqwest::StatusCode,
+    code: &str,
+) {
     assert_eq!(response.status(), expected_status);
     assert_eq!(
         response
@@ -221,7 +223,11 @@ async fn assert_problem(response: Response, expected_status: reqwest::StatusCode
         Some("no-store")
     );
 
-    let payload: Value = response.json().await.expect("decode problem response");
+    let payload: Value = response
+        .json()
+        .await
+        .expect("decode problem response");
+
     assert_eq!(payload["code"], code);
     assert!(payload.get("password").is_none());
     assert!(payload.get("password_hash").is_none());
@@ -233,9 +239,13 @@ async fn change_password_end_to_end() {
     let _database_guard = TEST_DATABASE_LOCK.lock().await;
     let pool = connect_database().await;
 
-    digital_publication_backend::MIGRATOR.run(&pool).await.expect("run migrations");
+    digital_publication_backend::MIGRATOR
+        .run(&pool)
+        .await
+        .expect("run migrations");
 
     let (admin_id, admin_token) = seed_principal(&pool, "account_admin").await;
+
     let target_id = seed_account(
         &pool,
         &format!("target-{}@example.com", Uuid::new_v4()),
@@ -291,7 +301,10 @@ async fn change_password_authentication_authorization_and_validation_end_to_end(
     let _database_guard = TEST_DATABASE_LOCK.lock().await;
     let pool = connect_database().await;
 
-    digital_publication_backend::MIGRATOR.run(&pool).await.expect("run migrations");
+    digital_publication_backend::MIGRATOR
+        .run(&pool)
+        .await
+        .expect("run migrations");
 
     let (admin_id, admin_token) = seed_principal(&pool, "account_admin").await;
     let (viewer_id, viewer_token) = seed_principal(&pool, "account_viewer").await;
@@ -342,7 +355,12 @@ async fn change_password_authentication_authorization_and_validation_end_to_end(
         .await
         .expect("send forbidden request");
 
-    assert_problem(forbidden, reqwest::StatusCode::FORBIDDEN, "FORBIDDEN").await;
+    assert_problem(
+        forbidden,
+        reqwest::StatusCode::FORBIDDEN,
+        "FORBIDDEN",
+    )
+    .await;
 
     let invalid = client
         .patch(&uri)

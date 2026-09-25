@@ -17,7 +17,8 @@ use digital_publication_backend::{
 static TEST_DATABASE_LOCK: Mutex<()> = Mutex::const_new(());
 
 async fn connect_database() -> PgPool {
-    let database_url = env::var("TEST_DATABASE_URL").expect("TEST_DATABASE_URL must be set");
+    let database_url =
+        env::var("TEST_DATABASE_URL").expect("TEST_DATABASE_URL must be set");
 
     PgPool::connect(&database_url)
         .await
@@ -33,17 +34,32 @@ async fn seed_account(
     updated_by: Option<Uuid>,
     deleted_by: Option<Uuid>,
 ) -> Uuid {
-    let account_id = sqlx::query_scalar::<_, Uuid>(
+    sqlx::query_scalar::<_, Uuid>(
         r#"
-        INSERT INTO account (
-            status,
-            deleted_at,
-            created_by,
-            updated_by,
-            deleted_by
+        WITH inserted_account AS (
+            INSERT INTO account (
+                status,
+                deleted_at,
+                created_by,
+                updated_by,
+                deleted_by
+            )
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING id
         )
-        VALUES ($1, $2, $3, $4, $5)
-        RETURNING id
+        INSERT INTO account_credentials (
+            account_id,
+            email,
+            email_normalized,
+            password_hash
+        )
+        SELECT
+            id,
+            $6,
+            $6,
+            $7
+        FROM inserted_account
+        RETURNING account_id
         "#,
     )
     .bind(status)
@@ -51,39 +67,20 @@ async fn seed_account(
     .bind(created_by)
     .bind(updated_by)
     .bind(deleted_by)
-    .fetch_one(pool)
-    .await
-    .expect("seed account");
-
-    sqlx::query(
-        r#"
-        INSERT INTO account_credentials (
-            account_id,
-            email,
-            email_normalized,
-            password_hash
-        )
-        VALUES ($1, $2, $2, $3)
-        "#,
-    )
-    .bind(account_id)
     .bind(email)
     .bind("$argon2id$v=19$m=19456,t=2,p=1$test$test")
-    .execute(pool)
+    .fetch_one(pool)
     .await
-    .expect("seed account credentials");
-
-    account_id
+    .expect("seed account")
 }
 
 async fn assign_role(pool: &PgPool, account_id: Uuid, role_name: &str) {
-    let role_id = sqlx::query_scalar::<_, Uuid>(
-        "SELECT id FROM authorization_role WHERE name = $1",
-    )
-    .bind(role_name)
-    .fetch_one(pool)
-    .await
-    .expect("find authorization role");
+    let role_id =
+        sqlx::query_scalar::<_, Uuid>("SELECT id FROM authorization_role WHERE name = $1")
+            .bind(role_name)
+            .fetch_one(pool)
+            .await
+            .expect("find authorization role");
 
     sqlx::query(
         r#"
@@ -184,7 +181,8 @@ async fn cleanup_accounts(pool: &PgPool, account_ids: &[Uuid]) {
 }
 
 fn test_router(pool: PgPool) -> Router {
-    let blocklist = PasswordBlocklist::from_hashes("test", Vec::<[u8; 20]>::new());
+    let blocklist =
+        PasswordBlocklist::from_hashes("test", Vec::<[u8; 20]>::new());
 
     build_router(AppState::new(
         pool,
@@ -308,7 +306,10 @@ async fn restore_account_end_to_end() {
         Some("no-store")
     );
 
-    let payload: Value = response.json().await.expect("decode restore response");
+    let payload: Value = response
+        .json()
+        .await
+        .expect("decode restore response");
 
     assert_eq!(payload["id"], target_id.to_string());
     assert_eq!(payload["status"], "inactive");
@@ -324,7 +325,9 @@ async fn restore_account_end_to_end() {
     assert_eq!(state.deleted_by, None);
 
     let response = client
-        .get(format!("http://{address}/admin/accounts/{target_id}"))
+        .get(format!(
+            "http://{address}/admin/accounts/{target_id}"
+        ))
         .bearer_auth(&admin_token)
         .send()
         .await
@@ -442,7 +445,8 @@ async fn restore_account_authentication_authorization_and_conflicts_end_to_end()
         .await
         .expect("send invalid-account-id request");
 
-    let body = assert_problem(response, reqwest::StatusCode::BAD_REQUEST).await;
+    let body =
+        assert_problem(response, reqwest::StatusCode::BAD_REQUEST).await;
     assert_eq!(body["code"], "INVALID_ACCOUNT_ID");
 
     let missing_id = Uuid::new_v4();
@@ -456,12 +460,16 @@ async fn restore_account_authentication_authorization_and_conflicts_end_to_end()
         .await
         .expect("send missing-account request");
 
-    let body = assert_problem(response, reqwest::StatusCode::NOT_FOUND).await;
+    let body =
+        assert_problem(response, reqwest::StatusCode::NOT_FOUND).await;
     assert_eq!(body["code"], "ACCOUNT_NOT_FOUND");
 
     let inactive_not_deleted_id = seed_account(
         &pool,
-        &format!("e2e-restore-inactive-{}@example.com", Uuid::new_v4()),
+        &format!(
+            "e2e-restore-inactive-{}@example.com",
+            Uuid::new_v4()
+        ),
         "inactive",
         None,
         Some(admin_id),
@@ -479,12 +487,16 @@ async fn restore_account_authentication_authorization_and_conflicts_end_to_end()
         .await
         .expect("send non-deleted inactive account request");
 
-    let body = assert_problem(response, reqwest::StatusCode::CONFLICT).await;
+    let body =
+        assert_problem(response, reqwest::StatusCode::CONFLICT).await;
     assert_eq!(body["code"], "ACCOUNT_NOT_DELETED");
 
     let active_not_deleted_id = seed_account(
         &pool,
-        &format!("e2e-restore-active-{}@example.com", Uuid::new_v4()),
+        &format!(
+            "e2e-restore-active-{}@example.com",
+            Uuid::new_v4()
+        ),
         "active",
         None,
         Some(admin_id),
@@ -502,7 +514,8 @@ async fn restore_account_authentication_authorization_and_conflicts_end_to_end()
         .await
         .expect("send non-deleted active account request");
 
-    let body = assert_problem(response, reqwest::StatusCode::CONFLICT).await;
+    let body =
+        assert_problem(response, reqwest::StatusCode::CONFLICT).await;
     assert_eq!(body["code"], "ACCOUNT_NOT_DELETED");
 
     server.abort();

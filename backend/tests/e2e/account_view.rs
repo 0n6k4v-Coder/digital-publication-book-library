@@ -23,7 +23,8 @@ fn sha1_hash(password: &str) -> [u8; 20] {
 }
 
 async fn connect_database() -> PgPool {
-    let database_url = env::var("TEST_DATABASE_URL").expect("TEST_DATABASE_URL must be set");
+    let database_url =
+        env::var("TEST_DATABASE_URL").expect("TEST_DATABASE_URL must be set");
 
     PgPool::connect(&database_url)
         .await
@@ -53,41 +54,42 @@ async fn seed_account(
     status: &str,
     deleted_at: Option<time::OffsetDateTime>,
 ) -> Uuid {
-    let account_id = sqlx::query_scalar::<_, Uuid>(
+    sqlx::query_scalar::<_, Uuid>(
         r#"
-        INSERT INTO account (status, deleted_at)
-        VALUES ($1, $2)
-        RETURNING id
-        "#,
-    )
-    .bind(status)
-    .bind(deleted_at)
-    .fetch_one(pool)
-    .await
-    .expect("seed account");
-
-    sqlx::query(
-        r#"
+        WITH inserted_account AS (
+            INSERT INTO account (status, deleted_at)
+            VALUES ($1, $2)
+            RETURNING id
+        )
         INSERT INTO account_credentials (
             account_id,
             email,
             email_normalized,
             password_hash
         )
-        VALUES ($1, $2, $2, $3)
+        SELECT
+            id,
+            $3,
+            $3,
+            $4
+        FROM inserted_account
+        RETURNING account_id
         "#,
     )
-    .bind(account_id)
+    .bind(status)
+    .bind(deleted_at)
     .bind(email)
     .bind("$argon2id$v=19$m=19456,t=2,p=1$test$test")
-    .execute(pool)
+    .fetch_one(pool)
     .await
-    .expect("seed account credentials");
-
-    account_id
+    .expect("seed account")
 }
 
-async fn seed_access_token(pool: &PgPool, account_id: Uuid, role_name: &str) -> String {
+async fn seed_access_token(
+    pool: &PgPool,
+    account_id: Uuid,
+    role_name: &str,
+) -> String {
     let session_id = sqlx::query_scalar::<_, Uuid>(
         r#"
         INSERT INTO authentication_session (
@@ -157,7 +159,10 @@ async fn seed_access_token(pool: &PgPool, account_id: Uuid, role_name: &str) -> 
 async fn seed_accounts(pool: &PgPool) -> Vec<Uuid> {
     let active_one = seed_account(
         pool,
-        &format!("e2e-view-active-one-{}@example.com", Uuid::new_v4()),
+        &format!(
+            "e2e-view-active-one-{}@example.com",
+            Uuid::new_v4()
+        ),
         "active",
         None,
     )
@@ -165,7 +170,10 @@ async fn seed_accounts(pool: &PgPool) -> Vec<Uuid> {
 
     let active_two = seed_account(
         pool,
-        &format!("e2e-view-active-two-{}@example.com", Uuid::new_v4()),
+        &format!(
+            "e2e-view-active-two-{}@example.com",
+            Uuid::new_v4()
+        ),
         "active",
         None,
     )
@@ -173,7 +181,10 @@ async fn seed_accounts(pool: &PgPool) -> Vec<Uuid> {
 
     let inactive = seed_account(
         pool,
-        &format!("e2e-view-inactive-{}@example.com", Uuid::new_v4()),
+        &format!(
+            "e2e-view-inactive-{}@example.com",
+            Uuid::new_v4()
+        ),
         "inactive",
         None,
     )
@@ -181,7 +192,10 @@ async fn seed_accounts(pool: &PgPool) -> Vec<Uuid> {
 
     let deleted = seed_account(
         pool,
-        &format!("e2e-view-deleted-{}@example.com", Uuid::new_v4()),
+        &format!(
+            "e2e-view-deleted-{}@example.com",
+            Uuid::new_v4()
+        ),
         "inactive",
         Some(time::OffsetDateTime::now_utc()),
     )
@@ -191,7 +205,11 @@ async fn seed_accounts(pool: &PgPool) -> Vec<Uuid> {
 }
 
 fn test_router(pool: PgPool) -> Router {
-    let blocklist = PasswordBlocklist::from_hashes("test", [sha1_hash("password-password")]);
+    let blocklist =
+        PasswordBlocklist::from_hashes(
+            "test",
+            [sha1_hash("password-password")],
+        );
 
     build_router(AppState::new(
         pool,
@@ -217,17 +235,21 @@ async fn start_server(app: Router) -> (SocketAddr, tokio::task::JoinHandle<()>) 
 }
 
 async fn cleanup_accounts(pool: &PgPool, account_ids: &[Uuid]) {
-    sqlx::query("DELETE FROM authorization_account_role WHERE account_id = ANY($1)")
-        .bind(account_ids)
-        .execute(pool)
-        .await
-        .expect("cleanup authorization roles");
+    sqlx::query(
+        "DELETE FROM authorization_account_role WHERE account_id = ANY($1)",
+    )
+    .bind(account_ids)
+    .execute(pool)
+    .await
+    .expect("cleanup authorization roles");
 
-    sqlx::query("DELETE FROM authentication_session WHERE account_id = ANY($1)")
-        .bind(account_ids)
-        .execute(pool)
-        .await
-        .expect("cleanup authentication sessions");
+    sqlx::query(
+        "DELETE FROM authentication_session WHERE account_id = ANY($1)",
+    )
+    .bind(account_ids)
+    .execute(pool)
+    .await
+    .expect("cleanup authentication sessions");
 
     sqlx::query("DELETE FROM account WHERE id = ANY($1)")
         .bind(account_ids)
@@ -251,7 +273,8 @@ async fn view_accounts_end_to_end() {
     reset_test_database(&pool).await;
 
     let seeded = seed_accounts(&pool).await;
-    let token = seed_access_token(&pool, seeded[0], "account_viewer").await;
+    let token =
+        seed_access_token(&pool, seeded[0], "account_viewer").await;
 
     let app = test_router(pool.clone());
     let (address, server) = start_server(app).await;
@@ -288,13 +311,17 @@ async fn view_accounts_end_to_end() {
     assert_eq!(response_body["page_size"], 20);
     assert_eq!(response_body["total"], 3);
 
-    let items = response_body["items"].as_array().expect("items array");
+    let items = response_body["items"]
+        .as_array()
+        .expect("items array");
+
     assert_eq!(items.len(), 3);
 
     let ids: Vec<&str> = items
         .iter()
         .map(|item| item["id"].as_str().expect("account id"))
         .collect();
+
     assert!(ids.windows(2).all(|pair| pair[0] < pair[1]));
 
     for item in items {
@@ -334,14 +361,17 @@ async fn view_accounts_supports_filters_and_pagination_end_to_end() {
     reset_test_database(&pool).await;
 
     let seeded = seed_accounts(&pool).await;
-    let token = seed_access_token(&pool, seeded[0], "account_viewer").await;
+    let token =
+        seed_access_token(&pool, seeded[0], "account_viewer").await;
 
     let app = test_router(pool.clone());
     let (address, server) = start_server(app).await;
     let client = Client::new();
 
     let active_response = client
-        .get(format!("http://{address}/admin/accounts?status=active"))
+        .get(format!(
+            "http://{address}/admin/accounts?status=active"
+        ))
         .bearer_auth(&token)
         .send()
         .await
@@ -377,7 +407,10 @@ async fn view_accounts_supports_filters_and_pagination_end_to_end() {
         .await
         .expect("send page-one request");
 
-    assert_eq!(page_one_response.status(), reqwest::StatusCode::OK);
+    assert_eq!(
+        page_one_response.status(),
+        reqwest::StatusCode::OK
+    );
 
     let page_one_body: Value = page_one_response
         .json()
@@ -387,7 +420,10 @@ async fn view_accounts_supports_filters_and_pagination_end_to_end() {
     assert_eq!(page_one_body["page"], 1);
     assert_eq!(page_one_body["page_size"], 2);
     assert_eq!(page_one_body["total"], 3);
-    assert_eq!(page_one_body["items"].as_array().unwrap().len(), 2);
+    assert_eq!(
+        page_one_body["items"].as_array().unwrap().len(),
+        2
+    );
 
     let page_two_response = client
         .get(format!(
@@ -398,14 +434,20 @@ async fn view_accounts_supports_filters_and_pagination_end_to_end() {
         .await
         .expect("send page-two request");
 
-    assert_eq!(page_two_response.status(), reqwest::StatusCode::OK);
+    assert_eq!(
+        page_two_response.status(),
+        reqwest::StatusCode::OK
+    );
 
     let page_two_body: Value = page_two_response
         .json()
         .await
         .expect("decode page-two response");
 
-    assert_eq!(page_two_body["items"].as_array().unwrap().len(), 1);
+    assert_eq!(
+        page_two_body["items"].as_array().unwrap().len(),
+        1
+    );
 
     let deleted_response = client
         .get(format!(
@@ -416,7 +458,10 @@ async fn view_accounts_supports_filters_and_pagination_end_to_end() {
         .await
         .expect("send include-deleted request");
 
-    assert_eq!(deleted_response.status(), reqwest::StatusCode::OK);
+    assert_eq!(
+        deleted_response.status(),
+        reqwest::StatusCode::OK
+    );
 
     let deleted_body: Value = deleted_response
         .json()
@@ -424,6 +469,7 @@ async fn view_accounts_supports_filters_and_pagination_end_to_end() {
         .expect("decode include-deleted response");
 
     assert_eq!(deleted_body["total"], 4);
+
     assert!(deleted_body["items"]
         .as_array()
         .expect("include-deleted items")
@@ -459,7 +505,10 @@ async fn unauthenticated_view_accounts_end_to_end_returns_401() {
         .await
         .expect("send unauthenticated view request");
 
-    assert_eq!(response.status(), reqwest::StatusCode::UNAUTHORIZED);
+    assert_eq!(
+        response.status(),
+        reqwest::StatusCode::UNAUTHORIZED
+    );
     assert_eq!(
         response
             .headers()
@@ -510,7 +559,10 @@ async fn invalid_bearer_view_accounts_end_to_end_returns_401() {
         .await
         .expect("send invalid bearer request");
 
-    assert_eq!(response.status(), reqwest::StatusCode::UNAUTHORIZED);
+    assert_eq!(
+        response.status(),
+        reqwest::StatusCode::UNAUTHORIZED
+    );
     assert_eq!(
         response
             .headers()
@@ -552,7 +604,8 @@ async fn invalid_view_accounts_query_end_to_end_returns_appropriate_status() {
     reset_test_database(&pool).await;
 
     let seeded = seed_accounts(&pool).await;
-    let token = seed_access_token(&pool, seeded[0], "account_viewer").await;
+    let token =
+        seed_access_token(&pool, seeded[0], "account_viewer").await;
 
     let app = test_router(pool.clone());
     let (address, server) = start_server(app).await;
@@ -560,12 +613,23 @@ async fn invalid_view_accounts_query_end_to_end_returns_appropriate_status() {
     for (query, expected_status) in [
         ("page=abc", reqwest::StatusCode::BAD_REQUEST),
         ("page=0", reqwest::StatusCode::UNPROCESSABLE_ENTITY),
-        ("page_size=0", reqwest::StatusCode::UNPROCESSABLE_ENTITY),
-        ("page_size=101", reqwest::StatusCode::UNPROCESSABLE_ENTITY),
-        ("status=unknown", reqwest::StatusCode::UNPROCESSABLE_ENTITY),
+        (
+            "page_size=0",
+            reqwest::StatusCode::UNPROCESSABLE_ENTITY,
+        ),
+        (
+            "page_size=101",
+            reqwest::StatusCode::UNPROCESSABLE_ENTITY,
+        ),
+        (
+            "status=unknown",
+            reqwest::StatusCode::UNPROCESSABLE_ENTITY,
+        ),
     ] {
         let response = Client::new()
-            .get(format!("http://{address}/admin/accounts?{query}"))
+            .get(format!(
+                "http://{address}/admin/accounts?{query}"
+            ))
             .bearer_auth(&token)
             .send()
             .await
