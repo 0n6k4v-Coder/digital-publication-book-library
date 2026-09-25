@@ -397,7 +397,7 @@ input:focus-visible {
 }
 
 .route-transition {
-  min-height: 100vh;
+  min-block-size: 100dvh;
   display: grid;
   place-items: center;
   padding: 24px;
@@ -405,7 +405,7 @@ input:focus-visible {
 }
 
 .admin-shell {
-  min-height: 100vh;
+  min-block-size: 100dvh;
   display: grid;
   grid-template-columns: minmax(220px, 280px) 1fr;
 }
@@ -415,9 +415,9 @@ input:focus-visible {
   flex-direction: column;
   justify-content: space-between;
   gap: 24px;
-  min-height: 100vh;
+  min-block-size: 100dvh;
   padding: 28px 24px;
-  border-right: 1px solid #d9dfeb;
+  border-inline-end: 1px solid #d9dfeb;
   background: #ffffff;
 }
 
@@ -433,8 +433,14 @@ input:focus-visible {
   margin-top: auto;
 }
 
+.admin-sidebar__status {
+  margin: 0.75rem 0 0;
+  color: #536176;
+  font-size: 0.875rem;
+}
+
 .admin-main {
-  min-height: 100vh;
+  min-block-size: 100dvh;
   background: #f5f7fb;
 }
 
@@ -467,10 +473,10 @@ input:focus-visible {
   }
 
   .admin-sidebar {
-    min-height: auto;
+    min-block-size: auto;
     padding: 22px 18px;
-    border-right: 0;
-    border-bottom: 1px solid #d9dfeb;
+    border-inline-end: 0;
+    border-block-end: 1px solid #d9dfeb;
   }
 
   .admin-sidebar__title {
@@ -478,7 +484,7 @@ input:focus-visible {
   }
 
   .admin-main {
-    min-height: calc(100vh - 230px);
+    min-block-size: calc(100dvh - 230px);
   }
 }
 

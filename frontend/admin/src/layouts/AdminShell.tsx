@@ -27,7 +27,11 @@ export function AdminShell({ onLogout }: AdminShellProps) {
 
   return (
     <div className="admin-shell">
-      <aside className="admin-sidebar" aria-label="Admin application">
+      <aside
+        className="admin-sidebar"
+        aria-label="Admin application"
+        aria-busy={isLoggingOut}
+      >
         <div>
           <p className="eyebrow">Admin Application</p>
           <h1 className="admin-sidebar__title">
@@ -41,6 +45,7 @@ export function AdminShell({ onLogout }: AdminShellProps) {
               {logoutError}
             </div>
           ) : null}
+
           <button
             className="secondary-button"
             type="button"
@@ -49,6 +54,16 @@ export function AdminShell({ onLogout }: AdminShellProps) {
           >
             {isLoggingOut ? "Signing out…" : "Logout"}
           </button>
+
+          {isLoggingOut ? (
+            <p
+              className="admin-sidebar__status"
+              role="status"
+              aria-live="polite"
+            >
+              Signing out…
+            </p>
+          ) : null}
         </div>
       </aside>
 
