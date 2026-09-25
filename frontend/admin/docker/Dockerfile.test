@@ -21,8 +21,4 @@ RUN npx playwright install --with-deps chromium
 
 COPY . .
 
-CMD [
-  "sh",
-  "-c",
-  "npm run format:check && npm run typecheck && npm run lint && npm run build && npm run test:unit && npm run test:integration && npm run test:e2e"
-]
+CMD ["sh", "-c", "npm run format:check && npm run typecheck && npm run lint && npm run build && npm run test:unit && npm run test:integration && npm run test:e2e"]
