@@ -151,6 +151,30 @@ If design blockers exist, output only:
 ```
 # Task 3: Conduct Deep Research
 
+Before implementing any frontend code, you MUST use:
+
+`modern-web-guidance`
+
+Skill:
+https://github.com/0n6k4v-Coder/skills/blob/master/google/modern-web-guidance/SKILL.md
+
+The skill MUST be used before:
+
+* implementing any HTML, CSS, or client-side JavaScript
+* creating a new React component
+* implementing frontend forms
+* implementing frontend UI behavior
+* implementing frontend layout or responsive behavior
+* implementing browser-facing APIs
+* implementing accessibility-related UI behavior
+
+Follow the skill's required workflow:
+
+1. Search for the relevant modern web guidance.
+2. Retrieve the applicable guide(s).
+3. Apply the relevant guidance to the implementation.
+4. Adapt the guidance to the project's React, Vite, TypeScript, and Native CSS architecture.
+
 Research only technologies, standards, and security requirements relevant to the objective.
 
 Prefer official documentation and primary sources.
@@ -645,4 +669,7 @@ Only provide commands relevant to the objective.
 * The final response must contain the full implementation source, not only a summary, patch, diff, or archive.
 * A patch or archive may be provided as an additional artifact, but never as a replacement for the full source code.
 * Apply all relevant deep-research findings directly to the implementation before presenting the final source.
+* MUST use the `modern-web-guidance` skill before implementing frontend code.
+* MUST apply relevant findings from `modern-web-guidance` to the final implementation.
+* MUST NOT bypass the skill when implementing HTML, CSS, client-side JavaScript, React UI, forms, accessibility, responsive behavior, or browser-facing functionality.
 ```
