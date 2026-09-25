@@ -18,13 +18,14 @@
 
 # 1. Scope
 
-This document defines the protected **Admin Shell** for the first Admin Application vertical slice.
+This document defines the protected **Admin Shell** and its integration with routed Admin feature pages.
 
 | Item                           | Reference                     |
 | ------------------------------ | ----------------------------- |
 | Frontend Scope                 | Protected Admin Shell         |
-| Main Content                   | Intentionally empty           |
+| Main Content                   | Routed Admin feature content  |
 | Authentication Source of Truth | Backend Authentication domain |
+| Authorization Source of Truth  | Backend Authorization domain  |
 | Login Behavior                 | `login.md`                    |
 | Authentication Behavior        | Backend Authentication domain |
 
@@ -33,30 +34,54 @@ The shell contains:
 ```text
 Admin Shell
 ├── Sidebar
+│   ├── Application Identity
+│   ├── Accounts Navigation
+│   └── Logout
 └── Main Content Area
+    └── Routed Admin Feature Page
 ```
 
-This document does not define:
+The first routed Admin feature is:
 
-| Excluded Area               |
-| --------------------------- |
-| Account management          |
-| Role management             |
-| Post management             |
-| Book management             |
-| Dashboard functionality     |
-| Business logic              |
-| Feature-specific navigation |
+```text
+Account Management
+└── Account List
+```
+
+The shell is responsible for:
+
+* Protected Admin application layout
+* Sidebar navigation
+* Active navigation state
+* Main content routing container
+* Authentication-aware access
+* Logout behavior
+
+Feature-specific business logic remains outside the shell.
+
+The following areas are outside this document:
+
+| Excluded Area                 |
+| ----------------------------- |
+| Account List details          |
+| Account CRUD logic            |
+| Role management               |
+| Post management               |
+| Book management               |
+| Dashboard logic               |
+| Feature-specific API behavior |
 
 ---
 
 # 2. Routes
 
-| ID                  | Route    | Access          | Purpose     | Behavior             |
-| ------------------- | -------- | --------------- | ----------- | -------------------- |
-| `FE_SHELL_ROUTE_01` | `/admin` | Authenticated   | Admin Shell | Display Admin Shell  |
-| `FE_SHELL_ROUTE_02` | `/admin` | Unauthenticated | Admin Shell | Redirect to `/login` |
-| `FE_SHELL_ROUTE_03` | `/login` | Authenticated   | Login page  | Redirect to `/admin` |
+| ID                  | Route             | Access          | Purpose      | Behavior                          |
+| ------------------- | ----------------- | --------------- | ------------ | --------------------------------- |
+| `FE_SHELL_ROUTE_01` | `/admin`          | Authenticated   | Admin Shell  | Display Admin Shell               |
+| `FE_SHELL_ROUTE_02` | `/admin`          | Unauthenticated | Admin Shell  | Redirect to `/login`              |
+| `FE_SHELL_ROUTE_03` | `/login`          | Authenticated   | Login page   | Redirect to `/admin`              |
+| `FE_SHELL_ROUTE_04` | `/admin/accounts` | Authenticated   | Account List | Display Account List inside shell |
+| `FE_SHELL_ROUTE_05` | `/admin/accounts` | Unauthenticated | Account List | Redirect to `/login`              |
 
 ---
 
@@ -67,13 +92,18 @@ This document does not define:
 | `FE_SHELL_01` | Provide a protected `/admin` route                                                |
 | `FE_SHELL_02` | Render the Admin Shell after successful authentication                            |
 | `FE_SHELL_03` | Render a Sidebar within the Admin Shell                                           |
-| `FE_SHELL_04` | Render an empty Main Content Area                                                 |
+| `FE_SHELL_04` | Provide the Main Content Area as the routed feature container                     |
 | `FE_SHELL_05` | Provide a Logout action in the Sidebar                                            |
 | `FE_SHELL_06` | Prevent unauthenticated access to `/admin`                                        |
 | `FE_SHELL_07` | Redirect unauthenticated users to `/login`                                        |
 | `FE_SHELL_08` | Logout must revoke the current authentication session through `POST /auth/logout` |
 | `FE_SHELL_09` | Logout must clear the client authentication state                                 |
 | `FE_SHELL_10` | After logout, navigate to `/login`                                                |
+| `FE_SHELL_11` | Provide navigation to `/admin/accounts`                                           |
+| `FE_SHELL_12` | Render the Account List inside the Admin Shell Main Content Area                  |
+| `FE_SHELL_13` | Indicate the Accounts navigation item when `/admin/accounts` is active            |
+| `FE_SHELL_14` | Preserve the Admin Shell while navigating between Admin feature routes            |
+| `FE_SHELL_15` | Treat backend authorization as authoritative for Admin feature access             |
 
 ---
 
@@ -81,43 +111,52 @@ This document does not define:
 
 ## Admin Shell
 
-| ID               | Component            | Requirement                                       |
-| ---------------- | -------------------- | ------------------------------------------------- |
-| `FE_SHELL_UI_01` | Admin Shell          | Provide the protected application shell           |
-| `FE_SHELL_UI_02` | Sidebar              | Render the Sidebar within the Admin Shell         |
-| `FE_SHELL_UI_03` | Main Content Area    | Render an empty content container                 |
-| `FE_SHELL_UI_04` | Application Identity | Display Admin Application identity in the Sidebar |
-| `FE_SHELL_UI_05` | Logout Action        | Display the Logout action in the Sidebar          |
+| ID               | Component            | Requirement                               |
+| ---------------- | -------------------- | ----------------------------------------- |
+| `FE_SHELL_UI_01` | Admin Shell          | Provide the protected application shell   |
+| `FE_SHELL_UI_02` | Sidebar              | Render the Sidebar within the Admin Shell |
+| `FE_SHELL_UI_03` | Main Content Area    | Render routed Admin feature content       |
+| `FE_SHELL_UI_04` | Application Identity | Display Admin Application identity        |
+| `FE_SHELL_UI_05` | Accounts Navigation  | Provide navigation to `/admin/accounts`   |
+| `FE_SHELL_UI_06` | Logout Action        | Display the Logout action                 |
+| `FE_SHELL_UI_07` | Active Navigation    | Clearly indicate the active Admin feature |
 
-The initial Admin Shell contains only:
+The Admin Shell contains:
 
 ```text
-┌─────────────────────────────────────────────┐
-│                                             │
-│ Sidebar              Main Content           │
-│                                             │
-│ Admin Application                           │
-│                                             │
-│                                             │
-│                                             │
-│ Logout                                      │
-│                                             │
-└─────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                                                             │
+│ Sidebar                     Main Content                    │
+│                                                             │
+│ Admin Application           Routed Admin Feature            │
+│                                                             │
+│ Accounts                                                    │
+│                                                             │
+│                                                             │
+│ Logout                                                      │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ## Sidebar
 
-| ID               | Requirement                                                                                    |
-| ---------------- | ---------------------------------------------------------------------------------------------- |
-| `FE_SHELL_UI_06` | No feature navigation is required for the initial Admin Shell                                  |
-| `FE_SHELL_UI_07` | Future navigation items may be added when their corresponding frontend designs are implemented |
+| ID               | Requirement                                      |
+| ---------------- | ------------------------------------------------ |
+| `FE_SHELL_UI_08` | Display the Accounts navigation item             |
+| `FE_SHELL_UI_09` | Navigate to `/admin/accounts`                    |
+| `FE_SHELL_UI_10` | Indicate Accounts as active on `/admin/accounts` |
+| `FE_SHELL_UI_11` | Keep Logout separate from feature navigation     |
+| `FE_SHELL_UI_12` | Support keyboard navigation                      |
+| `FE_SHELL_UI_13` | Provide visible focus states                     |
 
 ## Main Content
 
-| ID               | Requirement                                                                         |
-| ---------------- | ----------------------------------------------------------------------------------- |
-| `FE_SHELL_UI_08` | Keep the Main Content Area empty for this implementation                            |
-| `FE_SHELL_UI_09` | Provide the Main Content Area as the application content container for future pages |
+| ID               | Requirement                                               |
+| ---------------- | --------------------------------------------------------- |
+| `FE_SHELL_UI_14` | Provide a stable container for routed Admin feature pages |
+| `FE_SHELL_UI_15` | Render Account List content for `/admin/accounts`         |
+| `FE_SHELL_UI_16` | Preserve the Admin Shell while the feature page changes   |
+| `FE_SHELL_UI_17` | Keep feature-specific business logic outside the shell    |
 
 ---
 
@@ -201,15 +240,19 @@ Logout is initiated from the Sidebar.
 
 # 7. UI States
 
-| ID                  | State               | Behavior                                                                           |
-| ------------------- | ------------------- | ---------------------------------------------------------------------------------- |
-| `FE_SHELL_STATE_01` | Authenticated       | Render Admin Shell                                                                 |
-| `FE_SHELL_STATE_02` | Unauthenticated     | Redirect to `/login`                                                               |
-| `FE_SHELL_STATE_03` | Logout Pending      | Disable Logout action                                                              |
-| `FE_SHELL_STATE_04` | Logout Success      | Clear auth state and navigate to `/login`                                          |
-| `FE_SHELL_STATE_05` | Logout Unauthorized | Clear auth state and navigate to `/login`                                          |
-| `FE_SHELL_STATE_06` | Logout Failure      | Keep authenticated state and allow retry, unless authentication is no longer valid |
-| `FE_SHELL_STATE_07` | Main Content        | Remain empty for this implementation                                               |
+| ID                  | State               | Behavior                                                                 |
+| ------------------- | ------------------- | ------------------------------------------------------------------------ |
+| `FE_SHELL_STATE_01` | Authenticated       | Render Admin Shell                                                       |
+| `FE_SHELL_STATE_02` | Unauthenticated     | Redirect to `/login`                                                     |
+| `FE_SHELL_STATE_03` | Logout Pending      | Disable Logout action                                                    |
+| `FE_SHELL_STATE_04` | Logout Success      | Clear auth state and navigate to `/login`                                |
+| `FE_SHELL_STATE_05` | Logout Unauthorized | Clear auth state and navigate to `/login`                                |
+| `FE_SHELL_STATE_06` | Logout Failure      | Keep authenticated state and allow retry                                 |
+| `FE_SHELL_STATE_07` | Account Route       | Render Account List inside Main Content                                  |
+| `FE_SHELL_STATE_08` | Active Accounts Nav | Accounts navigation item is visibly active                               |
+| `FE_SHELL_STATE_09` | Feature Loading     | Keep the Admin Shell rendered while feature content loads                |
+| `FE_SHELL_STATE_10` | Feature Error       | Keep the Admin Shell rendered while feature content handles its error    |
+| `FE_SHELL_STATE_11` | Feature Empty       | Keep the Admin Shell rendered while feature content handles its empty UI |
 
 ---
 
@@ -265,13 +308,15 @@ The Admin Shell must follow the Authentication and Authorization domain contract
 
 ## Unit
 
-| ID                      | Test                                                 |
-| ----------------------- | ---------------------------------------------------- |
-| `FE_SHELL_TEST_UNIT_01` | Admin Shell renders correctly                        |
-| `FE_SHELL_TEST_UNIT_02` | Sidebar renders correctly                            |
-| `FE_SHELL_TEST_UNIT_03` | Logout button state is handled correctly             |
-| `FE_SHELL_TEST_UNIT_04` | Authenticated route guard behavior works correctly   |
-| `FE_SHELL_TEST_UNIT_05` | Unauthenticated route guard behavior works correctly |
+| ID                      | Test                                        |
+| ----------------------- | ------------------------------------------- |
+| `FE_SHELL_TEST_UNIT_01` | Admin Shell renders correctly               |
+| `FE_SHELL_TEST_UNIT_02` | Sidebar renders correctly                   |
+| `FE_SHELL_TEST_UNIT_03` | Accounts navigation item renders correctly  |
+| `FE_SHELL_TEST_UNIT_04` | Accounts navigation active state is correct |
+| `FE_SHELL_TEST_UNIT_05` | Logout button state is handled correctly    |
+| `FE_SHELL_TEST_UNIT_06` | Authenticated route guard works correctly   |
+| `FE_SHELL_TEST_UNIT_07` | Unauthenticated route guard works correctly |
 
 ## Integration
 
@@ -280,33 +325,42 @@ The Admin Shell must follow the Authentication and Authorization domain contract
 | `FE_SHELL_TEST_INT_01` | Authenticated user can access `/admin`                          |
 | `FE_SHELL_TEST_INT_02` | Unauthenticated user is redirected to `/login`                  |
 | `FE_SHELL_TEST_INT_03` | Authenticated user accessing `/login` is redirected to `/admin` |
-| `FE_SHELL_TEST_INT_04` | Logout sends `POST /auth/logout`                                |
-| `FE_SHELL_TEST_INT_05` | Logout success clears authentication state                      |
-| `FE_SHELL_TEST_INT_06` | Logout success navigates to `/login`                            |
-| `FE_SHELL_TEST_INT_07` | Logout `401` clears authentication state                        |
-| `FE_SHELL_TEST_INT_08` | Duplicate logout submission is prevented                        |
+| `FE_SHELL_TEST_INT_04` | Authenticated user can access `/admin/accounts`                 |
+| `FE_SHELL_TEST_INT_05` | Account List renders inside the Admin Shell                     |
+| `FE_SHELL_TEST_INT_06` | Accounts navigation becomes active                              |
+| `FE_SHELL_TEST_INT_07` | Logout sends `POST /auth/logout`                                |
+| `FE_SHELL_TEST_INT_08` | Logout success clears authentication state                      |
+| `FE_SHELL_TEST_INT_09` | Logout success navigates to `/login`                            |
+| `FE_SHELL_TEST_INT_10` | Logout `401` clears authentication state                        |
+| `FE_SHELL_TEST_INT_11` | Duplicate logout submission is prevented                        |
 
 ## E2E
 
-| ID                     | Test                                                            |
-| ---------------------- | --------------------------------------------------------------- |
-| `FE_SHELL_TEST_E2E_01` | User logs in and the Admin Shell appears                        |
-| `FE_SHELL_TEST_E2E_02` | Sidebar appears in the Admin Shell                              |
-| `FE_SHELL_TEST_E2E_03` | User logs out and `/login` appears                              |
-| `FE_SHELL_TEST_E2E_04` | Unauthenticated user opening `/admin` is redirected to `/login` |
+| ID                     | Test                                                     |
+| ---------------------- | -------------------------------------------------------- |
+| `FE_SHELL_TEST_E2E_01` | User logs in and the Admin Shell appears                 |
+| `FE_SHELL_TEST_E2E_02` | Sidebar appears in the Admin Shell                       |
+| `FE_SHELL_TEST_E2E_03` | Accounts navigation is visible                           |
+| `FE_SHELL_TEST_E2E_04` | User navigates to `/admin/accounts`                      |
+| `FE_SHELL_TEST_E2E_05` | Account List appears inside the Admin Shell              |
+| `FE_SHELL_TEST_E2E_06` | Accounts navigation appears active                       |
+| `FE_SHELL_TEST_E2E_07` | User logs out and `/login` appears                       |
+| `FE_SHELL_TEST_E2E_08` | Unauthenticated user opening `/admin/accounts` redirects |
 
 ## Manual
 
-| ID                        | Test                                 |
-| ------------------------- | ------------------------------------ |
-| `FE_SHELL_TEST_MANUAL_01` | Sidebar layout is verified           |
-| `FE_SHELL_TEST_MANUAL_02` | Main Content Area is empty           |
-| `FE_SHELL_TEST_MANUAL_03` | Login → Admin transition is verified |
-| `FE_SHELL_TEST_MANUAL_04` | Logout behavior is verified          |
-| `FE_SHELL_TEST_MANUAL_05` | Redirect behavior is verified        |
-| `FE_SHELL_TEST_MANUAL_06` | Keyboard interaction is verified     |
-| `FE_SHELL_TEST_MANUAL_07` | Responsive layout is verified        |
-| `FE_SHELL_TEST_MANUAL_08` | Visible focus states are verified    |
+| ID                        | Test                                      |
+| ------------------------- | ----------------------------------------- |
+| `FE_SHELL_TEST_MANUAL_01` | Sidebar layout is verified                |
+| `FE_SHELL_TEST_MANUAL_02` | Accounts navigation is verified           |
+| `FE_SHELL_TEST_MANUAL_03` | Active Accounts state is verified         |
+| `FE_SHELL_TEST_MANUAL_04` | Account List is rendered inside the shell |
+| `FE_SHELL_TEST_MANUAL_05` | Login → Admin transition is verified      |
+| `FE_SHELL_TEST_MANUAL_06` | Logout behavior is verified               |
+| `FE_SHELL_TEST_MANUAL_07` | Redirect behavior is verified             |
+| `FE_SHELL_TEST_MANUAL_08` | Keyboard interaction is verified          |
+| `FE_SHELL_TEST_MANUAL_09` | Responsive layout is verified             |
+| `FE_SHELL_TEST_MANUAL_10` | Visible focus states are verified         |
 
 ---
 
@@ -328,6 +382,8 @@ The Admin Shell must follow the Authentication and Authorization domain contract
 | `FE_SHELL_ROUTE_01` | Authenticated users can access `/admin` and see the Admin Shell     | 🟢 Implemented |        |
 | `FE_SHELL_ROUTE_02` | Unauthenticated users accessing `/admin` are redirected to `/login` | 🟢 Implemented |        |
 | `FE_SHELL_ROUTE_03` | Authenticated users accessing `/login` are redirected to `/admin`   | 🟢 Implemented |        |
+| `FE_SHELL_ROUTE_04` | Authenticated users can access `/admin/accounts`                    | 🟡 In Progress |        |
+| `FE_SHELL_ROUTE_05` | Unauthenticated users accessing `/admin/accounts` are redirected    | 🟡 In Progress |        |
 
 ## Requirements
 
@@ -336,27 +392,32 @@ The Admin Shell must follow the Authentication and Authorization domain contract
 | `FE_SHELL_01` | Provide a protected `/admin` route                                    | 🟢 Implemented |        |
 | `FE_SHELL_02` | Render the Admin Shell after successful authentication                | 🟢 Implemented |        |
 | `FE_SHELL_03` | Render a Sidebar within the Admin Shell                               | 🟢 Implemented |        |
-| `FE_SHELL_04` | Render an empty Main Content Area                                     | 🟢 Implemented |        |
+| `FE_SHELL_04` | Provide the Main Content Area as the routed feature container         | 🟡 In Progress |        |
 | `FE_SHELL_05` | Provide a Logout action in the Sidebar                                | 🟢 Implemented |        |
 | `FE_SHELL_06` | Prevent unauthenticated access to `/admin`                            | 🟢 Implemented |        |
 | `FE_SHELL_07` | Redirect unauthenticated users to `/login`                            | 🟢 Implemented |        |
 | `FE_SHELL_08` | Revoke the current authentication session through `POST /auth/logout` | 🟢 Implemented |        |
 | `FE_SHELL_09` | Clear the client authentication state after logout                    | 🟢 Implemented |        |
 | `FE_SHELL_10` | Navigate to `/login` after logout                                     | 🟢 Implemented |        |
+| `FE_SHELL_11` | Provide navigation to `/admin/accounts`                               | 🟡 In Progress |        |
+| `FE_SHELL_12` | Render the Account List inside the Admin Shell                        | 🟡 In Progress |        |
+| `FE_SHELL_13` | Indicate Accounts navigation when active                              | 🟡 In Progress |        |
+| `FE_SHELL_14` | Preserve the Admin Shell across Admin feature navigation              | 🟡 In Progress |        |
+| `FE_SHELL_15` | Treat backend authorization as authoritative                          | 🟢 Implemented |        |
 
 ## Layout
 
-| ID               | Criteria                                                            | Status         | Reason |
-| ---------------- | ------------------------------------------------------------------- | -------------- | ------ |
-| `FE_SHELL_UI_01` | Admin Shell is implemented                                          | 🟢 Implemented |        |
-| `FE_SHELL_UI_02` | Sidebar is rendered within the Admin Shell                          | 🟢 Implemented |        |
-| `FE_SHELL_UI_03` | Empty Main Content Area is rendered                                 | 🟢 Implemented |        |
-| `FE_SHELL_UI_04` | Admin Application identity is displayed                             | 🟢 Implemented |        |
-| `FE_SHELL_UI_05` | Logout action is displayed in the Sidebar                           | 🟢 Implemented |        |
-| `FE_SHELL_UI_06` | No feature navigation is included in the initial Admin Shell        | 🟢 Implemented |        |
-| `FE_SHELL_UI_07` | Future navigation is only added with corresponding frontend designs | 🟢 Implemented |        |
-| `FE_SHELL_UI_08` | Main Content Area remains empty                                     | 🟢 Implemented |        |
-| `FE_SHELL_UI_09` | Main Content Area provides the future page content container        | 🟢 Implemented |        |
+| ID               | Criteria                                       | Status         | Reason |
+| ---------------- | ---------------------------------------------- | -------------- | ------ |
+| `FE_SHELL_UI_01` | Admin Shell is implemented                     | 🟢 Implemented |        |
+| `FE_SHELL_UI_02` | Sidebar is rendered                            | 🟢 Implemented |        |
+| `FE_SHELL_UI_03` | Main Content supports routed feature content   | 🟡 In Progress |        |
+| `FE_SHELL_UI_04` | Admin Application identity is displayed        | 🟢 Implemented |        |
+| `FE_SHELL_UI_05` | Accounts navigation is displayed               | 🟡 In Progress |        |
+| `FE_SHELL_UI_06` | Logout action is displayed                     | 🟢 Implemented |        |
+| `FE_SHELL_UI_07` | Active navigation state is displayed           | 🟡 In Progress |        |
+| `FE_SHELL_UI_08` | Accounts navigation links to `/admin/accounts` | 🟡 In Progress |        |
+| `FE_SHELL_UI_09` | Account List renders inside Main Content       | 🟡 In Progress |        |
 
 ## Authentication Behavior
 
