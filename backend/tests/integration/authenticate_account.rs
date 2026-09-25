@@ -74,32 +74,43 @@ async fn seed_account(
 ) -> Uuid {
     let deleted_at = deleted.then(OffsetDateTime::now_utc);
 
-    let account_id = sqlx::query_scalar::<_, Uuid>(
-        "INSERT INTO account (status, deleted_at) VALUES ($1, $2) RETURNING id",
-    )
-    .bind(status)
-    .bind(deleted_at)
-    .fetch_one(pool)
-    .await
-    .expect("seed account");
-
     let email = normalize_email(email).expect("valid test email");
     let password_hash =
         hash_password(SecretString::from(password.to_owned())).expect("hash test password");
 
-    sqlx::query(
-        "INSERT INTO account_credentials (account_id, email, email_normalized, password_hash) \
-         VALUES ($1, $2, $3, $4)",
+    sqlx::query_scalar::<_, Uuid>(
+        r#"
+        WITH inserted_account AS (
+            INSERT INTO account (
+                status,
+                deleted_at
+            )
+            VALUES ($1, $2)
+            RETURNING id
+        )
+        INSERT INTO account_credentials (
+            account_id,
+            email,
+            email_normalized,
+            password_hash
+        )
+        SELECT
+            id,
+            $3,
+            $4,
+            $5
+        FROM inserted_account
+        RETURNING account_id
+        "#,
     )
-    .bind(account_id)
+    .bind(status)
+    .bind(deleted_at)
     .bind(email.canonical)
     .bind(email.normalized)
     .bind(password_hash)
-    .execute(pool)
+    .fetch_one(pool)
     .await
-    .expect("seed credentials");
-
-    account_id
+    .expect("seed account")
 }
 
 async fn seed_failed_attempts(
@@ -182,10 +193,7 @@ async fn malformed_login_json_is_rejected_without_database_access() {
             40000,
         )));
 
-    let response = test_router(pool)
-        .oneshot(request)
-        .await
-        .unwrap();
+    let response = test_router(pool).oneshot(request).await.unwrap();
 
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
     assert_eq!(

@@ -35,45 +35,40 @@ async fn seed_account(
     status: &str,
     deleted_at: Option<time::OffsetDateTime>,
 ) -> Uuid {
-    let account_id = sqlx::query_scalar::<_, Uuid>(
+    sqlx::query_scalar::<_, Uuid>(
         r#"
-        INSERT INTO account (status, deleted_at)
-        VALUES ($1, $2)
-        RETURNING id
-        "#,
-    )
-    .bind(status)
-    .bind(deleted_at)
-    .fetch_one(pool)
-    .await
-    .expect("seed account");
-
-    sqlx::query(
-        r#"
+        WITH inserted_account AS (
+            INSERT INTO account (
+                status,
+                deleted_at
+            )
+            VALUES ($1, $2)
+            RETURNING id
+        )
         INSERT INTO account_credentials (
             account_id,
             email,
             email_normalized,
             password_hash
         )
-        VALUES ($1, $2, $2, $3)
+        SELECT
+            id,
+            $3,
+            $3,
+            '$argon2id$v=19$m=19456,t=2,p=1$test$test'
+        FROM inserted_account
+        RETURNING account_id
         "#,
     )
-    .bind(account_id)
+    .bind(status)
+    .bind(deleted_at)
     .bind(email)
-    .bind("$argon2id$v=19$m=19456,t=2,p=1$test$test")
-    .execute(pool)
+    .fetch_one(pool)
     .await
-    .expect("seed account credentials");
-
-    account_id
+    .expect("seed account")
 }
 
-async fn seed_access_token(
-    pool: &PgPool,
-    account_id: Uuid,
-    role_name: &str,
-) -> String {
+async fn seed_access_token(pool: &PgPool, account_id: Uuid, role_name: &str) -> String {
     let session_id = sqlx::query_scalar::<_, Uuid>(
         r#"
         INSERT INTO authentication_session (
@@ -318,6 +313,7 @@ async fn lists_accounts_with_filters_and_pagination() {
         .iter()
         .map(|item| item["id"].as_str().unwrap().to_owned())
         .collect();
+
     assert_eq!(ordered_ids.len(), 3);
     assert!(ordered_ids.windows(2).all(|ids| ids[0] < ids[1]));
     assert!(ordered_ids.contains(&active_one.to_string()));
@@ -331,7 +327,10 @@ async fn lists_accounts_with_filters_and_pagination() {
     }
 
     let response = app(pool.clone())
-        .oneshot(bearer_request("/admin/accounts?page=1&page_size=2", &token))
+        .oneshot(bearer_request(
+            "/admin/accounts?page=1&page_size=2",
+            &token,
+        ))
         .await
         .unwrap();
     let body = axum::body::to_bytes(response.into_body(), 32 * 1024)
@@ -345,11 +344,15 @@ async fn lists_accounts_with_filters_and_pagination() {
         .iter()
         .map(|item| item["id"].as_str().unwrap().to_owned())
         .collect();
+
     assert_eq!(page_one_ids, ordered_ids[..2].to_vec());
     assert_eq!(payload["total"], 3);
 
     let response = app(pool.clone())
-        .oneshot(bearer_request("/admin/accounts?page=2&page_size=2", &token))
+        .oneshot(bearer_request(
+            "/admin/accounts?page=2&page_size=2",
+            &token,
+        ))
         .await
         .unwrap();
     let body = axum::body::to_bytes(response.into_body(), 32 * 1024)
@@ -363,6 +366,7 @@ async fn lists_accounts_with_filters_and_pagination() {
         .iter()
         .map(|item| item["id"].as_str().unwrap().to_owned())
         .collect();
+
     assert_eq!(page_two_ids, ordered_ids[2..].to_vec());
 
     let response = app(pool.clone())
@@ -391,7 +395,10 @@ async fn lists_accounts_with_filters_and_pagination() {
     }
 
     let response = app(pool.clone())
-        .oneshot(bearer_request("/admin/accounts?status=inactive", &token))
+        .oneshot(bearer_request(
+            "/admin/accounts?status=inactive",
+            &token,
+        ))
         .await
         .unwrap();
     let body = axum::body::to_bytes(response.into_body(), 32 * 1024)
@@ -406,7 +413,10 @@ async fn lists_accounts_with_filters_and_pagination() {
     );
 
     let response = app(pool.clone())
-        .oneshot(bearer_request("/admin/accounts?page=99&page_size=20", &token))
+        .oneshot(bearer_request(
+            "/admin/accounts?page=99&page_size=20",
+            &token,
+        ))
         .await
         .unwrap();
     let body = axum::body::to_bytes(response.into_body(), 32 * 1024)
@@ -417,22 +427,28 @@ async fn lists_accounts_with_filters_and_pagination() {
     assert_eq!(payload["items"].as_array().unwrap().len(), 0);
     assert_eq!(payload["total"], 3);
 
-    sqlx::query("DELETE FROM authorization_account_role WHERE account_id IN ($1, $2, $3, $4)")
-        .bind(active_one)
-        .bind(active_two)
-        .bind(inactive)
-        .bind(deleted)
-        .execute(&pool)
-        .await
-        .unwrap();
-    sqlx::query("DELETE FROM authentication_session WHERE account_id IN ($1, $2, $3, $4)")
-        .bind(active_one)
-        .bind(active_two)
-        .bind(inactive)
-        .bind(deleted)
-        .execute(&pool)
-        .await
-        .unwrap();
+    sqlx::query(
+        "DELETE FROM authorization_account_role WHERE account_id IN ($1, $2, $3, $4)",
+    )
+    .bind(active_one)
+    .bind(active_two)
+    .bind(inactive)
+    .bind(deleted)
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    sqlx::query(
+        "DELETE FROM authentication_session WHERE account_id IN ($1, $2, $3, $4)",
+    )
+    .bind(active_one)
+    .bind(active_two)
+    .bind(inactive)
+    .bind(deleted)
+    .execute(&pool)
+    .await
+    .unwrap();
+
     sqlx::query("DELETE FROM account WHERE id IN ($1, $2, $3, $4)")
         .bind(active_one)
         .bind(active_two)
@@ -475,7 +491,10 @@ async fn denies_include_deleted_without_account_view_deleted_permission() {
         .unwrap();
 
     assert_eq!(response.status(), StatusCode::FORBIDDEN);
-    assert_eq!(response.headers()[header::CONTENT_TYPE], "application/problem+json");
+    assert_eq!(
+        response.headers()[header::CONTENT_TYPE],
+        "application/problem+json"
+    );
     assert_eq!(response.headers()[header::CACHE_CONTROL], "no-store");
     assert!(response.headers().get(header::WWW_AUTHENTICATE).is_none());
 
@@ -484,21 +503,25 @@ async fn denies_include_deleted_without_account_view_deleted_permission() {
         .execute(&pool)
         .await
         .unwrap();
+
     sqlx::query("DELETE FROM authentication_session WHERE account_id = $1")
         .bind(principal_id)
         .execute(&pool)
         .await
         .unwrap();
+
     sqlx::query("DELETE FROM authorization_role_permission WHERE role_id = $1")
         .bind(role_id)
         .execute(&pool)
         .await
         .unwrap();
+
     sqlx::query("DELETE FROM authorization_role WHERE id = $1")
         .bind(role_id)
         .execute(&pool)
         .await
         .unwrap();
+
     sqlx::query("DELETE FROM account WHERE id = $1")
         .bind(principal_id)
         .execute(&pool)
