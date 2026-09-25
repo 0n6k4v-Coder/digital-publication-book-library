@@ -5,9 +5,13 @@
 1. [Directory Structure](#directory-structure)
 2. [Directory and File Purpose](#directory-and-file-purpose)
 3. [Technology Stack](#technology-stack)
+
    1. [Frontend](#frontend)
    2. [Infrastructure](#infrastructure)
 4. [Test Strategy](#test-strategy)
+5. [Docker Command](#docker-command)
+
+   1. [Docker Test Profile Command](#docker-test-profile-command)
 
 ---
 
@@ -128,3 +132,54 @@
 | 3     | Integration   | Test multiple components and application behavior together              |
 | 4     | E2E           | Test complete user flows in a real browser                              |
 | 5     | Manual        | Verify visual, usability, accessibility, and real-world user experience |
+
+---
+
+# 5. Docker Command
+
+## 5.1 Docker Test Profile Command
+
+Build test image
+```bash
+docker compose -f frontend/admin/compose/docker-compose.test.yml build test
+```
+
+Clean Up
+```bash
+docker compose -f frontend/admin/compose/docker-compose.test.yml down --volumes --remove-orphans
+```
+
+Static Code Auto Fix and Test
+```bash
+# Auto Fix
+docker compose -f frontend/admin/compose/docker-compose.test.yml run --rm test sh -c \
+'npm run format && npm run lint -- --fix'
+
+# Test
+docker compose -f frontend/admin/compose/docker-compose.test.yml run --rm test sh -c \
+'npm run format:check && npm run typecheck && npm run lint && npm run build'
+```
+
+Full Unit Test Command
+```bash
+docker compose -f frontend/admin/compose/docker-compose.test.yml run --rm test \
+npm run test:unit
+```
+
+Full Integration Test Command
+```bash
+docker compose -f frontend/admin/compose/docker-compose.test.yml run --rm test \
+npm run test:integration
+```
+
+Full E2E Test Command
+```bash
+docker compose -f frontend/admin/compose/docker-compose.test.yml run --rm test \
+npm run test:e2e
+```
+
+Full Frontend Test Profile
+```bash
+docker compose -f frontend/admin/compose/docker-compose.test.yml run --rm test sh -c \
+'npm run format:check && npm run typecheck && npm run lint && npm run build && npm run test:unit && npm run test:integration && npm run test:e2e'
+```
