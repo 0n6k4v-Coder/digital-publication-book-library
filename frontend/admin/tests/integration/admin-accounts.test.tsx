@@ -112,8 +112,7 @@ describe("Admin Accounts integration", () => {
 
     expect(
       screen.getByRole("link", {
-        name: "Accounts",
-        exact: true,
+        name: /^Accounts$/,
       }),
     ).toHaveAttribute("aria-current", "page");
 
@@ -199,8 +198,7 @@ describe("Admin Accounts integration", () => {
 
     expect(
       await screen.findByRole("link", {
-        name: "Accounts",
-        exact: true,
+        name: /^Accounts$/,
       }),
     ).toBeInTheDocument();
 
@@ -210,8 +208,7 @@ describe("Admin Accounts integration", () => {
 
     screen
       .getByRole("link", {
-        name: "Accounts",
-        exact: true,
+        name: /^Accounts$/,
       })
       .click();
 

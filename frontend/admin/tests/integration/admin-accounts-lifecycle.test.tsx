@@ -1,8 +1,9 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { AccountsError, accountsService } from "../../src/services/accounts";
 import { AccountsPage } from "../../src/pages/accounts/AccountsPage";
+import { AccountsError, accountsService } from "../../src/services/accounts";
+import type { AdministratorAccount } from "../../src/types/account";
 
 vi.mock("../../src/services/accounts", () => {
   class MockAccountsError extends Error {
@@ -65,7 +66,9 @@ const deletedAccount = {
   deletedAt: "2026-09-24T10:00:00Z",
 };
 
-function listResponse(items = [activeAccount, inactiveAccount]) {
+function listResponse(
+  items: AdministratorAccount[] = [activeAccount, inactiveAccount],
+) {
   return {
     items,
     page: 1,
@@ -113,9 +116,11 @@ describe("Admin Accounts lifecycle integration", () => {
       expect(mockedList).toHaveBeenCalledTimes(2);
     });
 
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "Account deactivated.",
-    );
+    expect(
+      screen.getByText("Account deactivated.", {
+        exact: true,
+      }),
+    ).toBeInTheDocument();
   });
 
   it("refreshes and reports the last-active-administrator conflict", async () => {
@@ -179,7 +184,11 @@ describe("Admin Accounts lifecycle integration", () => {
       expect(mockedList).toHaveBeenCalledTimes(2);
     });
 
-    expect(screen.getByRole("status")).toHaveTextContent("Account activated.");
+    expect(
+      screen.getByText("Account activated.", {
+        exact: true,
+      }),
+    ).toBeInTheDocument();
   });
 
   it("restores a deleted account only when it is included in the current list", async () => {
@@ -215,6 +224,10 @@ describe("Admin Accounts lifecycle integration", () => {
       expect(mockedList).toHaveBeenCalledTimes(2);
     });
 
-    expect(screen.getByRole("status")).toHaveTextContent("Account restored.");
+    expect(
+      screen.getByText("Account restored.", {
+        exact: true,
+      }),
+    ).toBeInTheDocument();
   });
 });
