@@ -470,8 +470,6 @@ The Admin Shell must follow the Authentication and Authorization domain contract
 
 ## Testing — Manual
 
-Manual verification remains `🟡 In Progress` because the repository state provides automated coverage and implementation evidence, but no completed manual browser verification evidence for the current Admin Shell state.
-
 | ID                        | Criteria                             | Status         | Reason |
 | ------------------------- | ------------------------------------ | -------------- | ------ |
 | `FE_SHELL_TEST_MANUAL_01` | Sidebar layout is verified           | 🟡 In Progress |        |
