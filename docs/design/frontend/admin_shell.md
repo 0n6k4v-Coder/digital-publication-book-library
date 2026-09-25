@@ -380,12 +380,12 @@ The Admin Shell must follow the Authentication and Authorization domain contract
 
 ### Status Values
 
-| Status         | Meaning                                            |
-| -------------- | -------------------------------------------------- |
-| ⚪ Not Started  | Criteria has not been implemented or verified      |
-| 🟡 In Progress | Implementation is in progress                      |
-| 🟢 Implemented | Implementation is complete and verified            |
-| 🔴 Blocked     | Implementation cannot proceed because of a blocker |
+| Status         | Meaning                                             |
+| -------------- | --------------------------------------------------- |
+| ⚪ Not Started  | Criteria has not been implemented or verified       |
+| 🟡 In Progress | Implementation or verification is still in progress |
+| 🟢 Implemented | Implementation is complete and verified             |
+| 🔴 Blocked     | Implementation cannot proceed because of a blocker  |
 
 ## Routes
 
@@ -394,8 +394,8 @@ The Admin Shell must follow the Authentication and Authorization domain contract
 | `FE_SHELL_ROUTE_01` | Authenticated users can access `/admin` and see the Admin Shell     | 🟢 Implemented |        |
 | `FE_SHELL_ROUTE_02` | Unauthenticated users accessing `/admin` are redirected to `/login` | 🟢 Implemented |        |
 | `FE_SHELL_ROUTE_03` | Authenticated users accessing `/login` are redirected to `/admin`   | 🟢 Implemented |        |
-| `FE_SHELL_ROUTE_04` | Authenticated users can access `/admin/accounts`                    | 🟡 In Progress |        |
-| `FE_SHELL_ROUTE_05` | Unauthenticated users accessing `/admin/accounts` are redirected    | 🟡 In Progress |        |
+| `FE_SHELL_ROUTE_04` | Authenticated users can access `/admin/accounts`                    | 🟢 Implemented |        |
+| `FE_SHELL_ROUTE_05` | Unauthenticated users accessing `/admin/accounts` are redirected    | 🟢 Implemented |        |
 
 ## Requirements
 
@@ -404,53 +404,53 @@ The Admin Shell must follow the Authentication and Authorization domain contract
 | `FE_SHELL_01` | Provide a protected `/admin` route                                    | 🟢 Implemented |        |
 | `FE_SHELL_02` | Render the Admin Shell after successful authentication                | 🟢 Implemented |        |
 | `FE_SHELL_03` | Render a Sidebar within the Admin Shell                               | 🟢 Implemented |        |
-| `FE_SHELL_04` | Provide the Main Content Area as the routed feature container         | 🟡 In Progress |        |
+| `FE_SHELL_04` | Provide the Main Content Area as the routed feature container         | 🟢 Implemented |        |
 | `FE_SHELL_05` | Provide a Logout action in the Sidebar                                | 🟢 Implemented |        |
 | `FE_SHELL_06` | Prevent unauthenticated access to `/admin`                            | 🟢 Implemented |        |
 | `FE_SHELL_07` | Redirect unauthenticated users to `/login`                            | 🟢 Implemented |        |
 | `FE_SHELL_08` | Revoke the current authentication session through `POST /auth/logout` | 🟢 Implemented |        |
 | `FE_SHELL_09` | Clear the client authentication state after logout                    | 🟢 Implemented |        |
 | `FE_SHELL_10` | Navigate to `/login` after logout                                     | 🟢 Implemented |        |
-| `FE_SHELL_11` | Provide navigation to `/admin/accounts`                               | 🟡 In Progress |        |
-| `FE_SHELL_12` | Render the Account List inside the Admin Shell                        | 🟡 In Progress |        |
-| `FE_SHELL_13` | Indicate Accounts navigation when active                              | 🟡 In Progress |        |
-| `FE_SHELL_14` | Preserve the Admin Shell across Admin feature navigation              | 🟡 In Progress |        |
+| `FE_SHELL_11` | Provide navigation to `/admin/accounts`                               | 🟢 Implemented |        |
+| `FE_SHELL_12` | Render the Account List inside the Admin Shell                        | 🟢 Implemented |        |
+| `FE_SHELL_13` | Indicate Accounts navigation when active                              | 🟢 Implemented |        |
+| `FE_SHELL_14` | Preserve the Admin Shell across Admin feature navigation              | 🟢 Implemented |        |
 | `FE_SHELL_15` | Treat backend authorization as authoritative                          | 🟢 Implemented |        |
 
 ## Layout
 
-| ID               | Criteria                                             | Status         | Reason |
-| ---------------- | ---------------------------------------------------- | -------------- | ------ |
-| `FE_SHELL_UI_01` | Admin Shell is implemented                           | 🟢 Implemented |        |
-| `FE_SHELL_UI_02` | Sidebar is rendered                                  | 🟢 Implemented |        |
-| `FE_SHELL_UI_03` | Main Content supports routed feature content         | 🟡 In Progress |        |
-| `FE_SHELL_UI_04` | Admin Application identity is displayed              | 🟢 Implemented |        |
-| `FE_SHELL_UI_05` | Accounts navigation is displayed                     | 🟡 In Progress |        |
-| `FE_SHELL_UI_06` | Logout action is displayed                           | 🟢 Implemented |        |
-| `FE_SHELL_UI_07` | Active navigation state is displayed                 | 🟡 In Progress |        |
-| `FE_SHELL_UI_08` | Accounts navigation links to `/admin/accounts`       | 🟡 In Progress |        |
-| `FE_SHELL_UI_09` | Accounts navigation is active on `/admin/accounts`   | 🟡 In Progress |        |
-| `FE_SHELL_UI_10` | Logout remains separate from feature navigation      | 🟢 Implemented |        |
-| `FE_SHELL_UI_11` | Sidebar supports keyboard navigation and focus       | 🟢 Implemented |        |
-| `FE_SHELL_UI_12` | Feature pages render inside Main Content             | 🟡 In Progress |        |
-| `FE_SHELL_UI_13` | Main Content provides a stable routed container      | 🟡 In Progress |        |
-| `FE_SHELL_UI_14` | Account List renders at `/admin/accounts`            | 🟡 In Progress |        |
-| `FE_SHELL_UI_15` | Shell remains while feature page changes             | 🟡 In Progress |        |
-| `FE_SHELL_UI_16` | Feature business logic remains outside the shell     | 🟢 Implemented |        |
+| ID               | Criteria                                           | Status         | Reason |
+| ---------------- | -------------------------------------------------- | -------------- | ------ |
+| `FE_SHELL_UI_01` | Admin Shell is implemented                         | 🟢 Implemented |        |
+| `FE_SHELL_UI_02` | Sidebar is rendered                                | 🟢 Implemented |        |
+| `FE_SHELL_UI_03` | Main Content supports routed feature content       | 🟢 Implemented |        |
+| `FE_SHELL_UI_04` | Admin Application identity is displayed            | 🟢 Implemented |        |
+| `FE_SHELL_UI_05` | Accounts navigation is displayed                   | 🟢 Implemented |        |
+| `FE_SHELL_UI_06` | Logout action is displayed                         | 🟢 Implemented |        |
+| `FE_SHELL_UI_07` | Active navigation state is displayed               | 🟢 Implemented |        |
+| `FE_SHELL_UI_08` | Accounts navigation links to `/admin/accounts`     | 🟢 Implemented |        |
+| `FE_SHELL_UI_09` | Accounts navigation is active on `/admin/accounts` | 🟢 Implemented |        |
+| `FE_SHELL_UI_10` | Logout remains separate from feature navigation    | 🟢 Implemented |        |
+| `FE_SHELL_UI_11` | Sidebar supports keyboard navigation and focus     | 🟢 Implemented |        |
+| `FE_SHELL_UI_12` | Feature pages render inside Main Content           | 🟢 Implemented |        |
+| `FE_SHELL_UI_13` | Main Content provides a stable routed container    | 🟢 Implemented |        |
+| `FE_SHELL_UI_14` | Account List renders at `/admin/accounts`          | 🟢 Implemented |        |
+| `FE_SHELL_UI_15` | Shell remains while feature page changes           | 🟢 Implemented |        |
+| `FE_SHELL_UI_16` | Feature business logic remains outside the shell   | 🟢 Implemented |        |
 
 ## Responsive Layout
 
-| ID | Criteria | Status | Reason |
-| --- | --- | --- | --- |
-| `FE_SHELL_RESP_01` | Desktop uses a persistent fixed-width Sidebar | 🟡 In Progress | |
-| `FE_SHELL_RESP_02` | Tablet uses a persistent reduced-width Sidebar | 🟡 In Progress | |
-| `FE_SHELL_RESP_03` | Mobile uses a collapsible Sidebar | 🟡 In Progress | |
-| `FE_SHELL_RESP_04` | Unintended horizontal page scrolling is prevented | 🟡 In Progress | |
-| `FE_SHELL_RESP_05` | Active navigation state is preserved across viewport sizes | 🟡 In Progress | |
-| `FE_SHELL_RESP_06` | Sidebar navigation remains keyboard accessible across viewport sizes | 🟡 In Progress | |
-| `FE_SHELL_RESP_07` | Mobile navigation can be dismissed without leaving the current page | 🟡 In Progress | |
-| `FE_SHELL_RESP_08` | Feature pages manage their own internal responsive behavior | 🟢 Implemented | |
-| `FE_SHELL_RESP_09` | Authentication and authorization behavior is unchanged across viewport sizes | 🟢 Implemented | |
+| ID                 | Criteria                                                                     | Status         | Reason                                                                       |
+| ------------------ | ---------------------------------------------------------------------------- | -------------- | ---------------------------------------------------------------------------- |
+| `FE_SHELL_RESP_01` | Desktop uses a persistent fixed-width Sidebar                                | 🟢 Implemented |                                                                              |
+| `FE_SHELL_RESP_02` | Tablet uses a persistent reduced-width Sidebar                               | 🟢 Implemented |                                                                              |
+| `FE_SHELL_RESP_03` | Mobile uses a collapsible Sidebar                                            | 🟢 Implemented |                                                                              |
+| `FE_SHELL_RESP_04` | Unintended horizontal page scrolling is prevented                            | 🟢 Implemented |                                                                              |
+| `FE_SHELL_RESP_05` | Active navigation state is preserved across viewport sizes                   | 🟢 Implemented |                                                                              |
+| `FE_SHELL_RESP_06` | Sidebar navigation remains keyboard accessible across viewport sizes         | 🟢 Implemented |                                                                              |
+| `FE_SHELL_RESP_07` | Mobile navigation can be dismissed without leaving the current page          | 🟡 In Progress | Latest mobile E2E fix is committed but has not yet been re-run successfully. |
+| `FE_SHELL_RESP_08` | Feature pages manage their own internal responsive behavior                  | 🟢 Implemented |                                                                              |
+| `FE_SHELL_RESP_09` | Authentication and authorization behavior is unchanged across viewport sizes | 🟢 Implemented |                                                                              |
 
 ## Authentication Behavior
 
@@ -501,7 +501,11 @@ The Admin Shell must follow the Authentication and Authorization domain contract
 | `FE_SHELL_STATE_04` | Logout Success clears auth state and navigates to `/login`                                         | 🟢 Implemented |        |
 | `FE_SHELL_STATE_05` | Logout Unauthorized clears auth state and navigates to `/login`                                    | 🟢 Implemented |        |
 | `FE_SHELL_STATE_06` | Logout Failure keeps authenticated state and allows retry unless authentication is no longer valid | 🟢 Implemented |        |
-| `FE_SHELL_STATE_07` | Main Content Area remains empty                                                                    | 🟢 Implemented |        |
+| `FE_SHELL_STATE_07` | Account Route renders the Account List inside Main Content                                         | 🟢 Implemented |        |
+| `FE_SHELL_STATE_08` | Accounts navigation is active on `/admin/accounts`                                                 | 🟢 Implemented |        |
+| `FE_SHELL_STATE_09` | Feature Loading keeps the Admin Shell rendered                                                     | 🟢 Implemented |        |
+| `FE_SHELL_STATE_10` | Feature Error keeps the Admin Shell rendered                                                       | 🟢 Implemented |        |
+| `FE_SHELL_STATE_11` | Feature Empty keeps the Admin Shell rendered                                                       | 🟢 Implemented |        |
 
 ## Security
 
@@ -532,42 +536,53 @@ The Admin Shell must follow the Authentication and Authorization domain contract
 
 ## Testing — Unit
 
-| ID                      | Criteria                                       | Status         | Reason |
-| ----------------------- | ---------------------------------------------- | -------------- | ------ |
-| `FE_SHELL_TEST_UNIT_01` | Admin Shell rendering is tested                | 🟢 Implemented |        |
-| `FE_SHELL_TEST_UNIT_02` | Sidebar rendering is tested                    | 🟢 Implemented |        |
-| `FE_SHELL_TEST_UNIT_03` | Logout button state is tested                  | 🟢 Implemented |        |
-| `FE_SHELL_TEST_UNIT_04` | Authenticated route guard behavior is tested   | 🟢 Implemented |        |
-| `FE_SHELL_TEST_UNIT_05` | Unauthenticated route guard behavior is tested | 🟢 Implemented |        |
+| ID                      | Criteria                                                     | Status         | Reason |
+| ----------------------- | ------------------------------------------------------------ | -------------- | ------ |
+| `FE_SHELL_TEST_UNIT_01` | Admin Shell rendering is tested                              | 🟢 Implemented |        |
+| `FE_SHELL_TEST_UNIT_02` | Sidebar rendering is tested                                  | 🟢 Implemented |        |
+| `FE_SHELL_TEST_UNIT_03` | Logout button state is tested                                | 🟢 Implemented |        |
+| `FE_SHELL_TEST_UNIT_04` | Authenticated route guard behavior is tested                 | 🟢 Implemented |        |
+| `FE_SHELL_TEST_UNIT_05` | Unauthenticated route guard behavior is tested               | 🟢 Implemented |        |
+| `FE_SHELL_TEST_UNIT_06` | Accounts navigation and active state are tested              | 🟢 Implemented |        |
+| `FE_SHELL_TEST_UNIT_07` | Account List loading, loaded, error, and empty states tested | 🟢 Implemented |        |
+| `FE_SHELL_TEST_UNIT_08` | Mobile navigation open, Escape, and dismiss behavior tested  | 🟢 Implemented |        |
 
 ## Testing — Integration
 
-| ID                     | Criteria                                                        | Status         | Reason |
-| ---------------------- | --------------------------------------------------------------- | -------------- | ------ |
-| `FE_SHELL_TEST_INT_01` | Authenticated user can access `/admin`                          | 🟢 Implemented |        |
-| `FE_SHELL_TEST_INT_02` | Unauthenticated user is redirected to `/login`                  | 🟢 Implemented |        |
-| `FE_SHELL_TEST_INT_03` | Authenticated user accessing `/login` is redirected to `/admin` | 🟢 Implemented |        |
-| `FE_SHELL_TEST_INT_04` | Logout sends `POST /auth/logout`                                | 🟢 Implemented |        |
-| `FE_SHELL_TEST_INT_05` | Logout success clears authentication state                      | 🟢 Implemented |        |
-| `FE_SHELL_TEST_INT_06` | Logout success navigates to `/login`                            | 🟢 Implemented |        |
-| `FE_SHELL_TEST_INT_07` | Logout `401` clears authentication state                        | 🟢 Implemented |        |
-| `FE_SHELL_TEST_INT_08` | Duplicate logout submission is prevented                        | 🟢 Implemented |        |
+| ID                     | Criteria                                                          | Status         | Reason |
+| ---------------------- | ----------------------------------------------------------------- | -------------- | ------ |
+| `FE_SHELL_TEST_INT_01` | Authenticated user can access `/admin`                            | 🟢 Implemented |        |
+| `FE_SHELL_TEST_INT_02` | Unauthenticated user is redirected to `/login`                    | 🟢 Implemented |        |
+| `FE_SHELL_TEST_INT_03` | Authenticated user accessing `/login` is redirected to `/admin`   | 🟢 Implemented |        |
+| `FE_SHELL_TEST_INT_04` | Logout sends `POST /auth/logout`                                  | 🟢 Implemented |        |
+| `FE_SHELL_TEST_INT_05` | Logout success clears authentication state                        | 🟢 Implemented |        |
+| `FE_SHELL_TEST_INT_06` | Logout success navigates to `/login`                              | 🟢 Implemented |        |
+| `FE_SHELL_TEST_INT_07` | Logout `401` clears authentication state                          | 🟢 Implemented |        |
+| `FE_SHELL_TEST_INT_08` | Duplicate logout submission is prevented                          | 🟢 Implemented |        |
+| `FE_SHELL_TEST_INT_09` | Authenticated user can access `/admin/accounts`                   | 🟢 Implemented |        |
+| `FE_SHELL_TEST_INT_10` | Account List renders inside the Admin Shell                       | 🟢 Implemented |        |
+| `FE_SHELL_TEST_INT_11` | Admin Shell remains mounted while navigating to `/admin/accounts` | 🟢 Implemented |        |
 
 ## Testing — E2E
 
-| ID                     | Criteria                                                 | Status         | Reason |
-| ---------------------- | -------------------------------------------------------- | -------------- | ------ |
-| `FE_SHELL_TEST_E2E_01` | Login leads to the Admin Shell                           | 🟢 Implemented |        |
-| `FE_SHELL_TEST_E2E_02` | Sidebar appears in the Admin Shell                       | 🟢 Implemented |        |
-| `FE_SHELL_TEST_E2E_03` | Logout leads to `/login`                                 | 🟢 Implemented |        |
-| `FE_SHELL_TEST_E2E_04` | Unauthenticated access to `/admin` redirects to `/login` | 🟢 Implemented |        |
+| ID                     | Criteria                                                                                    | Status         | Reason                                                                       |
+| ---------------------- | ------------------------------------------------------------------------------------------- | -------------- | ---------------------------------------------------------------------------- |
+| `FE_SHELL_TEST_E2E_01` | Login leads to the Admin Shell                                                              | 🟢 Implemented |                                                                              |
+| `FE_SHELL_TEST_E2E_02` | Sidebar appears in the Admin Shell                                                          | 🟢 Implemented |                                                                              |
+| `FE_SHELL_TEST_E2E_03` | Logout leads to `/login`                                                                    | 🟢 Implemented |                                                                              |
+| `FE_SHELL_TEST_E2E_04` | Unauthenticated access to `/admin` redirects to `/login`                                    | 🟢 Implemented |                                                                              |
+| `FE_SHELL_TEST_E2E_05` | Authenticated access to `/admin/accounts` is supported                                      | 🟢 Implemented |                                                                              |
+| `FE_SHELL_TEST_E2E_06` | Account List renders inside the Admin Shell                                                 | 🟢 Implemented |                                                                              |
+| `FE_SHELL_TEST_E2E_07` | Accounts navigation appears active on `/admin/accounts`                                     | 🟢 Implemented |                                                                              |
+| `FE_SHELL_TEST_E2E_08` | Unauthenticated access to `/admin/accounts` redirects to `/login`                           | 🟢 Implemented |                                                                              |
+| `FE_SHELL_TEST_E2E_09` | Mobile navigation can be opened, navigated, and dismissed without leaving `/admin/accounts` | 🟡 In Progress | Latest mobile E2E fix is committed but has not yet been re-run successfully. |
 
 ## Testing — Manual
 
 | ID                        | Criteria                             | Status         | Reason |
 | ------------------------- | ------------------------------------ | -------------- | ------ |
 | `FE_SHELL_TEST_MANUAL_01` | Sidebar layout is verified           | 🟡 In Progress |        |
-| `FE_SHELL_TEST_MANUAL_02` | Main Content Area is empty           | 🟡 In Progress |        |
+| `FE_SHELL_TEST_MANUAL_02` | Main Content Area is verified        | 🟡 In Progress |        |
 | `FE_SHELL_TEST_MANUAL_03` | Login → Admin transition is verified | 🟡 In Progress |        |
 | `FE_SHELL_TEST_MANUAL_04` | Logout behavior is verified          | 🟡 In Progress |        |
 | `FE_SHELL_TEST_MANUAL_05` | Redirect behavior is verified        | 🟡 In Progress |        |
