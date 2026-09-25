@@ -538,55 +538,48 @@ Confirm:
 ```
 
 ````
-# Task 12: Generate the Final Implementation Summary
+# Task 12: Generate the Complete Implementation Output
 
-Provide:
+For every file created or modified for the objective, provide:
 
-## 1. Objective
+1. Exact repository path.
+2. File status:
+   - New
+   - Modified
+3. Complete final file content.
+4. The implementation must include all applicable findings from Task 3.
+5. The implementation must comply with all applicable source-of-truth documents.
+6. The implementation must not contain placeholders, omissions, ellipses, pseudo-code, or comments such as:
+   - `...`
+   - `TODO`
+   - `implement here`
+   - `same as above`
+   - `existing code`
+   - `rest of code`
 
-```text
-<one-sentence summary>
+Output every file independently.
+
+Required format:
+
+## <Exact Repository Path>
+
+**Status:** New | Modified
+
+```<language>
+<COMPLETE FINAL FILE CONTENT>
 ```
 
-## 2. Changed Files
+Repeat this format for every changed file.
 
-Group by responsibility:
+Rules:
 
-```text
-Pages
-Components
-Services / API
-Types
-Styles
-Tests
-Configuration
-```
-
-For every file provide the exact repository path.
-
-## 3. Implementation Summary
-
-Describe what was implemented.
-
-Keep this concise.
-
-## 4. Test Coverage
-
-List the implemented:
-
-* Unit
-* Integration
-* E2E
-
-## 5. Validation
-
-List the commands actually run and their actual results.
-
-Do not fabricate results.
-
-## 6. Remaining Issues
-
-Only list actual unresolved issues.
+* Do not output a patch instead of the full file.
+* Do not output only snippets.
+* Do not omit unchanged sections of a modified file.
+* Do not replace code with explanations.
+* Do not hide implementation inside an archive.
+* Do not require the user to open another artifact to see the source code.
+* The code shown must represent the final implementation after applying the research findings, source-of-truth requirements, API contracts, security requirements, accessibility requirements, and testing requirements.
 ````
 
 ````
@@ -647,4 +640,9 @@ Only provide commands relevant to the objective.
 * Do not commit.
 * Do not push.
 * Do not modify Git history.
+* Always provide the exact repository path for every created or modified file.
+* Always provide the complete final source code for every created or modified file.
+* The final response must contain the full implementation source, not only a summary, patch, diff, or archive.
+* A patch or archive may be provided as an additional artifact, but never as a replacement for the full source code.
+* Apply all relevant deep-research findings directly to the implementation before presenting the final source.
 ```
