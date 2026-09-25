@@ -1,6 +1,5 @@
 use std::{env, net::SocketAddr, sync::Arc};
 
-use axum::Router;
 use axum_server::tls_rustls::RustlsConfig;
 use digital_publication_backend::{
     app::{router::build_router, state::AppState},
@@ -70,6 +69,7 @@ async fn authentication_api_is_https_only() {
             listener,
             tls_config,
         )
+        .expect("create TLS server")
         .serve(
             app.into_make_service_with_connect_info::<
                 SocketAddr,
