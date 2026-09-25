@@ -17,7 +17,6 @@ services:
       - type: bind
         source: ..
         target: /workspace
-        read_only: true
       - frontend-admin-node-modules:/workspace/node_modules
       - frontend-admin-ms-playwright:/ms-playwright
 
@@ -25,7 +24,7 @@ services:
       [
         "sh",
         "-c",
-        "npm run format:check && npm run typecheck && npm run lint && npm run build && npm run test:unit && npm run test:integration && npm run test:e2e"
+        "npm run format:check && npm run typecheck && npm run lint && npm run build && npm run test:unit && npm run test:integration && npm run test:e2e",
       ]
 
 volumes:
