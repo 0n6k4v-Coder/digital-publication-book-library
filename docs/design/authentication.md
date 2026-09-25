@@ -75,14 +75,14 @@
 ## 1.4 Non-Functional Requirements
 
 | ID                 | Requirement                                                                                             |
-| ------------------ | ------------------------------------------------------------------------------------------------------- |
+| ------------------ | -------------------------------------------------------------------------------------------------------- |
 | `AU_REQ_NON_FC_01` | Passwords, raw access tokens, raw refresh tokens, and `Authorization` header values must not be logged. |
 | `AU_REQ_NON_FC_02` | Raw access tokens must not be persisted.                                                                |
 | `AU_REQ_NON_FC_03` | Raw refresh tokens must not be persisted.                                                               |
-| `AU_REQ_NON_FC_04` | Authentication endpoints must use HTTPS/TLS.                                                            |
+| `AU_REQ_NON_FC_04` | Authentication endpoints must use HTTPS/TLS. TLS terminates at the backend application through Rustls. TLS 1.3 must be preferred; TLS 1.2 may be supported for compatibility; TLS 1.0 and TLS 1.1 must not be negotiated. The backend must not expose Authentication endpoints through plaintext HTTP. If a reverse proxy or load balancer is used, its connection to the backend must also be TLS-protected. The application must not trust forwarded scheme headers as proof of HTTPS. Certificate and private-key provisioning is deployment-managed and private-key material must never be logged, returned, or committed to source control. |
 | `AU_REQ_NON_FC_05` | Failed password authentication attempts must be rate-limited.                                           |
 | `AU_REQ_NON_FC_06` | Authentication failures must not reveal unnecessary account-existence information.                      |
-| `AU_REQ_NON_FC_07` | Authentication responses must use `Cache-Control: no-store`.                                            |
+| `AU_REQ_NON_FC_07` | Authentication responses must use `Cache-Control: no-store`.                                             |
 
 ---
 
