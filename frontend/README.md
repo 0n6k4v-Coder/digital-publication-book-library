@@ -22,7 +22,7 @@
 | Vue 3        | UI framework          |
 | TypeScript   | Type-safe development |
 
-## Admin Application
+### Admin Application
 
 | Technology      | Purpose                              |
 | --------------- | ------------------------------------ |
