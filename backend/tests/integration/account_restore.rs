@@ -273,7 +273,7 @@ async fn restores_soft_deleted_account_as_inactive_and_clears_deletion_metadata(
         return;
     };
 
-    sqlx::migrate!().run(&pool).await.expect("run migrations");
+    digital_publication_backend::MIGRATOR.run(&pool).await.expect("run migrations");
 
     let (admin_id, admin_token) = seed_principal(&pool, "account_admin").await;
 
@@ -342,7 +342,7 @@ async fn restore_enforces_authentication_authorization_and_defined_conflicts() {
         return;
     };
 
-    sqlx::migrate!().run(&pool).await.expect("run migrations");
+    digital_publication_backend::MIGRATOR.run(&pool).await.expect("run migrations");
 
     let (admin_id, admin_token) = seed_principal(&pool, "account_admin").await;
     let (viewer_id, viewer_token) = seed_principal(&pool, "account_viewer").await;

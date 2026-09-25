@@ -32,7 +32,7 @@ async fn every_account_must_have_exactly_one_credential_set() {
         return;
     };
 
-    sqlx::migrate!().run(&pool).await.expect("run migrations");
+    digital_publication_backend::MIGRATOR.run(&pool).await.expect("run migrations");
 
     let mut create_transaction =
         pool.begin().await.expect("begin create transaction");

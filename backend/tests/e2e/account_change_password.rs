@@ -233,7 +233,7 @@ async fn change_password_end_to_end() {
     let _database_guard = TEST_DATABASE_LOCK.lock().await;
     let pool = connect_database().await;
 
-    sqlx::migrate!().run(&pool).await.expect("run migrations");
+    digital_publication_backend::MIGRATOR.run(&pool).await.expect("run migrations");
 
     let (admin_id, admin_token) = seed_principal(&pool, "account_admin").await;
     let target_id = seed_account(
@@ -291,7 +291,7 @@ async fn change_password_authentication_authorization_and_validation_end_to_end(
     let _database_guard = TEST_DATABASE_LOCK.lock().await;
     let pool = connect_database().await;
 
-    sqlx::migrate!().run(&pool).await.expect("run migrations");
+    digital_publication_backend::MIGRATOR.run(&pool).await.expect("run migrations");
 
     let (admin_id, admin_token) = seed_principal(&pool, "account_admin").await;
     let (viewer_id, viewer_token) = seed_principal(&pool, "account_viewer").await;

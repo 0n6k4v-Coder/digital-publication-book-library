@@ -269,7 +269,7 @@ async fn changes_password_without_changing_account_metadata() {
         return;
     };
 
-    sqlx::migrate!().run(&pool).await.expect("run migrations");
+    digital_publication_backend::MIGRATOR.run(&pool).await.expect("run migrations");
 
     let (admin_id, token) = seed_principal(&pool, "account_admin").await;
     let target_id = seed_account(
@@ -349,7 +349,7 @@ async fn rejects_password_policy_violations_missing_and_soft_deleted_targets() {
         return;
     };
 
-    sqlx::migrate!().run(&pool).await.expect("run migrations");
+    digital_publication_backend::MIGRATOR.run(&pool).await.expect("run migrations");
 
     let (admin_id, token) = seed_principal(&pool, "account_admin").await;
     let target_id = seed_account(
@@ -449,7 +449,7 @@ async fn account_change_password_requires_change_password_permission() {
         return;
     };
 
-    sqlx::migrate!().run(&pool).await.expect("run migrations");
+    digital_publication_backend::MIGRATOR.run(&pool).await.expect("run migrations");
 
     let (viewer_id, viewer_token) = seed_principal(&pool, "account_viewer").await;
     let target_id = seed_account(

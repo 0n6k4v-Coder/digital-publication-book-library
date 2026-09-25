@@ -216,7 +216,7 @@ async fn logout_revokes_only_the_current_session_and_invalidates_its_access_toke
     let _lock = TEST_DATABASE_LOCK.lock().await;
     let pool = database().await;
 
-    sqlx::migrate!().run(&pool).await.unwrap();
+    digital_publication_backend::MIGRATOR.run(&pool).await.unwrap();
     reset(&pool).await;
 
     let email = format!(

@@ -226,7 +226,7 @@ async fn activates_inactive_account_and_preserves_immutable_and_credential_data(
     let _database_guard = TEST_DATABASE_LOCK.lock().await;
     let Some(pool) = test_pool().await else { return };
 
-    sqlx::migrate!().run(&pool).await.expect("run migrations");
+    digital_publication_backend::MIGRATOR.run(&pool).await.expect("run migrations");
     let (admin_id, admin_token) = seed_principal(&pool, "account_admin").await;
     let target_id = seed_account(
         &pool,
@@ -285,7 +285,7 @@ async fn activation_enforces_authentication_authorization_and_defined_conflicts(
     let _database_guard = TEST_DATABASE_LOCK.lock().await;
     let Some(pool) = test_pool().await else { return };
 
-    sqlx::migrate!().run(&pool).await.expect("run migrations");
+    digital_publication_backend::MIGRATOR.run(&pool).await.expect("run migrations");
     let (admin_id, admin_token) = seed_principal(&pool, "account_admin").await;
     let (viewer_id, viewer_token) = seed_principal(&pool, "account_viewer").await;
     let target_id = seed_account(

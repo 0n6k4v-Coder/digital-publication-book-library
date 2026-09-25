@@ -161,7 +161,7 @@ async fn malformed_refresh_json_is_rejected_without_database_access() {
 async fn refresh_rotates_tokens_and_preserves_absolute_session_state() {
     let _lock = TEST_DATABASE_LOCK.lock().await;
     let pool = database().await;
-    sqlx::migrate!().run(&pool).await.unwrap();
+    digital_publication_backend::MIGRATOR.run(&pool).await.unwrap();
     reset(&pool).await;
 
     let email = format!("refresh-{}@example.com", Uuid::new_v4());
@@ -246,7 +246,7 @@ async fn refresh_rotates_tokens_and_preserves_absolute_session_state() {
 async fn replayed_refresh_token_is_rejected_without_issuing_more_credentials() {
     let _lock = TEST_DATABASE_LOCK.lock().await;
     let pool = database().await;
-    sqlx::migrate!().run(&pool).await.unwrap();
+    digital_publication_backend::MIGRATOR.run(&pool).await.unwrap();
     reset(&pool).await;
 
     let email = format!("replay-{}@example.com", Uuid::new_v4());
@@ -302,7 +302,7 @@ async fn replayed_refresh_token_is_rejected_without_issuing_more_credentials() {
 async fn expired_revoked_or_account_invalid_refresh_tokens_are_rejected() {
     let _lock = TEST_DATABASE_LOCK.lock().await;
     let pool = database().await;
-    sqlx::migrate!().run(&pool).await.unwrap();
+    digital_publication_backend::MIGRATOR.run(&pool).await.unwrap();
     reset(&pool).await;
 
     for case in [
