@@ -316,167 +316,169 @@ The Admin Shell must follow the Authentication and Authorization domain contract
 
 | Status         | Meaning                                            |
 | -------------- | -------------------------------------------------- |
-| ⚪ Not Started  | Criteria has not been implemented or verified     |
+| ⚪ Not Started  | Criteria has not been implemented or verified      |
 | 🟡 In Progress | Implementation is in progress                      |
 | 🟢 Implemented | Implementation is complete and verified            |
 | 🔴 Blocked     | Implementation cannot proceed because of a blocker |
 
 ## Routes
 
-| ID                  | Criteria                                                            | Status        | Reason |
-| ------------------- | ------------------------------------------------------------------- | ------------- | ------ |
-| `FE_SHELL_ROUTE_01` | Authenticated users can access `/admin` and see the Admin Shell     | ⚪ Not Started |        |
-| `FE_SHELL_ROUTE_02` | Unauthenticated users accessing `/admin` are redirected to `/login` | ⚪ Not Started |        |
-| `FE_SHELL_ROUTE_03` | Authenticated users accessing `/login` are redirected to `/admin`   | ⚪ Not Started |        |
+| ID                  | Criteria                                                            | Status         | Reason |
+| ------------------- | ------------------------------------------------------------------- | -------------- | ------ |
+| `FE_SHELL_ROUTE_01` | Authenticated users can access `/admin` and see the Admin Shell     | 🟢 Implemented |        |
+| `FE_SHELL_ROUTE_02` | Unauthenticated users accessing `/admin` are redirected to `/login` | 🟢 Implemented |        |
+| `FE_SHELL_ROUTE_03` | Authenticated users accessing `/login` are redirected to `/admin`   | 🟢 Implemented |        |
 
 ## Requirements
 
-| ID            | Criteria                                                              | Status        | Reason |
-| ------------- | --------------------------------------------------------------------- | ------------- | ------ |
-| `FE_SHELL_01` | Provide a protected `/admin` route                                    | ⚪ Not Started |        |
-| `FE_SHELL_02` | Render the Admin Shell after successful authentication                | ⚪ Not Started |        |
-| `FE_SHELL_03` | Render a Sidebar within the Admin Shell                               | ⚪ Not Started |        |
-| `FE_SHELL_04` | Render an empty Main Content Area                                     | ⚪ Not Started |        |
-| `FE_SHELL_05` | Provide a Logout action in the Sidebar                                | ⚪ Not Started |        |
-| `FE_SHELL_06` | Prevent unauthenticated access to `/admin`                            | ⚪ Not Started |        |
-| `FE_SHELL_07` | Redirect unauthenticated users to `/login`                            | ⚪ Not Started |        |
-| `FE_SHELL_08` | Revoke the current authentication session through `POST /auth/logout` | ⚪ Not Started |        |
-| `FE_SHELL_09` | Clear the client authentication state after logout                    | ⚪ Not Started |        |
-| `FE_SHELL_10` | Navigate to `/login` after logout                                     | ⚪ Not Started |        |
+| ID            | Criteria                                                              | Status         | Reason |
+| ------------- | --------------------------------------------------------------------- | -------------- | ------ |
+| `FE_SHELL_01` | Provide a protected `/admin` route                                    | 🟢 Implemented |        |
+| `FE_SHELL_02` | Render the Admin Shell after successful authentication                | 🟢 Implemented |        |
+| `FE_SHELL_03` | Render a Sidebar within the Admin Shell                               | 🟢 Implemented |        |
+| `FE_SHELL_04` | Render an empty Main Content Area                                     | 🟢 Implemented |        |
+| `FE_SHELL_05` | Provide a Logout action in the Sidebar                                | 🟢 Implemented |        |
+| `FE_SHELL_06` | Prevent unauthenticated access to `/admin`                            | 🟢 Implemented |        |
+| `FE_SHELL_07` | Redirect unauthenticated users to `/login`                            | 🟢 Implemented |        |
+| `FE_SHELL_08` | Revoke the current authentication session through `POST /auth/logout` | 🟢 Implemented |        |
+| `FE_SHELL_09` | Clear the client authentication state after logout                    | 🟢 Implemented |        |
+| `FE_SHELL_10` | Navigate to `/login` after logout                                     | 🟢 Implemented |        |
 
 ## Layout
 
-| ID               | Criteria                                                            | Status        | Reason |
-| ---------------- | ------------------------------------------------------------------- | ------------- | ------ |
-| `FE_SHELL_UI_01` | Admin Shell is implemented                                          | ⚪ Not Started |        |
-| `FE_SHELL_UI_02` | Sidebar is rendered within the Admin Shell                          | ⚪ Not Started |        |
-| `FE_SHELL_UI_03` | Empty Main Content Area is rendered                                 | ⚪ Not Started |        |
-| `FE_SHELL_UI_04` | Admin Application identity is displayed                             | ⚪ Not Started |        |
-| `FE_SHELL_UI_05` | Logout action is displayed in the Sidebar                           | ⚪ Not Started |        |
-| `FE_SHELL_UI_06` | No feature navigation is included in the initial Admin Shell        | ⚪ Not Started |        |
-| `FE_SHELL_UI_07` | Future navigation is only added with corresponding frontend designs | ⚪ Not Started |        |
-| `FE_SHELL_UI_08` | Main Content Area remains empty                                     | ⚪ Not Started |        |
-| `FE_SHELL_UI_09` | Main Content Area provides the future page content container        | ⚪ Not Started |        |
+| ID               | Criteria                                                            | Status         | Reason |
+| ---------------- | ------------------------------------------------------------------- | -------------- | ------ |
+| `FE_SHELL_UI_01` | Admin Shell is implemented                                          | 🟢 Implemented |        |
+| `FE_SHELL_UI_02` | Sidebar is rendered within the Admin Shell                          | 🟢 Implemented |        |
+| `FE_SHELL_UI_03` | Empty Main Content Area is rendered                                 | 🟢 Implemented |        |
+| `FE_SHELL_UI_04` | Admin Application identity is displayed                             | 🟢 Implemented |        |
+| `FE_SHELL_UI_05` | Logout action is displayed in the Sidebar                           | 🟢 Implemented |        |
+| `FE_SHELL_UI_06` | No feature navigation is included in the initial Admin Shell        | 🟢 Implemented |        |
+| `FE_SHELL_UI_07` | Future navigation is only added with corresponding frontend designs | 🟢 Implemented |        |
+| `FE_SHELL_UI_08` | Main Content Area remains empty                                     | 🟢 Implemented |        |
+| `FE_SHELL_UI_09` | Main Content Area provides the future page content container        | 🟢 Implemented |        |
 
 ## Authentication Behavior
 
-| ID                 | Criteria                                                                       | Status        | Reason |
-| ------------------ | ------------------------------------------------------------------------------ | ------------- | ------ |
-| `FE_SHELL_AUTH_01` | Authenticated user opening `/admin` sees the Admin Shell                       | ⚪ Not Started |        |
-| `FE_SHELL_AUTH_02` | Authenticated user opening `/login` is redirected to `/admin`                  | ⚪ Not Started |        |
-| `FE_SHELL_AUTH_03` | Unauthenticated user opening `/admin` is redirected to `/login`                | ⚪ Not Started |        |
-| `FE_SHELL_AUTH_04` | Unavailable or invalid authentication state is treated as unauthenticated      | ⚪ Not Started |        |
-| `FE_SHELL_AUTH_05` | Authentication state comes from the Authentication flow                        | ⚪ Not Started |        |
-| `FE_SHELL_AUTH_06` | Client-supplied account IDs are not used to determine authentication           | ⚪ Not Started |        |
-| `FE_SHELL_AUTH_07` | Client-supplied roles are not used to determine authentication                 | ⚪ Not Started |        |
-| `FE_SHELL_AUTH_08` | Client-supplied permissions are not used to determine authentication           | ⚪ Not Started |        |
-| `FE_SHELL_AUTH_09` | Other client-provided identity values are not used to determine authentication | ⚪ Not Started |        |
-| `FE_SHELL_AUTH_10` | Backend remains the authentication authority                                   | ⚪ Not Started |        |
+| ID                 | Criteria                                                                       | Status         | Reason |
+| ------------------ | ------------------------------------------------------------------------------ | -------------- | ------ |
+| `FE_SHELL_AUTH_01` | Authenticated user opening `/admin` sees the Admin Shell                       | 🟢 Implemented |        |
+| `FE_SHELL_AUTH_02` | Authenticated user opening `/login` is redirected to `/admin`                  | 🟢 Implemented |        |
+| `FE_SHELL_AUTH_03` | Unauthenticated user opening `/admin` is redirected to `/login`                | 🟢 Implemented |        |
+| `FE_SHELL_AUTH_04` | Unavailable or invalid authentication state is treated as unauthenticated      | 🟢 Implemented |        |
+| `FE_SHELL_AUTH_05` | Authentication state comes from the Authentication flow                        | 🟢 Implemented |        |
+| `FE_SHELL_AUTH_06` | Client-supplied account IDs are not used to determine authentication           | 🟢 Implemented |        |
+| `FE_SHELL_AUTH_07` | Client-supplied roles are not used to determine authentication                 | 🟢 Implemented |        |
+| `FE_SHELL_AUTH_08` | Client-supplied permissions are not used to determine authentication           | 🟢 Implemented |        |
+| `FE_SHELL_AUTH_09` | Other client-provided identity values are not used to determine authentication | 🟢 Implemented |        |
+| `FE_SHELL_AUTH_10` | Backend remains the authentication authority                                   | 🟢 Implemented |        |
 
 ## Logout API
 
-| ID                       | Criteria                                                               | Status        | Reason |
-| ------------------------ | ---------------------------------------------------------------------- | ------------- | ------ |
-| `FE_SHELL_LOGOUT_API_01` | Logout uses `POST`                                                     | ⚪ Not Started |        |
-| `FE_SHELL_LOGOUT_API_02` | Logout uses `/auth/logout`                                             | ⚪ Not Started |        |
-| `FE_SHELL_LOGOUT_API_03` | Logout sends the bearer credential through the `Authorization` header  | ⚪ Not Started |        |
-| `FE_SHELL_LOGOUT_API_04` | Successful logout returns `204 No Content`                             | ⚪ Not Started |        |
-| `FE_SHELL_LOGOUT_API_05` | Successful logout uses `Cache-Control: no-store`                       | ⚪ Not Started |        |
-| `FE_SHELL_LOGOUT_API_06` | `401 Unauthorized` clears client authentication state                  | ⚪ Not Started |        |
-| `FE_SHELL_LOGOUT_API_07` | `401 Unauthorized` navigates to `/login`                               | ⚪ Not Started |        |
-| `FE_SHELL_LOGOUT_API_08` | `401 Unauthorized` invalidates the current client authentication state | ⚪ Not Started |        |
+| ID                       | Criteria                                                               | Status         | Reason |
+| ------------------------ | ---------------------------------------------------------------------- | -------------- | ------ |
+| `FE_SHELL_LOGOUT_API_01` | Logout uses `POST`                                                     | 🟢 Implemented |        |
+| `FE_SHELL_LOGOUT_API_02` | Logout uses `/auth/logout`                                             | 🟢 Implemented |        |
+| `FE_SHELL_LOGOUT_API_03` | Logout sends the bearer credential through the `Authorization` header  | 🟢 Implemented |        |
+| `FE_SHELL_LOGOUT_API_04` | Successful logout returns `204 No Content`                             | 🟢 Implemented |        |
+| `FE_SHELL_LOGOUT_API_05` | Successful logout uses `Cache-Control: no-store`                       | 🟢 Implemented |        |
+| `FE_SHELL_LOGOUT_API_06` | `401 Unauthorized` clears client authentication state                  | 🟢 Implemented |        |
+| `FE_SHELL_LOGOUT_API_07` | `401 Unauthorized` navigates to `/login`                               | 🟢 Implemented |        |
+| `FE_SHELL_LOGOUT_API_08` | `401 Unauthorized` invalidates the current client authentication state | 🟢 Implemented |        |
 
 ## Logout
 
-| ID                   | Criteria                                               | Status        | Reason |
-| -------------------- | ------------------------------------------------------ | ------------- | ------ |
-| `FE_SHELL_LOGOUT_01` | Duplicate logout requests are prevented                | ⚪ Not Started |        |
-| `FE_SHELL_LOGOUT_02` | Logout action is disabled while the request is pending | ⚪ Not Started |        |
-| `FE_SHELL_LOGOUT_03` | Access token is never exposed in the UI                | ⚪ Not Started |        |
-| `FE_SHELL_LOGOUT_04` | Access token is never logged                           | ⚪ Not Started |        |
-| `FE_SHELL_LOGOUT_05` | Client authentication state is cleared after logout    | ⚪ Not Started |        |
-| `FE_SHELL_LOGOUT_06` | User does not remain on `/admin` after logout          | ⚪ Not Started |        |
+| ID                   | Criteria                                               | Status         | Reason |
+| -------------------- | ------------------------------------------------------ | -------------- | ------ |
+| `FE_SHELL_LOGOUT_01` | Duplicate logout requests are prevented                | 🟢 Implemented |        |
+| `FE_SHELL_LOGOUT_02` | Logout action is disabled while the request is pending | 🟢 Implemented |        |
+| `FE_SHELL_LOGOUT_03` | Access token is never exposed in the UI                | 🟢 Implemented |        |
+| `FE_SHELL_LOGOUT_04` | Access token is never logged                           | 🟢 Implemented |        |
+| `FE_SHELL_LOGOUT_05` | Client authentication state is cleared after logout    | 🟢 Implemented |        |
+| `FE_SHELL_LOGOUT_06` | User does not remain on `/admin` after logout          | 🟢 Implemented |        |
 
 ## UI States
 
-| ID                  | Criteria                                                                                           | Status        | Reason |
-| ------------------- | -------------------------------------------------------------------------------------------------- | ------------- | ------ |
-| `FE_SHELL_STATE_01` | Authenticated state renders the Admin Shell                                                        | ⚪ Not Started |        |
-| `FE_SHELL_STATE_02` | Unauthenticated state redirects to `/login`                                                        | ⚪ Not Started |        |
-| `FE_SHELL_STATE_03` | Logout Pending disables the Logout action                                                          | ⚪ Not Started |        |
-| `FE_SHELL_STATE_04` | Logout Success clears auth state and navigates to `/login`                                         | ⚪ Not Started |        |
-| `FE_SHELL_STATE_05` | Logout Unauthorized clears auth state and navigates to `/login`                                    | ⚪ Not Started |        |
-| `FE_SHELL_STATE_06` | Logout Failure keeps authenticated state and allows retry unless authentication is no longer valid | ⚪ Not Started |        |
-| `FE_SHELL_STATE_07` | Main Content Area remains empty                                                                    | ⚪ Not Started |        |
+| ID                  | Criteria                                                                                           | Status         | Reason |
+| ------------------- | -------------------------------------------------------------------------------------------------- | -------------- | ------ |
+| `FE_SHELL_STATE_01` | Authenticated state renders the Admin Shell                                                        | 🟢 Implemented |        |
+| `FE_SHELL_STATE_02` | Unauthenticated state redirects to `/login`                                                        | 🟢 Implemented |        |
+| `FE_SHELL_STATE_03` | Logout Pending disables the Logout action                                                          | 🟢 Implemented |        |
+| `FE_SHELL_STATE_04` | Logout Success clears auth state and navigates to `/login`                                         | 🟢 Implemented |        |
+| `FE_SHELL_STATE_05` | Logout Unauthorized clears auth state and navigates to `/login`                                    | 🟢 Implemented |        |
+| `FE_SHELL_STATE_06` | Logout Failure keeps authenticated state and allows retry unless authentication is no longer valid | 🟢 Implemented |        |
+| `FE_SHELL_STATE_07` | Main Content Area remains empty                                                                    | 🟢 Implemented |        |
 
 ## Security
 
-| ID                | Criteria                                                                  | Status        | Reason |
-| ----------------- | ------------------------------------------------------------------------- | ------------- | ------ |
-| `FE_SHELL_SEC_01` | `/admin` is inaccessible without authentication                           | ⚪ Not Started |        |
-| `FE_SHELL_SEC_02` | Frontend does not implement independent authentication rules              | ⚪ Not Started |        |
-| `FE_SHELL_SEC_03` | Backend is treated as the authentication authority                        | ⚪ Not Started |        |
-| `FE_SHELL_SEC_04` | Bearer credentials are sent only through the `Authorization` header       | ⚪ Not Started |        |
-| `FE_SHELL_SEC_05` | Tokens are never placed in URLs                                           | ⚪ Not Started |        |
-| `FE_SHELL_SEC_06` | Tokens are never rendered                                                 | ⚪ Not Started |        |
-| `FE_SHELL_SEC_07` | Tokens are never logged                                                   | ⚪ Not Started |        |
-| `FE_SHELL_SEC_08` | Passwords are never stored or rendered by the Admin Shell                 | ⚪ Not Started |        |
-| `FE_SHELL_SEC_09` | Client-side authentication state is not treated as proof of authorization | ⚪ Not Started |        |
-| `FE_SHELL_SEC_10` | Future permission checks do not replace server-side authorization         | ⚪ Not Started |        |
+| ID                | Criteria                                                                  | Status         | Reason |
+| ----------------- | ------------------------------------------------------------------------- | -------------- | ------ |
+| `FE_SHELL_SEC_01` | `/admin` is inaccessible without authentication                           | 🟢 Implemented |        |
+| `FE_SHELL_SEC_02` | Frontend does not implement independent authentication rules              | 🟢 Implemented |        |
+| `FE_SHELL_SEC_03` | Backend is treated as the authentication authority                        | 🟢 Implemented |        |
+| `FE_SHELL_SEC_04` | Bearer credentials are sent only through the `Authorization` header       | 🟢 Implemented |        |
+| `FE_SHELL_SEC_05` | Tokens are never placed in URLs                                           | 🟢 Implemented |        |
+| `FE_SHELL_SEC_06` | Tokens are never rendered                                                 | 🟢 Implemented |        |
+| `FE_SHELL_SEC_07` | Tokens are never logged                                                   | 🟢 Implemented |        |
+| `FE_SHELL_SEC_08` | Passwords are never stored or rendered by the Admin Shell                 | 🟢 Implemented |        |
+| `FE_SHELL_SEC_09` | Client-side authentication state is not treated as proof of authorization | 🟢 Implemented |        |
+| `FE_SHELL_SEC_10` | Future permission checks do not replace server-side authorization         | 🟢 Implemented |        |
 
 ## Accessibility
 
-| ID                 | Criteria                                           | Status        | Reason |
-| ------------------ | -------------------------------------------------- | ------------- | ------ |
-| `FE_SHELL_A11Y_01` | Semantic layout elements are used                  | ⚪ Not Started |        |
-| `FE_SHELL_A11Y_02` | Sidebar has an accessible name                     | ⚪ Not Started |        |
-| `FE_SHELL_A11Y_03` | Logout action has an accessible name               | ⚪ Not Started |        |
-| `FE_SHELL_A11Y_04` | Keyboard navigation is supported                   | ⚪ Not Started |        |
-| `FE_SHELL_A11Y_05` | Visible focus states are provided                  | ⚪ Not Started |        |
-| `FE_SHELL_A11Y_06` | Logout pending state is communicated appropriately | ⚪ Not Started |        |
-| `FE_SHELL_A11Y_07` | Layout remains usable on supported viewport sizes  | ⚪ Not Started |        |
+| ID                 | Criteria                                           | Status         | Reason |
+| ------------------ | -------------------------------------------------- | -------------- | ------ |
+| `FE_SHELL_A11Y_01` | Semantic layout elements are used                  | 🟢 Implemented |        |
+| `FE_SHELL_A11Y_02` | Sidebar has an accessible name                     | 🟢 Implemented |        |
+| `FE_SHELL_A11Y_03` | Logout action has an accessible name               | 🟢 Implemented |        |
+| `FE_SHELL_A11Y_04` | Keyboard navigation is supported                   | 🟢 Implemented |        |
+| `FE_SHELL_A11Y_05` | Visible focus states are provided                  | 🟢 Implemented |        |
+| `FE_SHELL_A11Y_06` | Logout pending state is communicated appropriately | 🟢 Implemented |        |
+| `FE_SHELL_A11Y_07` | Layout remains usable on supported viewport sizes  | 🟢 Implemented |        |
 
 ## Testing — Unit
 
-| ID                      | Criteria                                       | Status        | Reason |
-| ----------------------- | ---------------------------------------------- | ------------- | ------ |
-| `FE_SHELL_TEST_UNIT_01` | Admin Shell rendering is tested                | ⚪ Not Started |        |
-| `FE_SHELL_TEST_UNIT_02` | Sidebar rendering is tested                    | ⚪ Not Started |        |
-| `FE_SHELL_TEST_UNIT_03` | Logout button state is tested                  | ⚪ Not Started |        |
-| `FE_SHELL_TEST_UNIT_04` | Authenticated route guard behavior is tested   | ⚪ Not Started |        |
-| `FE_SHELL_TEST_UNIT_05` | Unauthenticated route guard behavior is tested | ⚪ Not Started |        |
+| ID                      | Criteria                                       | Status         | Reason |
+| ----------------------- | ---------------------------------------------- | -------------- | ------ |
+| `FE_SHELL_TEST_UNIT_01` | Admin Shell rendering is tested                | 🟢 Implemented |        |
+| `FE_SHELL_TEST_UNIT_02` | Sidebar rendering is tested                    | 🟢 Implemented |        |
+| `FE_SHELL_TEST_UNIT_03` | Logout button state is tested                  | 🟢 Implemented |        |
+| `FE_SHELL_TEST_UNIT_04` | Authenticated route guard behavior is tested   | 🟢 Implemented |        |
+| `FE_SHELL_TEST_UNIT_05` | Unauthenticated route guard behavior is tested | 🟢 Implemented |        |
 
 ## Testing — Integration
 
-| ID                     | Criteria                                                        | Status        | Reason |
-| ---------------------- | --------------------------------------------------------------- | ------------- | ------ |
-| `FE_SHELL_TEST_INT_01` | Authenticated user can access `/admin`                          | ⚪ Not Started |        |
-| `FE_SHELL_TEST_INT_02` | Unauthenticated user is redirected to `/login`                  | ⚪ Not Started |        |
-| `FE_SHELL_TEST_INT_03` | Authenticated user accessing `/login` is redirected to `/admin` | ⚪ Not Started |        |
-| `FE_SHELL_TEST_INT_04` | Logout sends `POST /auth/logout`                                | ⚪ Not Started |        |
-| `FE_SHELL_TEST_INT_05` | Logout success clears authentication state                      | ⚪ Not Started |        |
-| `FE_SHELL_TEST_INT_06` | Logout success navigates to `/login`                            | ⚪ Not Started |        |
-| `FE_SHELL_TEST_INT_07` | Logout `401` clears authentication state                        | ⚪ Not Started |        |
-| `FE_SHELL_TEST_INT_08` | Duplicate logout submission is prevented                        | ⚪ Not Started |        |
+| ID                     | Criteria                                                        | Status         | Reason |
+| ---------------------- | --------------------------------------------------------------- | -------------- | ------ |
+| `FE_SHELL_TEST_INT_01` | Authenticated user can access `/admin`                          | 🟢 Implemented |        |
+| `FE_SHELL_TEST_INT_02` | Unauthenticated user is redirected to `/login`                  | 🟢 Implemented |        |
+| `FE_SHELL_TEST_INT_03` | Authenticated user accessing `/login` is redirected to `/admin` | 🟢 Implemented |        |
+| `FE_SHELL_TEST_INT_04` | Logout sends `POST /auth/logout`                                | 🟢 Implemented |        |
+| `FE_SHELL_TEST_INT_05` | Logout success clears authentication state                      | 🟢 Implemented |        |
+| `FE_SHELL_TEST_INT_06` | Logout success navigates to `/login`                            | 🟢 Implemented |        |
+| `FE_SHELL_TEST_INT_07` | Logout `401` clears authentication state                        | 🟢 Implemented |        |
+| `FE_SHELL_TEST_INT_08` | Duplicate logout submission is prevented                        | 🟢 Implemented |        |
 
 ## Testing — E2E
 
-| ID                     | Criteria                                                 | Status        | Reason |
-| ---------------------- | -------------------------------------------------------- | ------------- | ------ |
-| `FE_SHELL_TEST_E2E_01` | Login leads to the Admin Shell                           | ⚪ Not Started |        |
-| `FE_SHELL_TEST_E2E_02` | Sidebar appears in the Admin Shell                       | ⚪ Not Started |        |
-| `FE_SHELL_TEST_E2E_03` | Logout leads to `/login`                                 | ⚪ Not Started |        |
-| `FE_SHELL_TEST_E2E_04` | Unauthenticated access to `/admin` redirects to `/login` | ⚪ Not Started |        |
+| ID                     | Criteria                                                 | Status         | Reason |
+| ---------------------- | -------------------------------------------------------- | -------------- | ------ |
+| `FE_SHELL_TEST_E2E_01` | Login leads to the Admin Shell                           | 🟢 Implemented |        |
+| `FE_SHELL_TEST_E2E_02` | Sidebar appears in the Admin Shell                       | 🟢 Implemented |        |
+| `FE_SHELL_TEST_E2E_03` | Logout leads to `/login`                                 | 🟢 Implemented |        |
+| `FE_SHELL_TEST_E2E_04` | Unauthenticated access to `/admin` redirects to `/login` | 🟢 Implemented |        |
 
 ## Testing — Manual
 
-| ID                        | Criteria                             | Status        | Reason |
-| ------------------------- | ------------------------------------ | ------------- | ------ |
-| `FE_SHELL_TEST_MANUAL_01` | Sidebar layout is verified           | ⚪ Not Started |        |
-| `FE_SHELL_TEST_MANUAL_02` | Main Content Area is empty           | ⚪ Not Started |        |
-| `FE_SHELL_TEST_MANUAL_03` | Login → Admin transition is verified | ⚪ Not Started |        |
-| `FE_SHELL_TEST_MANUAL_04` | Logout behavior is verified          | ⚪ Not Started |        |
-| `FE_SHELL_TEST_MANUAL_05` | Redirect behavior is verified        | ⚪ Not Started |        |
-| `FE_SHELL_TEST_MANUAL_06` | Keyboard interaction is verified     | ⚪ Not Started |        |
-| `FE_SHELL_TEST_MANUAL_07` | Responsive layout is verified        | ⚪ Not Started |        |
-| `FE_SHELL_TEST_MANUAL_08` | Visible focus states are verified    | ⚪ Not Started |        |
+Manual verification remains `🟡 In Progress` because the repository state provides automated coverage and implementation evidence, but no completed manual browser verification evidence for the current Admin Shell state.
+
+| ID                        | Criteria                             | Status         | Reason |
+| ------------------------- | ------------------------------------ | -------------- | ------ |
+| `FE_SHELL_TEST_MANUAL_01` | Sidebar layout is verified           | 🟡 In Progress |        |
+| `FE_SHELL_TEST_MANUAL_02` | Main Content Area is empty           | 🟡 In Progress |        |
+| `FE_SHELL_TEST_MANUAL_03` | Login → Admin transition is verified | 🟡 In Progress |        |
+| `FE_SHELL_TEST_MANUAL_04` | Logout behavior is verified          | 🟡 In Progress |        |
+| `FE_SHELL_TEST_MANUAL_05` | Redirect behavior is verified        | 🟡 In Progress |        |
+| `FE_SHELL_TEST_MANUAL_06` | Keyboard interaction is verified     | 🟡 In Progress |        |
+| `FE_SHELL_TEST_MANUAL_07` | Responsive layout is verified        | 🟡 In Progress |        |
+| `FE_SHELL_TEST_MANUAL_08` | Visible focus states are verified    | 🟡 In Progress |        |
