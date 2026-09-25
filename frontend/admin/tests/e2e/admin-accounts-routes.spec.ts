@@ -66,6 +66,15 @@ async function stubAccountsApi(page: Page): Promise<void> {
   });
 }
 
+function getAccountsNavigation(page: Page) {
+  return page
+    .getByRole("navigation", { name: "Admin feature navigation" })
+    .getByRole("link", {
+      name: "Accounts",
+      exact: true,
+    });
+}
+
 test.describe("admin accounts routes", () => {
   test("opens Create Account inside the Admin Shell without losing auth state", async ({
     page,
@@ -73,7 +82,7 @@ test.describe("admin accounts routes", () => {
     await authenticate(page);
     await stubAccountsApi(page);
 
-    await page.getByRole("link", { name: "Accounts" }).click();
+    await getAccountsNavigation(page).click();
     await expect(page).toHaveURL(/\/admin\/accounts$/);
 
     await page.getByRole("link", { name: "Create Account" }).click();
@@ -84,7 +93,7 @@ test.describe("admin accounts routes", () => {
         name: "Create Administrator Account",
       }),
     ).toBeVisible();
-    await expect(page.getByRole("link", { name: "Accounts" })).toHaveAttribute(
+    await expect(getAccountsNavigation(page)).toHaveAttribute(
       "aria-current",
       "page",
     );
@@ -109,7 +118,7 @@ test.describe("admin accounts routes", () => {
     await authenticate(page);
     await stubAccountsApi(page);
 
-    await page.getByRole("link", { name: "Accounts" }).click();
+    await getAccountsNavigation(page).click();
     await expect(page).toHaveURL(/\/admin\/accounts$/);
 
     await page.evaluate(() => {
@@ -144,7 +153,7 @@ test.describe("admin accounts routes", () => {
         name: "Edit Administrator Account",
       }),
     ).toBeVisible();
-    await expect(page.getByRole("link", { name: "Accounts" })).toHaveAttribute(
+    await expect(getAccountsNavigation(page)).toHaveAttribute(
       "aria-current",
       "page",
     );

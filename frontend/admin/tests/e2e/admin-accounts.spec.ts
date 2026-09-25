@@ -13,6 +13,7 @@ const accountsResponse = {
     {
       id: "01900000-0000-7000-8000-000000000001",
       email: "admin@example.com",
+      display_name: "Library Administrator",
       status: "active",
       created_at: "2026-09-23T10:00:00Z",
       updated_at: "2026-09-23T10:00:00Z",
@@ -80,7 +81,12 @@ test.describe("admin accounts", () => {
       });
     });
 
-    await page.getByRole("link", { name: "Accounts" }).click();
+    await page
+      .getByRole("link", {
+        name: "Accounts",
+        exact: true,
+      })
+      .click();
 
     await expect(page).toHaveURL(/\/admin\/accounts$/);
     await expect(
@@ -97,7 +103,10 @@ test.describe("admin accounts", () => {
 
     await expect(page.getByRole("button", { name: "Logout" })).toBeVisible();
 
-    const accountsLink = page.getByRole("link", { name: "Accounts" });
+    const accountsLink = page.getByRole("link", {
+      name: "Accounts",
+      exact: true,
+    });
 
     await expect(accountsLink).toHaveAttribute("aria-current", "page");
 
@@ -162,7 +171,12 @@ test.describe("admin accounts", () => {
 
       await expect(menuButton).toHaveAttribute("aria-expanded", "true");
 
-      await page.getByRole("link", { name: "Accounts" }).click();
+      await page
+        .getByRole("link", {
+          name: "Accounts",
+          exact: true,
+        })
+        .click();
 
       await expect(page).toHaveURL(/\/admin\/accounts$/);
       await expect(menuButton).toHaveAttribute("aria-expanded", "false");
