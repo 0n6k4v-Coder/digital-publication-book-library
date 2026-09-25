@@ -171,9 +171,16 @@ test.describe("admin accounts", () => {
 
       await expect(menuButton).toHaveAttribute("aria-expanded", "true");
 
-      await page
-        .getByRole("button", { name: "Dismiss admin navigation" })
-        .click();
+      const dismissButton = page.getByRole("button", {
+        name: "Dismiss admin navigation",
+      });
+
+      await dismissButton.click({
+        position: {
+          x: 380,
+          y: 100,
+        },
+      });
 
       await expect(page).toHaveURL(/\/admin\/accounts$/);
       await expect(menuButton).toHaveAttribute("aria-expanded", "false");
