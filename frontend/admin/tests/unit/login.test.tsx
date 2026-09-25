@@ -2,7 +2,10 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthenticationError } from "../../src/services/auth";
-import { LoginPage, validateLoginCredentials } from "../../src/pages/login/LoginPage";
+import {
+  LoginPage,
+  validateLoginCredentials,
+} from "../../src/pages/login/LoginPage";
 
 beforeEach(() => {
   vi.restoreAllMocks();
@@ -15,7 +18,9 @@ describe("validateLoginCredentials", () => {
       password: "Password is required.",
     });
 
-    expect(validateLoginCredentials({ email: "admin@example.com", password: "x" })).toEqual({});
+    expect(
+      validateLoginCredentials({ email: "admin@example.com", password: "x" }),
+    ).toEqual({});
   });
 });
 
@@ -23,9 +28,14 @@ describe("LoginPage", () => {
   it("renders accessible email, password, and sign-in controls", () => {
     render(<LoginPage onLogin={vi.fn().mockResolvedValue(undefined)} />);
 
-    expect(screen.getByRole("heading", { name: "Sign in" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Sign in" }),
+    ).toBeInTheDocument();
     expect(screen.getByLabelText("Email")).toHaveAttribute("type", "email");
-    expect(screen.getByLabelText("Password")).toHaveAttribute("type", "password");
+    expect(screen.getByLabelText("Password")).toHaveAttribute(
+      "type",
+      "password",
+    );
     expect(screen.getByRole("button", { name: "Sign In" })).toBeEnabled();
   });
 
@@ -55,7 +65,10 @@ describe("LoginPage", () => {
     render(<LoginPage onLogin={onLogin} />);
 
     await user.type(screen.getByLabelText("Email"), "admin@example.com");
-    await user.type(screen.getByLabelText("Password"), "example-secure-password");
+    await user.type(
+      screen.getByLabelText("Password"),
+      "example-secure-password",
+    );
     await user.click(screen.getByRole("button", { name: "Sign In" }));
 
     expect(screen.getByRole("button", { name: "Signing in…" })).toBeDisabled();
@@ -70,16 +83,29 @@ describe("LoginPage", () => {
   it.each([
     ["INVALID_REQUEST", "Please check the required fields and try again."],
     ["INVALID_CREDENTIALS", "The email or password is incorrect."],
-    ["AUTHENTICATION_RATE_LIMITED", "Too many sign-in attempts. Please try again later."],
+    [
+      "AUTHENTICATION_RATE_LIMITED",
+      "Too many sign-in attempts. Please try again later.",
+    ],
   ] as const)("renders a generic %s error", async (code, expectedMessage) => {
     const user = userEvent.setup();
-    const status = code === "INVALID_REQUEST" ? 400 : code === "INVALID_CREDENTIALS" ? 401 : 429;
-    const onLogin = vi.fn().mockRejectedValue(new AuthenticationError(code, status));
+    const status =
+      code === "INVALID_REQUEST"
+        ? 400
+        : code === "INVALID_CREDENTIALS"
+          ? 401
+          : 429;
+    const onLogin = vi
+      .fn()
+      .mockRejectedValue(new AuthenticationError(code, status));
 
     render(<LoginPage onLogin={onLogin} />);
 
     await user.type(screen.getByLabelText("Email"), "admin@example.com");
-    await user.type(screen.getByLabelText("Password"), "example-secure-password");
+    await user.type(
+      screen.getByLabelText("Password"),
+      "example-secure-password",
+    );
     await user.click(screen.getByRole("button", { name: "Sign In" }));
 
     expect(screen.getByRole("alert")).toHaveTextContent(expectedMessage);

@@ -12,7 +12,9 @@ interface LoginFieldErrors {
   password?: string;
 }
 
-export function validateLoginCredentials(credentials: LoginCredentials): LoginFieldErrors {
+export function validateLoginCredentials(
+  credentials: LoginCredentials,
+): LoginFieldErrors {
   const errors: LoginFieldErrors = {};
 
   if (credentials.email.trim().length === 0) {
@@ -54,7 +56,9 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
+  async function handleSubmit(
+    event: FormEvent<HTMLFormElement>,
+  ): Promise<void> {
     event.preventDefault();
 
     if (isSubmitting) {
@@ -103,9 +107,19 @@ export function LoginPage({ onLogin }: LoginPageProps) {
           <p>Use your administrator credentials to continue.</p>
         </div>
 
-        <form className="login-form" noValidate aria-busy={isSubmitting} onSubmit={handleSubmit}>
+        <form
+          className="login-form"
+          noValidate
+          aria-busy={isSubmitting}
+          onSubmit={handleSubmit}
+        >
           {formError !== null ? (
-            <div id={formErrorId} className="form-alert" role="alert" tabIndex={-1}>
+            <div
+              id={formErrorId}
+              className="form-alert"
+              role="alert"
+              tabIndex={-1}
+            >
               {formError}
             </div>
           ) : null}
@@ -163,7 +177,11 @@ export function LoginPage({ onLogin }: LoginPageProps) {
             ) : null}
           </div>
 
-          <button className="primary-button" type="submit" disabled={isSubmitting}>
+          <button
+            className="primary-button"
+            type="submit"
+            disabled={isSubmitting}
+          >
             {isSubmitting ? "Signing in…" : "Sign In"}
           </button>
 

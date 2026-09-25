@@ -65,11 +65,16 @@ describe("login integration", () => {
     render(<App />);
 
     await user.type(screen.getByLabelText("Email"), "admin@example.com");
-    await user.type(screen.getByLabelText("Password"), "example-secure-password");
+    await user.type(
+      screen.getByLabelText("Password"),
+      "example-secure-password",
+    );
     await user.click(screen.getByRole("button", { name: "Sign In" }));
 
     await waitFor(() =>
-      expect(screen.getByText("Digital Publication & Book Library")).toBeInTheDocument(),
+      expect(
+        screen.getByText("Digital Publication & Book Library"),
+      ).toBeInTheDocument(),
     );
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -79,9 +84,14 @@ describe("login integration", () => {
       method: "POST",
       cache: "no-store",
     });
-    expect(new Headers(init?.headers).get("content-type")).toBe("application/json");
+    expect(new Headers(init?.headers).get("content-type")).toBe(
+      "application/json",
+    );
     expect(init?.body).toBe(
-      JSON.stringify({ email: "admin@example.com", password: "example-secure-password" }),
+      JSON.stringify({
+        email: "admin@example.com",
+        password: "example-secure-password",
+      }),
     );
     expect(document.body).not.toHaveTextContent(accessToken);
     expect(document.body).not.toHaveTextContent(refreshToken);
@@ -90,22 +100,38 @@ describe("login integration", () => {
   it.each([
     [400, "INVALID_REQUEST", "Please check the required fields and try again."],
     [401, "INVALID_CREDENTIALS", "The email or password is incorrect."],
-    [429, "AUTHENTICATION_RATE_LIMITED", "Too many sign-in attempts. Please try again later."],
-  ] as const)("keeps the user on login for %s %s", async (status, code, expectedMessage) => {
-    const user = userEvent.setup();
-    vi.mocked(fetch).mockResolvedValueOnce(problemResponse(status, code));
+    [
+      429,
+      "AUTHENTICATION_RATE_LIMITED",
+      "Too many sign-in attempts. Please try again later.",
+    ],
+  ] as const)(
+    "keeps the user on login for %s %s",
+    async (status, code, expectedMessage) => {
+      const user = userEvent.setup();
+      vi.mocked(fetch).mockResolvedValueOnce(problemResponse(status, code));
 
-    render(<App />);
+      render(<App />);
 
-    await user.type(screen.getByLabelText("Email"), "admin@example.com");
-    await user.type(screen.getByLabelText("Password"), "example-secure-password");
-    await user.click(screen.getByRole("button", { name: "Sign In" }));
+      await user.type(screen.getByLabelText("Email"), "admin@example.com");
+      await user.type(
+        screen.getByLabelText("Password"),
+        "example-secure-password",
+      );
+      await user.click(screen.getByRole("button", { name: "Sign In" }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(expectedMessage);
-    expect(window.location.pathname).toBe("/login");
-    expect(screen.queryByText("Digital Publication & Book Library")).not.toBeInTheDocument();
-    expect(screen.queryByText("server detail must not reach the UI")).not.toBeInTheDocument();
-  });
+      expect(await screen.findByRole("alert")).toHaveTextContent(
+        expectedMessage,
+      );
+      expect(window.location.pathname).toBe("/login");
+      expect(
+        screen.queryByText("Digital Publication & Book Library"),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByText("server detail must not reach the UI"),
+      ).not.toBeInTheDocument();
+    },
+  );
 
   it("prevents duplicate login requests while authentication is pending", async () => {
     const user = userEvent.setup();
@@ -121,7 +147,10 @@ describe("login integration", () => {
     render(<App />);
 
     await user.type(screen.getByLabelText("Email"), "admin@example.com");
-    await user.type(screen.getByLabelText("Password"), "example-secure-password");
+    await user.type(
+      screen.getByLabelText("Password"),
+      "example-secure-password",
+    );
     await user.click(screen.getByRole("button", { name: "Sign In" }));
     await user.click(screen.getByRole("button", { name: "Signing in…" }));
 
@@ -129,7 +158,9 @@ describe("login integration", () => {
 
     resolveLogin(loginResponse());
     await waitFor(() =>
-      expect(screen.getByText("Digital Publication & Book Library")).toBeInTheDocument(),
+      expect(
+        screen.getByText("Digital Publication & Book Library"),
+      ).toBeInTheDocument(),
     );
   });
 
@@ -139,20 +170,27 @@ describe("login integration", () => {
     render(<App />);
 
     await waitFor(() =>
-      expect(screen.getByRole("heading", { name: "Sign in" })).toBeInTheDocument(),
+      expect(
+        screen.getByRole("heading", { name: "Sign in" }),
+      ).toBeInTheDocument(),
     );
     expect(window.location.pathname).toBe("/login");
   });
 
   it("redirects authenticated access to /login to /admin", async () => {
     vi.mocked(fetch).mockResolvedValueOnce(loginResponse());
-    await authService.login({ email: "admin@example.com", password: "example-secure-password" });
+    await authService.login({
+      email: "admin@example.com",
+      password: "example-secure-password",
+    });
     window.history.replaceState({}, "", "/login");
 
     render(<App />);
 
     await waitFor(() =>
-      expect(screen.getByText("Digital Publication & Book Library")).toBeInTheDocument(),
+      expect(
+        screen.getByText("Digital Publication & Book Library"),
+      ).toBeInTheDocument(),
     );
     expect(window.location.pathname).toBe("/admin");
   });
@@ -162,10 +200,15 @@ describe("login integration", () => {
     vi.mocked(fetch).mockResolvedValueOnce(loginResponse());
 
     render(<App />);
-    await authService.login({ email: "admin@example.com", password: "example-secure-password" });
+    await authService.login({
+      email: "admin@example.com",
+      password: "example-secure-password",
+    });
 
     await waitFor(() =>
-      expect(screen.getByText("Digital Publication & Book Library")).toBeInTheDocument(),
+      expect(
+        screen.getByText("Digital Publication & Book Library"),
+      ).toBeInTheDocument(),
     );
 
     vi.mocked(fetch).mockResolvedValueOnce(
@@ -180,7 +223,9 @@ describe("login integration", () => {
     await user.click(screen.getByRole("button", { name: "Logout" }));
 
     await waitFor(() =>
-      expect(screen.getByRole("heading", { name: "Sign in" })).toBeInTheDocument(),
+      expect(
+        screen.getByRole("heading", { name: "Sign in" }),
+      ).toBeInTheDocument(),
     );
     expect(window.location.pathname).toBe("/login");
 
@@ -198,16 +243,25 @@ describe("login integration", () => {
     vi.mocked(fetch).mockResolvedValueOnce(loginResponse());
 
     render(<App />);
-    await authService.login({ email: "admin@example.com", password: "example-secure-password" });
+    await authService.login({
+      email: "admin@example.com",
+      password: "example-secure-password",
+    });
     await waitFor(() =>
-      expect(screen.getByText("Digital Publication & Book Library")).toBeInTheDocument(),
+      expect(
+        screen.getByText("Digital Publication & Book Library"),
+      ).toBeInTheDocument(),
     );
 
-    vi.mocked(fetch).mockResolvedValueOnce(problemResponse(401, "UNAUTHORIZED"));
+    vi.mocked(fetch).mockResolvedValueOnce(
+      problemResponse(401, "UNAUTHORIZED"),
+    );
     await user.click(screen.getByRole("button", { name: "Logout" }));
 
     await waitFor(() =>
-      expect(screen.getByRole("heading", { name: "Sign in" })).toBeInTheDocument(),
+      expect(
+        screen.getByRole("heading", { name: "Sign in" }),
+      ).toBeInTheDocument(),
     );
     expect(window.location.pathname).toBe("/login");
   });
@@ -217,9 +271,14 @@ describe("login integration", () => {
     vi.mocked(fetch).mockResolvedValueOnce(loginResponse());
 
     render(<App />);
-    await authService.login({ email: "admin@example.com", password: "example-secure-password" });
+    await authService.login({
+      email: "admin@example.com",
+      password: "example-secure-password",
+    });
     await waitFor(() =>
-      expect(screen.getByText("Digital Publication & Book Library")).toBeInTheDocument(),
+      expect(
+        screen.getByText("Digital Publication & Book Library"),
+      ).toBeInTheDocument(),
     );
 
     vi.mocked(fetch).mockResolvedValueOnce(problemResponse(500, "UNKNOWN"));

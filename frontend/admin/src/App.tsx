@@ -14,7 +14,10 @@ function RouteTransition() {
 
 export default function App() {
   const pathname = usePathname();
-  const isAuthenticated = useSyncExternalStore(authService.subscribe, authService.getSnapshot);
+  const isAuthenticated = useSyncExternalStore(
+    authService.subscribe,
+    authService.getSnapshot,
+  );
 
   const redirectTarget =
     pathname === "/login" && isAuthenticated

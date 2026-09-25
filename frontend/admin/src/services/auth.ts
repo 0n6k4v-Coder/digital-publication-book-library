@@ -15,7 +15,9 @@ interface AuthenticationSession {
 type AuthenticationListener = () => void;
 
 const listeners = new Set<AuthenticationListener>();
-const apiOrigin = (import.meta.env.VITE_API_ORIGIN ?? "").trim().replace(/\/$/, "");
+const apiOrigin = (import.meta.env.VITE_API_ORIGIN ?? "")
+  .trim()
+  .replace(/\/$/, "");
 
 let authenticationSession: AuthenticationSession | null = null;
 let loginRequest: Promise<void> | null = null;
@@ -52,7 +54,10 @@ function buildApiUrl(pathname: string): string {
     throw new AuthenticationError("UNKNOWN", 0);
   }
 
-  return new URL(pathname, `${origin.toString().replace(/\/$/, "")}/`).toString();
+  return new URL(
+    pathname,
+    `${origin.toString().replace(/\/$/, "")}/`,
+  ).toString();
 }
 
 function isNonEmptyString(value: unknown): value is string {
@@ -79,7 +84,9 @@ function parseLoginTokenResponse(value: unknown): LoginTokenResponse {
   return value as LoginTokenResponse;
 }
 
-async function readProblemCode(response: Response): Promise<AuthenticationErrorCode | null> {
+async function readProblemCode(
+  response: Response,
+): Promise<AuthenticationErrorCode | null> {
   const contentType = response.headers.get("content-type") ?? "";
 
   if (!contentType.toLowerCase().includes("application/problem+json")) {

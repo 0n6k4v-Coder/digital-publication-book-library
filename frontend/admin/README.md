@@ -8,6 +8,7 @@
 
    1. [Frontend](#frontend)
    2. [Infrastructure](#infrastructure)
+
 4. [Test Strategy](#test-strategy)
 5. [Docker Command](#docker-command)
 
@@ -140,16 +141,19 @@
 ## 5.1 Docker Test Profile Command
 
 Build test image
+
 ```bash
 docker compose -f frontend/admin/compose/docker-compose.test.yml build test
 ```
 
 Clean Up
+
 ```bash
 docker compose -f frontend/admin/compose/docker-compose.test.yml down --volumes --remove-orphans
 ```
 
 Static Code Auto Fix and Test
+
 ```bash
 # Auto Fix
 docker compose -f frontend/admin/compose/docker-compose.test.yml run --rm test sh -c \
@@ -161,24 +165,28 @@ docker compose -f frontend/admin/compose/docker-compose.test.yml run --rm test s
 ```
 
 Full Unit Test Command
+
 ```bash
 docker compose -f frontend/admin/compose/docker-compose.test.yml run --rm test \
 npm run test:unit
 ```
 
 Full Integration Test Command
+
 ```bash
 docker compose -f frontend/admin/compose/docker-compose.test.yml run --rm test \
 npm run test:integration
 ```
 
 Full E2E Test Command
+
 ```bash
 docker compose -f frontend/admin/compose/docker-compose.test.yml run --rm test \
 npm run test:e2e
 ```
 
 Full Frontend Test Profile
+
 ```bash
 docker compose -f frontend/admin/compose/docker-compose.test.yml run --rm test sh -c \
 'npm run format:check && npm run typecheck && npm run lint && npm run build && npm run test:unit && npm run test:integration && npm run test:e2e'

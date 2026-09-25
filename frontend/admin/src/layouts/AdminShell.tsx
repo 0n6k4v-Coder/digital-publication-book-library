@@ -30,7 +30,9 @@ export function AdminShell({ onLogout }: AdminShellProps) {
       <aside className="admin-sidebar" aria-label="Admin application">
         <div>
           <p className="eyebrow">Admin Application</p>
-          <h1 className="admin-sidebar__title">Digital Publication &amp; Book Library</h1>
+          <h1 className="admin-sidebar__title">
+            Digital Publication &amp; Book Library
+          </h1>
         </div>
 
         <div className="admin-sidebar__footer">

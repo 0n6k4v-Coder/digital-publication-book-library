@@ -9,7 +9,9 @@ const loginResponse = {
 };
 
 test.describe("admin login", () => {
-  test("opens /login and completes login, admin shell, and logout", async ({ page }) => {
+  test("opens /login and completes login, admin shell, and logout", async ({
+    page,
+  }) => {
     await page.goto("/login");
 
     await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
@@ -30,10 +32,16 @@ test.describe("admin login", () => {
     await page.getByRole("button", { name: "Sign In" }).click();
 
     await expect(page).toHaveURL(/\/admin$/);
-    await expect(page.getByText("Digital Publication & Book Library")).toBeVisible();
+    await expect(
+      page.getByText("Digital Publication & Book Library"),
+    ).toBeVisible();
     await expect(page.getByRole("button", { name: "Logout" })).toBeVisible();
-    await expect(page.locator("body")).not.toContainText(loginResponse.access_token);
-    await expect(page.locator("body")).not.toContainText(loginResponse.refresh_token);
+    await expect(page.locator("body")).not.toContainText(
+      loginResponse.access_token,
+    );
+    await expect(page.locator("body")).not.toContainText(
+      loginResponse.refresh_token,
+    );
 
     await page.route("**/auth/logout", async (route) => {
       expect(route.request().method()).toBe("POST");
@@ -53,7 +61,9 @@ test.describe("admin login", () => {
     await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
   });
 
-  test("rejects invalid credentials without entering the admin shell", async ({ page }) => {
+  test("rejects invalid credentials without entering the admin shell", async ({
+    page,
+  }) => {
     await page.goto("/login");
 
     await page.route("**/auth/login", async (route) => {
@@ -77,9 +87,15 @@ test.describe("admin login", () => {
     await page.getByLabel("Password").fill("example-secure-password");
     await page.getByRole("button", { name: "Sign In" }).click();
 
-    await expect(page.getByRole("alert")).toHaveText("The email or password is incorrect.");
+    await expect(page.getByRole("alert")).toHaveText(
+      "The email or password is incorrect.",
+    );
     await expect(page).toHaveURL(/\/login$/);
-    await expect(page.getByText("Digital Publication & Book Library")).not.toBeVisible();
-    await expect(page.locator("body")).not.toContainText("server detail must not reach the UI");
+    await expect(
+      page.getByText("Digital Publication & Book Library"),
+    ).not.toBeVisible();
+    await expect(page.locator("body")).not.toContainText(
+      "server detail must not reach the UI",
+    );
   });
 });
