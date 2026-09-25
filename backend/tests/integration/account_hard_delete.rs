@@ -36,7 +36,7 @@ async fn test_pool() -> Option<PgPool> {
 
 async fn seed_account(
     pool: &PgPool,
-    _email: &str,
+    email: &str,
     status: &str,
     deleted_at: Option<OffsetDateTime>,
     created_by: Option<Uuid>,
@@ -44,20 +44,37 @@ async fn seed_account(
 ) -> Uuid {
     sqlx::query_scalar::<_, Uuid>(
         r#"
-        INSERT INTO account (
-            status,
-            deleted_at,
-            created_by,
-            updated_by
+        WITH inserted_account AS (
+            INSERT INTO account (
+                status,
+                deleted_at,
+                created_by,
+                updated_by
+            )
+            VALUES ($1, $2, $3, $4)
+            RETURNING id
         )
-        VALUES ($1, $2, $3, $4)
-        RETURNING id
+        INSERT INTO account_credentials (
+            account_id,
+            email,
+            email_normalized,
+            password_hash
+        )
+        SELECT
+            id,
+            $5,
+            $5,
+            $6
+        FROM inserted_account
+        RETURNING account_id
         "#,
     )
     .bind(status)
     .bind(deleted_at)
     .bind(created_by)
     .bind(updated_by)
+    .bind(email)
+    .bind("$argon2id$v=19$m=19456,t=2,p=1$test$test")
     .fetch_one(pool)
     .await
     .expect("seed account")
@@ -73,6 +90,7 @@ async fn seed_credentials(pool: &PgPool, account_id: Uuid, email: &str) {
             password_hash
         )
         VALUES ($1, $2, $2, $3)
+        ON CONFLICT (account_id) DO NOTHING
         "#,
     )
     .bind(account_id)
@@ -190,9 +208,6 @@ async fn seed_principal(pool: &PgPool, role_name: &str) -> (Uuid, String) {
     )
     .await;
 
-    let email = format!("principal-{account_id}@example.com");
-    seed_credentials(pool, account_id, &email).await;
-
     let token = seed_access_and_refresh_tokens(pool, account_id).await;
     assign_role_as(pool, account_id, role_name, account_id).await;
 
@@ -277,7 +292,7 @@ async fn hard_deletes_account_and_cascades_all_required_state() {
         return;
     };
 
-    sqlx::migrate!()
+    digital_publication_backend::MIGRATOR
         .run(&pool)
         .await
         .expect("run migrations");
@@ -496,7 +511,7 @@ async fn rejects_authentication_authorization_and_invalid_targets() {
         return;
     };
 
-    sqlx::migrate!()
+    digital_publication_backend::MIGRATOR
         .run(&pool)
         .await
         .expect("run migrations");
@@ -589,7 +604,7 @@ async fn rejects_hard_delete_of_the_last_active_administrator() {
         return;
     };
 
-    sqlx::migrate!()
+    digital_publication_backend::MIGRATOR
         .run(&pool)
         .await
         .expect("run migrations");
@@ -646,13 +661,15 @@ async fn concurrent_purges_preserve_the_last_administrator_invariant() {
         return;
     };
 
-    sqlx::migrate!()
+    digital_publication_backend::MIGRATOR
         .run(&pool)
         .await
         .expect("run migrations");
 
-    let (admin_a_id, admin_a_token) = seed_principal(&pool, "account_admin").await;
-    let (admin_b_id, admin_b_token) = seed_principal(&pool, "account_admin").await;
+    let (admin_a_id, admin_a_token) =
+        seed_principal(&pool, "account_admin").await;
+    let (admin_b_id, admin_b_token) =
+        seed_principal(&pool, "account_admin").await;
 
     let mut requests = JoinSet::new();
 
@@ -739,7 +756,7 @@ async fn hard_delete_allows_inactive_and_soft_deleted_targets() {
         return;
     };
 
-    sqlx::migrate!()
+    digital_publication_backend::MIGRATOR
         .run(&pool)
         .await
         .expect("run migrations");

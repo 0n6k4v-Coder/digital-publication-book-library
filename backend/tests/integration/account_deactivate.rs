@@ -39,45 +39,42 @@ async fn seed_account(
     created_by: Option<Uuid>,
     updated_by: Option<Uuid>,
 ) -> Uuid {
-    let account_id = sqlx::query_scalar::<_, Uuid>(
+    sqlx::query_scalar::<_, Uuid>(
         r#"
-        INSERT INTO account (
-            status,
-            deleted_at,
-            created_by,
-            updated_by
+        WITH inserted_account AS (
+            INSERT INTO account (
+                status,
+                deleted_at,
+                created_by,
+                updated_by
+            )
+            VALUES ($1, $2, $3, $4)
+            RETURNING id
         )
-        VALUES ($1, $2, $3, $4)
-        RETURNING id
-        "#,
-    )
-    .bind(status)
-    .bind(deleted_at)
-    .bind(created_by)
-    .bind(updated_by)
-    .fetch_one(pool)
-    .await
-    .expect("seed account");
-
-    sqlx::query(
-        r#"
         INSERT INTO account_credentials (
             account_id,
             email,
             email_normalized,
             password_hash
         )
-        VALUES ($1, $2, $2, $3)
+        SELECT
+            id,
+            $5,
+            $5,
+            $6
+        FROM inserted_account
+        RETURNING account_id
         "#,
     )
-    .bind(account_id)
+    .bind(status)
+    .bind(deleted_at)
+    .bind(created_by)
+    .bind(updated_by)
     .bind(email)
     .bind("$argon2id$v=19$m=19456,t=2,p=1$test$test")
-    .execute(pool)
+    .fetch_one(pool)
     .await
-    .expect("seed account credentials");
-
-    account_id
+    .expect("seed account")
 }
 
 async fn assign_role(pool: &PgPool, account_id: Uuid, role_name: &str) {
@@ -313,7 +310,7 @@ async fn deactivates_account_and_preserves_immutable_and_credential_data() {
         return;
     };
 
-    sqlx::migrate!()
+    digital_publication_backend::MIGRATOR
         .run(&pool)
         .await
         .expect("run migrations");
@@ -416,7 +413,7 @@ async fn rejects_unauthenticated_unauthorized_and_conflicting_deactivation_reque
         return;
     };
 
-    sqlx::migrate!()
+    digital_publication_backend::MIGRATOR
         .run(&pool)
         .await
         .expect("run migrations");
@@ -564,12 +561,13 @@ async fn rejects_deactivation_of_the_last_active_administrator() {
         return;
     };
 
-    sqlx::migrate!()
+    digital_publication_backend::MIGRATOR
         .run(&pool)
         .await
         .expect("run migrations");
 
-    let (last_admin_id, last_admin_token) = seed_principal(&pool, "account_admin").await;
+    let (last_admin_id, last_admin_token) =
+        seed_principal(&pool, "account_admin").await;
 
     let response = app(pool.clone())
         .oneshot(deactivate_request(
@@ -597,17 +595,21 @@ async fn concurrent_deactivation_preserves_last_administrator_invariant() {
         return;
     };
 
-    sqlx::migrate!()
+    digital_publication_backend::MIGRATOR
         .run(&pool)
         .await
         .expect("run migrations");
 
-    let (admin_a_id, admin_a_token) = seed_principal(&pool, "account_admin").await;
-    let (admin_b_id, admin_b_token) = seed_principal(&pool, "account_admin").await;
+    let (admin_a_id, admin_a_token) =
+        seed_principal(&pool, "account_admin").await;
+    let (admin_b_id, admin_b_token) =
+        seed_principal(&pool, "account_admin").await;
 
     let mut requests = JoinSet::new();
 
-    for (account_id, token) in [(admin_a_id, admin_a_token), (admin_b_id, admin_b_token)] {
+    for (account_id, token) in
+        [(admin_a_id, admin_a_token), (admin_b_id, admin_b_token)]
+    {
         let request_app = app(pool.clone());
 
         requests.spawn(async move {
@@ -632,12 +634,14 @@ async fn concurrent_deactivation_preserves_last_administrator_invariant() {
     let mut conflict_code = None;
 
     while let Some(result) = requests.join_next().await {
-        let (status, body) = result.expect("join concurrent deactivation request");
+        let (status, body) =
+            result.expect("join concurrent deactivation request");
         statuses.push(status);
 
         if status == StatusCode::CONFLICT {
             let payload: Value =
-                serde_json::from_slice(&body).expect("decode concurrent problem response");
+                serde_json::from_slice(&body)
+                    .expect("decode concurrent problem response");
             conflict_code = payload["code"].as_str().map(str::to_owned);
         }
     }
@@ -669,7 +673,10 @@ async fn concurrent_deactivation_preserves_last_administrator_invariant() {
 
     assert_eq!(statuses.len(), 2);
     assert_eq!(
-        statuses.iter().filter(|(_, status)| status == "active").count(),
+        statuses
+            .iter()
+            .filter(|(_, status)| status == "active")
+            .count(),
         1
     );
     assert_eq!(
