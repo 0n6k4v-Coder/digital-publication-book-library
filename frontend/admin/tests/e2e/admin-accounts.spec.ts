@@ -155,7 +155,7 @@ test.describe("admin accounts", () => {
       });
 
       const menuButton = page.getByRole("button", {
-        name: /admin navigation/i,
+        name: /^(Open|Close) admin navigation$/,
       });
 
       await menuButton.click();
