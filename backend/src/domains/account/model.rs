@@ -85,6 +85,7 @@ fn default_page_size() -> u32 {
 pub struct AccountResponse {
     pub id: Uuid,
     pub email: String,
+    pub display_name: Option<String>,
     pub status: String,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
@@ -106,6 +107,7 @@ pub struct AccountListResponse {
 pub struct CreatedAccount {
     pub id: Uuid,
     pub email: String,
+    pub display_name: Option<String>,
     pub status: String,
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
@@ -116,6 +118,7 @@ pub struct CreatedAccount {
 pub struct ViewedAccount {
     pub id: Uuid,
     pub email: String,
+    pub display_name: Option<String>,
     pub status: String,
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
@@ -126,6 +129,7 @@ pub struct ViewedAccount {
 pub struct ListedAccount {
     pub id: Uuid,
     pub email: String,
+    pub display_name: Option<String>,
     pub status: String,
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
@@ -279,6 +283,7 @@ impl From<CreatedAccount> for AccountResponse {
         Self {
             id: account.id,
             email: account.email,
+            display_name: account.display_name,
             status: account.status,
             created_at: account.created_at,
             updated_at: account.updated_at,
@@ -292,6 +297,7 @@ impl From<ViewedAccount> for AccountResponse {
         Self {
             id: account.id,
             email: account.email,
+            display_name: account.display_name,
             status: account.status,
             created_at: account.created_at,
             updated_at: account.updated_at,
@@ -305,6 +311,7 @@ impl From<ListedAccount> for AccountResponse {
         Self {
             id: account.id,
             email: account.email,
+            display_name: account.display_name,
             status: account.status,
             created_at: account.created_at,
             updated_at: account.updated_at,
