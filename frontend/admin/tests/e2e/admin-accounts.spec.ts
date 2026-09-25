@@ -155,7 +155,7 @@ test.describe("admin accounts", () => {
       });
 
       const menuButton = page.getByRole("button", {
-        name: "Open admin navigation",
+        name: /admin navigation/i,
       });
 
       await menuButton.click();
@@ -165,7 +165,6 @@ test.describe("admin accounts", () => {
       await page.getByRole("link", { name: "Accounts" }).click();
 
       await expect(page).toHaveURL(/\/admin\/accounts$/);
-
       await expect(menuButton).toHaveAttribute("aria-expanded", "false");
 
       await menuButton.click();
