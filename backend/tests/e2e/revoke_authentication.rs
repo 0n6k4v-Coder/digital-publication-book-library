@@ -3,11 +3,7 @@ use std::{env, net::SocketAddr, sync::Arc};
 use axum::Router;
 use digital_publication_backend::{
     app::{router::build_router, state::AppState},
-    shared::validation::{
-        hash_password,
-        normalize_email,
-        PasswordBlocklist,
-    },
+    shared::validation::{hash_password, normalize_email, PasswordBlocklist},
 };
 use reqwest::Client;
 use secrecy::SecretString;
@@ -19,6 +15,7 @@ use uuid::Uuid;
 static TEST_DATABASE_LOCK: Mutex<()> = Mutex::const_new(());
 
 const TEST_PASSWORD: &str = "an extremely secure password";
+const REFRESH_COOKIE_NAME: &str = "__Host-refresh_token";
 
 async fn database() -> PgPool {
     PgPool::connect(
@@ -133,6 +130,28 @@ async fn start_server(
     (address, task)
 }
 
+fn refresh_cookie_value(
+    response: &reqwest::Response,
+) -> String {
+    let header = response
+        .headers()
+        .get("set-cookie")
+        .expect("login response must set the refresh cookie")
+        .to_str()
+        .expect("refresh cookie must be valid ASCII");
+
+    let prefix =
+        format!("{REFRESH_COOKIE_NAME}=");
+
+    header
+        .strip_prefix(&prefix)
+        .expect("refresh cookie must use the required __Host- name")
+        .split(';')
+        .next()
+        .expect("refresh cookie must contain a value")
+        .to_owned()
+}
+
 #[tokio::test]
 #[ignore = "requires PostgreSQL 18 and a built backend"]
 async fn logout_end_to_end_revokes_the_session() {
@@ -161,7 +180,7 @@ async fn logout_end_to_end_revokes_the_session() {
 
     let client = Client::new();
 
-    let login: Value = client
+    let login_response = client
         .post(format!(
             "http://{address}/auth/login"
         ))
@@ -175,10 +194,22 @@ async fn logout_end_to_end_revokes_the_session() {
         }))
         .send()
         .await
-        .unwrap()
-        .json()
-        .await
         .unwrap();
+
+    let refresh_token =
+        refresh_cookie_value(&login_response);
+
+    let login: Value =
+        login_response
+            .json()
+            .await
+            .unwrap();
+
+    assert!(
+        login
+            .get("refresh_token")
+            .is_none()
+    );
 
     let access_token =
         login["access_token"]
@@ -216,7 +247,7 @@ async fn logout_end_to_end_revokes_the_session() {
             "application/json",
         )
         .json(&json!({
-            "refresh_token": login["refresh_token"]
+            "refresh_token": refresh_token
         }))
         .send()
         .await

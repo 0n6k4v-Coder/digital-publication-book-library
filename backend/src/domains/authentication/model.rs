@@ -35,6 +35,4 @@ pub struct AuthenticationResponse {
     pub access_token: String,
     pub token_type: &'static str,
     pub expires_in: u64,
-    pub refresh_token: String,
-    pub refresh_expires_in: u64,
 }

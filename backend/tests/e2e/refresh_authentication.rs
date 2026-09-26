@@ -3,13 +3,9 @@ use std::{env, net::SocketAddr, sync::Arc};
 use axum::Router;
 use digital_publication_backend::{
     app::{router::build_router, state::AppState},
-    shared::validation::{
-        hash_password,
-        normalize_email,
-        PasswordBlocklist,
-    },
+    shared::validation::{hash_password, normalize_email, PasswordBlocklist},
 };
-use reqwest::Client;
+use reqwest::{Client, Response};
 use secrecy::SecretString;
 use serde_json::{json, Value};
 use sqlx::PgPool;
@@ -19,6 +15,7 @@ use uuid::Uuid;
 static TEST_DATABASE_LOCK: Mutex<()> = Mutex::const_new(());
 
 const TEST_PASSWORD: &str = "an extremely secure password";
+const REFRESH_COOKIE_NAME: &str = "__Host-refresh_token";
 
 async fn database() -> PgPool {
     PgPool::connect(
@@ -51,17 +48,10 @@ async fn reset(pool: &PgPool) {
         .unwrap();
 }
 
-async fn seed_account(
-    pool: &PgPool,
-    email: &str,
-) -> Uuid {
+async fn seed_account(pool: &PgPool, email: &str) -> Uuid {
     let email = normalize_email(email).unwrap();
 
-    let password_hash =
-        hash_password(
-            SecretString::from(TEST_PASSWORD.to_owned()),
-        )
-        .unwrap();
+    let password_hash = hash_password(SecretString::from(TEST_PASSWORD.to_owned())).unwrap();
 
     sqlx::query_scalar::<_, Uuid>(
         r#"
@@ -94,11 +84,10 @@ async fn seed_account(
 }
 
 fn test_router(pool: PgPool) -> Router {
-    let blocklist =
-        PasswordBlocklist::from_hashes(
-            "test",
-            Vec::<[u8; 20]>::new(),
-        );
+    let blocklist = PasswordBlocklist::from_hashes(
+        "test",
+        Vec::<[u8; 20]>::new(),
+    );
 
     build_router(AppState::new(
         pool,
@@ -133,36 +122,52 @@ async fn start_server(
     (address, task)
 }
 
+fn refresh_cookie_value(response: &Response) -> String {
+    let header = response
+        .headers()
+        .get("set-cookie")
+        .expect("login response must set the refresh cookie")
+        .to_str()
+        .expect("refresh cookie must be valid ASCII");
+
+    let prefix = format!("{REFRESH_COOKIE_NAME}=");
+
+    header
+        .strip_prefix(&prefix)
+        .expect("refresh cookie must use the required __Host- name")
+        .split(';')
+        .next()
+        .expect("refresh cookie must contain a value")
+        .to_owned()
+}
+
 async fn login(
     client: &Client,
     address: SocketAddr,
     email: &str,
-) -> Value {
-    client
-        .post(format!(
-            "http://{address}/auth/login"
-        ))
-        .header(
-            "content-type",
-            "application/json",
-        )
+) -> (Value, String) {
+    let response = client
+        .post(format!("http://{address}/auth/login"))
+        .header("content-type", "application/json")
         .json(&json!({
             "email": email,
             "password": TEST_PASSWORD
         }))
         .send()
         .await
-        .unwrap()
-        .json()
-        .await
-        .unwrap()
+        .unwrap();
+
+    let refresh_token = refresh_cookie_value(&response);
+
+    let body = response.json().await.unwrap();
+
+    (body, refresh_token)
 }
 
 #[tokio::test]
 #[ignore = "requires PostgreSQL 18 and a built backend"]
 async fn refresh_end_to_end_rotates_the_presented_token() {
-    let _lock =
-        TEST_DATABASE_LOCK.lock().await;
+    let _lock = TEST_DATABASE_LOCK.lock().await;
 
     let pool = database().await;
 
@@ -186,14 +191,10 @@ async fn refresh_end_to_end_rotates_the_presented_token() {
 
     let client = Client::new();
 
-    let login_body =
+    let (login_body, old_refresh) =
         login(&client, address, &email).await;
 
-    let old_refresh =
-        login_body["refresh_token"]
-            .as_str()
-            .unwrap()
-            .to_owned();
+    assert!(login_body.get("refresh_token").is_none());
 
     let response = client
         .post(format!(
@@ -220,13 +221,18 @@ async fn refresh_end_to_end_rotates_the_presented_token() {
         "no-store"
     );
 
+    let replacement_refresh = refresh_cookie_value(&response);
+
+    assert_ne!(
+        replacement_refresh,
+        old_refresh
+    );
+
     let body: Value =
         response.json().await.unwrap();
 
-    assert_ne!(
-        body["refresh_token"],
-        login_body["refresh_token"]
-    );
+    assert!(body.get("refresh_token").is_none());
+    assert!(body.get("refresh_expires_in").is_none());
 
     assert_ne!(
         body["access_token"],
@@ -240,8 +246,7 @@ async fn refresh_end_to_end_rotates_the_presented_token() {
 #[tokio::test]
 #[ignore = "requires PostgreSQL 18 and a built backend"]
 async fn replayed_refresh_end_to_end_returns_401_without_a_bearer_challenge() {
-    let _lock =
-        TEST_DATABASE_LOCK.lock().await;
+    let _lock = TEST_DATABASE_LOCK.lock().await;
 
     let pool = database().await;
 
@@ -265,14 +270,8 @@ async fn replayed_refresh_end_to_end_returns_401_without_a_bearer_challenge() {
 
     let client = Client::new();
 
-    let login_body =
+    let (_login_body, old_refresh) =
         login(&client, address, &email).await;
-
-    let old_refresh =
-        login_body["refresh_token"]
-            .as_str()
-            .unwrap()
-            .to_owned();
 
     let first = client
         .post(format!(
