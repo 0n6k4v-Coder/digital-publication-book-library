@@ -6,6 +6,21 @@ const frontendOrigin = new URL(
   process.env.E2E_BASE_URL ?? "https://localhost:5173",
 ).origin;
 
+interface RefreshCookie {
+  name: string;
+  value: string;
+  secure: boolean;
+  httpOnly: boolean;
+  sameSite: string;
+  path: string;
+}
+
+function findRefreshCookie(
+  cookies: RefreshCookie[],
+): RefreshCookie | undefined {
+  return cookies.find((cookie) => cookie.name === "__Host-refresh_token");
+}
+
 test.describe("real HTTPS authentication session", () => {
   test.skip(
     !realAuthE2E,
@@ -59,7 +74,9 @@ test.describe("real HTTPS authentication session", () => {
 
     await page.goto("/login");
 
-    await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Sign in" }),
+    ).toBeVisible();
 
     const loginResponsePromise = page.waitForResponse((response) => {
       const url = new URL(response.url());
@@ -72,7 +89,9 @@ test.describe("real HTTPS authentication session", () => {
     });
 
     await page.getByLabel("Email").fill(adminEmail);
-    await page.getByRole("textbox", { name: "Password" }).fill(adminPassword);
+    await page
+      .getByRole("textbox", { name: "Password" })
+      .fill(adminPassword);
 
     await page.getByRole("button", { name: "Sign In" }).click();
 
@@ -82,23 +101,38 @@ test.describe("real HTTPS authentication session", () => {
 
     const loginHeaders = loginResponse.headers();
 
-    expect(loginHeaders["access-control-allow-origin"]).toBe(frontendOrigin);
-    expect(loginHeaders["access-control-allow-credentials"]).toBe("true");
+    expect(loginHeaders["access-control-allow-origin"]).toBe(
+      frontendOrigin,
+    );
+    expect(
+      loginHeaders["access-control-allow-credentials"],
+    ).toBe("true");
+
+    const loginBody = await loginResponse.json();
+
+    expect(loginBody.refresh_token).toBeUndefined();
+    expect(loginBody.refresh_expires_in).toBeUndefined();
+    expect(typeof loginBody.access_token).toBe("string");
+    expect(loginBody.token_type).toBe("Bearer");
+    expect(loginBody.expires_in).toBeGreaterThan(0);
 
     await expect(page).toHaveURL(/\/admin$/);
     await expect(
       page.getByText("Digital Publication & Book Library"),
     ).toBeVisible();
 
-    const refreshCookie = (await page.context().cookies(apiOrigin)).find(
-      (cookie) => cookie.name === "__Host-refresh_token",
+    const loginCookie = findRefreshCookie(
+      await page.context().cookies(apiOrigin),
     );
 
-    expect(refreshCookie).toBeDefined();
-    expect(refreshCookie?.secure).toBe(true);
-    expect(refreshCookie?.httpOnly).toBe(true);
-    expect(refreshCookie?.sameSite).toBe("Strict");
-    expect(refreshCookie?.path).toBe("/");
+    expect(loginCookie).toBeDefined();
+    expect(loginCookie?.value).toBeTruthy();
+    expect(loginCookie?.secure).toBe(true);
+    expect(loginCookie?.httpOnly).toBe(true);
+    expect(loginCookie?.sameSite).toBe("Strict");
+    expect(loginCookie?.path).toBe("/");
+
+    const loginRefreshToken = loginCookie?.value;
 
     const documentCookie = await page.evaluate(() => document.cookie);
 
@@ -133,15 +167,69 @@ test.describe("real HTTPS authentication session", () => {
       allowCredentials: "true",
     });
 
-    const reloadedRefreshCookie = (
-      await page.context().cookies(apiOrigin)
-    ).find((cookie) => cookie.name === "__Host-refresh_token");
+    const reloadedRefreshCookie = findRefreshCookie(
+      await page.context().cookies(apiOrigin),
+    );
 
     expect(reloadedRefreshCookie).toBeDefined();
+    expect(reloadedRefreshCookie?.value).toBeTruthy();
     expect(reloadedRefreshCookie?.secure).toBe(true);
     expect(reloadedRefreshCookie?.httpOnly).toBe(true);
     expect(reloadedRefreshCookie?.sameSite).toBe("Strict");
     expect(reloadedRefreshCookie?.path).toBe("/");
+    expect(reloadedRefreshCookie?.value).not.toBe(loginRefreshToken);
+
+    const logoutResponsePromise = page.waitForResponse((response) => {
+      const url = new URL(response.url());
+
+      return (
+        response.request().method() === "POST" &&
+        url.origin === apiOrigin &&
+        url.pathname === "/auth/logout"
+      );
+    });
+
+    await page.getByRole("button", { name: "Logout" }).click();
+
+    const logoutResponse = await logoutResponsePromise;
+
+    expect(logoutResponse.status()).toBe(204);
+
+    const logoutHeaders = logoutResponse.headers();
+
+    expect(logoutHeaders["access-control-allow-origin"]).toBe(
+      frontendOrigin,
+    );
+    expect(
+      logoutHeaders["access-control-allow-credentials"],
+    ).toBe("true");
+
+    const clearedCookie = logoutHeaders["set-cookie"] ?? "";
+
+    expect(clearedCookie).toContain("__Host-refresh_token=");
+    expect(clearedCookie).toContain("Max-Age=0");
+    expect(clearedCookie).toContain("Path=/");
+    expect(clearedCookie).toContain("Secure");
+    expect(clearedCookie).toContain("HttpOnly");
+    expect(clearedCookie).toContain("SameSite=Strict");
+    expect(clearedCookie).not.toContain("Domain=");
+
+    await expect(page).toHaveURL(/\/login$/);
+    await expect(
+      page.getByRole("heading", { name: "Sign in" }),
+    ).toBeVisible();
+
+    expect(
+      findRefreshCookie(await page.context().cookies(apiOrigin)),
+    ).toBeUndefined();
+
+    const documentCookieAfterLogout = await page.evaluate(
+      () => document.cookie,
+    );
+
+    expect(documentCookieAfterLogout).not.toContain(
+      "__Host-refresh_token=",
+    );
 
     page.off("response", handleResponse);
   });
