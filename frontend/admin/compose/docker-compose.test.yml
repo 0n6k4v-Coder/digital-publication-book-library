@@ -1,3 +1,5 @@
+name: digital-publication-book-library-admin-test
+
 services:
   test:
     build:

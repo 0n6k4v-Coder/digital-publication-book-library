@@ -74,9 +74,7 @@ test.describe("real HTTPS authentication session", () => {
 
     await page.goto("/login");
 
-    await expect(
-      page.getByRole("heading", { name: "Sign in" }),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
 
     const loginResponsePromise = page.waitForResponse((response) => {
       const url = new URL(response.url());
@@ -89,9 +87,7 @@ test.describe("real HTTPS authentication session", () => {
     });
 
     await page.getByLabel("Email").fill(adminEmail);
-    await page
-      .getByRole("textbox", { name: "Password" })
-      .fill(adminPassword);
+    await page.getByRole("textbox", { name: "Password" }).fill(adminPassword);
 
     await page.getByRole("button", { name: "Sign In" }).click();
 
@@ -209,9 +205,7 @@ test.describe("real HTTPS authentication session", () => {
     expect(clearedCookie).not.toContain("Domain=");
 
     await expect(page).toHaveURL(/\/login$/);
-    await expect(
-      page.getByRole("heading", { name: "Sign in" }),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
 
     expect(
       findRefreshCookie(await page.context().cookies(apiOrigin)),
@@ -221,9 +215,7 @@ test.describe("real HTTPS authentication session", () => {
       () => document.cookie,
     );
 
-    expect(documentCookieAfterLogout).not.toContain(
-      "__Host-refresh_token=",
-    );
+    expect(documentCookieAfterLogout).not.toContain("__Host-refresh_token=");
 
     page.off("response", handleResponse);
   });
