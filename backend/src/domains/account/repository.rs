@@ -1158,3 +1158,121 @@ impl std::fmt::Display for ViewAccountRepositoryError {
         }
     }
 }
+
+impl std::error::Error for ViewAccountRepositoryError {}
+
+#[derive(Debug)]
+pub enum UpdateAccountRepositoryError {
+    Database(sqlx::Error),
+}
+
+impl std::fmt::Display for UpdateAccountRepositoryError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Database(error) => write!(f, "{error}"),
+        }
+    }
+}
+
+impl std::error::Error for UpdateAccountRepositoryError {}
+
+#[derive(Debug)]
+pub enum DeactivateAccountRepositoryError {
+    AccountNotFound,
+    AccountAlreadyInactive,
+    LastActiveAdministrator,
+    Database(sqlx::Error),
+}
+
+impl std::fmt::Display for DeactivateAccountRepositoryError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::AccountNotFound => f.write_str("account not found"),
+            Self::AccountAlreadyInactive => f.write_str("account already inactive"),
+            Self::LastActiveAdministrator => f.write_str("last active administrator"),
+            Self::Database(error) => write!(f, "{error}"),
+        }
+    }
+}
+
+impl std::error::Error for DeactivateAccountRepositoryError {}
+
+#[derive(Debug)]
+pub enum SoftDeleteAccountRepositoryError {
+    AccountNotFound,
+    AccountAlreadyDeleted,
+    LastActiveAdministrator,
+    Database(sqlx::Error),
+}
+
+impl std::fmt::Display for SoftDeleteAccountRepositoryError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::AccountNotFound => f.write_str("account not found"),
+            Self::AccountAlreadyDeleted => f.write_str("account already deleted"),
+            Self::LastActiveAdministrator => f.write_str("last active administrator"),
+            Self::Database(error) => write!(f, "{error}"),
+        }
+    }
+}
+
+impl std::error::Error for SoftDeleteAccountRepositoryError {}
+
+#[derive(Debug)]
+pub enum HardDeleteAccountRepositoryError {
+    AccountNotFound,
+    LastActiveAdministrator,
+    Database(sqlx::Error),
+}
+
+impl std::fmt::Display for HardDeleteAccountRepositoryError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::AccountNotFound => f.write_str("account not found"),
+            Self::LastActiveAdministrator => f.write_str("last active administrator"),
+            Self::Database(error) => write!(f, "{error}"),
+        }
+    }
+}
+
+impl std::error::Error for HardDeleteAccountRepositoryError {}
+
+#[derive(Debug)]
+pub enum ActivateAccountRepositoryError {
+    AccountNotFound,
+    AccountAlreadyActive,
+    AccountSoftDeleted,
+    Database(sqlx::Error),
+}
+
+impl std::fmt::Display for ActivateAccountRepositoryError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::AccountNotFound => f.write_str("account not found"),
+            Self::AccountAlreadyActive => f.write_str("account already active"),
+            Self::AccountSoftDeleted => f.write_str("account is soft deleted"),
+            Self::Database(error) => write!(f, "{error}"),
+        }
+    }
+}
+
+impl std::error::Error for ActivateAccountRepositoryError {}
+
+#[derive(Debug)]
+pub enum RestoreAccountRepositoryError {
+    AccountNotFound,
+    AccountNotDeleted,
+    Database(sqlx::Error),
+}
+
+impl std::fmt::Display for RestoreAccountRepositoryError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::AccountNotFound => f.write_str("account not found"),
+            Self::AccountNotDeleted => f.write_str("account is not soft deleted"),
+            Self::Database(error) => write!(f, "{error}"),
+        }
+    }
+}
+
+impl std::error::Error for RestoreAccountRepositoryError {}
