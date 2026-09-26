@@ -237,7 +237,7 @@ describe("login integration", () => {
     expect(window.location.pathname).toBe("/login");
     expect(authService.getSnapshot().authStatus).toBe("unauthenticated");
 
-    const [, logoutInit] = vi.mocked(fetch).mock.calls[1];
+    const [, logoutInit] = vi.mocked(fetch).mock.calls[2];
 
     expect(logoutInit?.method).toBe("POST");
     expect(logoutInit?.credentials).toBe("include");

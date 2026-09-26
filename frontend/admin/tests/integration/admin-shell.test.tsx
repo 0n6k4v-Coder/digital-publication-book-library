@@ -158,7 +158,7 @@ describe("Admin Shell integration", () => {
     expect(window.location.pathname).toBe("/login");
     expect(authService.getSnapshot().authStatus).toBe("unauthenticated");
 
-    const [url, init] = vi.mocked(fetch).mock.calls[1];
+    const [url, init] = vi.mocked(fetch).mock.calls[2];
 
     expect(url).toBe("/auth/logout");
     expect(init?.method).toBe("POST");
