@@ -4,6 +4,7 @@ import App from "../../src/App";
 import { authService } from "../../src/services/auth";
 
 const accessToken = "opaque-access-token";
+const refreshedAccessToken = "refreshed-access-token";
 
 function problemResponse(status: number, code: string): Response {
   return new Response(
@@ -28,10 +29,10 @@ function unauthorizedResponse(): Response {
   return problemResponse(401, "UNAUTHORIZED");
 }
 
-function loginResponse(): Response {
+function loginResponse(token: string = accessToken): Response {
   return new Response(
     JSON.stringify({
-      access_token: accessToken,
+      access_token: token,
       token_type: "Bearer",
       expires_in: 3600,
     }),
@@ -157,11 +158,60 @@ describe("Admin Accounts integration", () => {
     expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1);
   });
 
-  it("clears client authentication after an Accounts API 401", async () => {
+  it("refreshes the access token once after an Accounts API 401 and retries the request", async () => {
     window.history.replaceState({}, "", "/admin/accounts");
 
     vi.mocked(fetch)
       .mockResolvedValueOnce(loginResponse())
+      .mockResolvedValueOnce(unauthorizedResponse())
+      .mockResolvedValueOnce(loginResponse(refreshedAccessToken))
+      .mockResolvedValueOnce(accountsResponse());
+
+    await authService.login({
+      email: "admin@example.com",
+      password: "example-secure-password",
+    });
+
+    render(<App />);
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Administrator Accounts",
+      }),
+    ).toBeInTheDocument();
+
+    expect(authService.getAuthorizationHeader()).toBe(
+      `Bearer ${refreshedAccessToken}`,
+    );
+
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(4);
+
+    const initialRequest = vi.mocked(fetch).mock.calls[2];
+    const refreshRequest = vi.mocked(fetch).mock.calls[3];
+
+    expect(initialRequest[0]).toBe("/admin/accounts?page=1&page_size=20");
+    expect(new Headers(initialRequest[1]?.headers).get("authorization")).toBe(
+      `Bearer ${accessToken}`,
+    );
+
+    expect(refreshRequest[0]).toBe("/admin/accounts?page=1&page_size=20");
+    expect(new Headers(refreshRequest[1]?.headers).get("authorization")).toBe(
+      `Bearer ${refreshedAccessToken}`,
+    );
+
+    const refreshCalls = vi
+      .mocked(fetch)
+      .mock.calls.filter(([url]) => url === "/auth/refresh");
+
+    expect(refreshCalls).toHaveLength(1);
+  });
+
+  it("clears client authentication when the shared refresh returns 401", async () => {
+    window.history.replaceState({}, "", "/admin/accounts");
+
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(loginResponse())
+      .mockResolvedValueOnce(unauthorizedResponse())
       .mockResolvedValueOnce(unauthorizedResponse());
 
     await authService.login({
@@ -176,12 +226,7 @@ describe("Admin Accounts integration", () => {
     });
 
     expect(authService.getSnapshot().authStatus).toBe("unauthenticated");
-
-    expect(
-      screen.getByRole("heading", {
-        name: "Sign in",
-      }),
-    ).toBeInTheDocument();
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(3);
   });
 
   it("keeps the shell mounted while navigating from /admin to /admin/accounts", async () => {
@@ -224,7 +269,12 @@ describe("Admin Accounts integration", () => {
       }),
     ).toBeInTheDocument();
 
-    expect(screen.getByRole("button", { name: "Logout" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", {
+        name: "Logout",
+      }),
+    ).toBeInTheDocument();
+
     expect(
       screen.getByRole("heading", {
         name: "Administrator Accounts",

@@ -1,4 +1,4 @@
-import { authService } from "./auth";
+import { AuthenticationError, authService } from "./auth";
 import {
   DEFAULT_ACCOUNT_LIST_QUERY,
   type AccountListQuery,
@@ -140,6 +140,22 @@ function mapResponseError(
   }
 }
 
+function mapAuthenticationError(error: AuthenticationError): AccountsError {
+  if (error.status === 401 || error.code === "UNAUTHORIZED") {
+    return new AccountsError("UNAUTHORIZED", 401, "UNAUTHORIZED");
+  }
+
+  if (error.status === 0) {
+    return new AccountsError("NETWORK", 0, null);
+  }
+
+  if (error.status >= 500 && error.status <= 599) {
+    return new AccountsError("SERVER", error.status, null);
+  }
+
+  return new AccountsError("UNKNOWN", error.status, null);
+}
+
 function parseAccount(value: unknown): AdministratorAccount | null {
   if (!isRecord(value)) {
     return null;
@@ -214,30 +230,42 @@ function buildListUrl(query: AccountListQuery): string {
   return `/admin/accounts?${params.toString()}`;
 }
 
+async function fetchProtected(
+  input: RequestInfo | URL,
+  init: RequestInit,
+): Promise<Response> {
+  try {
+    return await authService.fetchWithAuthentication(input, init);
+  } catch (error) {
+    if (error instanceof AuthenticationError) {
+      throw mapAuthenticationError(error);
+    }
+
+    throw error;
+  }
+}
+
 async function listAccounts(
   query: AccountListQuery,
   options: ListAccountsOptions = {},
 ): Promise<AccountListResponse> {
-  const authorization = authService.getAuthorizationHeader();
-
-  if (authorization === null) {
-    throw new AccountsError("UNAUTHORIZED", 401, "UNAUTHORIZED");
-  }
-
   let response: Response;
 
   try {
-    response = await fetch(buildApiUrl(buildListUrl(query)), {
+    response = await fetchProtected(buildApiUrl(buildListUrl(query)), {
       method: "GET",
       headers: {
         Accept: "application/json",
-        Authorization: authorization,
       },
       cache: "no-store",
       signal: options.signal,
     });
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {
+      throw error;
+    }
+
+    if (error instanceof AccountsError) {
       throw error;
     }
 
@@ -275,27 +303,24 @@ async function mutateAccount(
   action: AccountMutation,
   accountId: string,
 ): Promise<void> {
-  const authorization = authService.getAuthorizationHeader();
-
-  if (authorization === null) {
-    throw new AccountsError("UNAUTHORIZED", 401, "UNAUTHORIZED");
-  }
-
   let response: Response;
 
   try {
-    response = await fetch(
+    response = await fetchProtected(
       buildApiUrl(`/admin/accounts/${encodeURIComponent(accountId)}/${action}`),
       {
         method: "POST",
         headers: {
           Accept: "application/json",
-          Authorization: authorization,
         },
         cache: "no-store",
       },
     );
-  } catch {
+  } catch (error) {
+    if (error instanceof AccountsError) {
+      throw error;
+    }
+
     throw new AccountsError("NETWORK", 0);
   }
 

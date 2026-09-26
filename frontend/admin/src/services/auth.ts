@@ -42,6 +42,7 @@ let authenticationSnapshot: AuthenticationSnapshot = {
 let loginRequest: Promise<void> | null = null;
 let logoutRequest: Promise<void> | null = null;
 let bootstrapRequest: Promise<void> | null = null;
+let protectedRefreshRequest: Promise<void> | null = null;
 let bootstrapStarted = false;
 
 export class AuthenticationError extends Error {
@@ -88,7 +89,13 @@ function buildApiUrl(pathname: string): string {
     return pathname;
   }
 
-  const origin = new URL(apiOrigin);
+  let origin: URL;
+
+  try {
+    origin = new URL(apiOrigin);
+  } catch {
+    throw new AuthenticationError("UNKNOWN", 0);
+  }
 
   if (import.meta.env.PROD && origin.protocol !== "https:") {
     throw new AuthenticationError("UNKNOWN", 0);
@@ -176,6 +183,23 @@ function createLoginError(
   return new AuthenticationError("UNKNOWN", status);
 }
 
+function buildAuthenticatedRequestInit(
+  init: RequestInit | undefined,
+  authorization: string,
+): RequestInit {
+  const headers = new Headers(init?.headers);
+  headers.set("Authorization", authorization);
+
+  return {
+    ...init,
+    headers,
+  };
+}
+
+function createAbortError(): DOMException {
+  return new DOMException("The protected request was aborted.", "AbortError");
+}
+
 async function loginInternal(credentials: LoginCredentials): Promise<void> {
   const response = await fetch(buildApiUrl("/auth/login"), {
     method: "POST",
@@ -244,6 +268,120 @@ async function bootstrapInternal(): Promise<void> {
   }
 }
 
+async function performProtectedRefresh(): Promise<void> {
+  setAuthenticationSnapshot(
+    authenticationSession === null ? "unknown" : "authenticated",
+    "refreshing",
+  );
+
+  try {
+    const response = await fetch(buildApiUrl("/auth/refresh"), {
+      method: "POST",
+      credentials: "include",
+      cache: "no-store",
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    if (response.status === 401) {
+      clearAuthenticationSession();
+      setAuthenticationSnapshot("unauthenticated", "refreshIdle");
+      return;
+    }
+
+    if (!response.ok) {
+      throw new AuthenticationError("UNKNOWN", response.status);
+    }
+
+    const tokenResponse = parseAccessTokenResponse(await response.json());
+    const issuedAt = Date.now();
+
+    authenticationSession = {
+      accessToken: tokenResponse.access_token,
+      tokenType: tokenResponse.token_type,
+      accessTokenExpiresAt: issuedAt + tokenResponse.expires_in * 1000,
+    };
+
+    setAuthenticationSnapshot("authenticated", "refreshIdle");
+  } catch (error) {
+    clearAuthenticationSession();
+    setAuthenticationSnapshot("authentication-error", "refreshIdle");
+
+    if (error instanceof AuthenticationError) {
+      throw error;
+    }
+
+    throw new AuthenticationError("UNKNOWN", 0);
+  }
+}
+
+async function refreshForProtectedRequest(): Promise<void> {
+  if (protectedRefreshRequest !== null) {
+    return protectedRefreshRequest;
+  }
+
+  protectedRefreshRequest = performProtectedRefresh().finally(() => {
+    protectedRefreshRequest = null;
+  });
+
+  return protectedRefreshRequest;
+}
+
+async function fetchWithAuthentication(
+  input: RequestInfo | URL,
+  init: RequestInit = {},
+): Promise<Response> {
+  const authorizationBeforeRequest = getAuthorizationHeader();
+
+  if (authorizationBeforeRequest === null) {
+    throw new AuthenticationError("UNAUTHORIZED", 401);
+  }
+
+  if (init.signal?.aborted) {
+    throw createAbortError();
+  }
+
+  const response = await fetch(
+    input,
+    buildAuthenticatedRequestInit(init, authorizationBeforeRequest),
+  );
+
+  if (response.status !== 401) {
+    return response;
+  }
+
+  await response.body?.cancel();
+
+  if (init.signal?.aborted) {
+    throw createAbortError();
+  }
+
+  const authorizationAfterResponse = getAuthorizationHeader();
+
+  if (
+    authorizationAfterResponse === null ||
+    authorizationAfterResponse === authorizationBeforeRequest
+  ) {
+    await refreshForProtectedRequest();
+  }
+
+  if (init.signal?.aborted) {
+    throw createAbortError();
+  }
+
+  const refreshedAuthorization = getAuthorizationHeader();
+
+  if (refreshedAuthorization === null) {
+    throw new AuthenticationError("UNAUTHORIZED", 401);
+  }
+
+  return fetch(
+    input,
+    buildAuthenticatedRequestInit(init, refreshedAuthorization),
+  );
+}
+
 async function logoutInternal(): Promise<void> {
   const response = await fetch(buildApiUrl("/auth/logout"), {
     method: "POST",
@@ -292,6 +430,14 @@ async function retryBootstrap(): Promise<void> {
   return bootstrap();
 }
 
+function getAuthorizationHeader(): string | null {
+  if (authenticationSession === null) {
+    return null;
+  }
+
+  return `${authenticationSession.tokenType} ${authenticationSession.accessToken}`;
+}
+
 export const authService = {
   subscribe(listener: AuthenticationListener): () => void {
     listeners.add(listener);
@@ -302,13 +448,9 @@ export const authService = {
     return authenticationSnapshot;
   },
 
-  getAuthorizationHeader(): string | null {
-    if (authenticationSession === null) {
-      return null;
-    }
+  getAuthorizationHeader,
 
-    return `${authenticationSession.tokenType} ${authenticationSession.accessToken}`;
-  },
+  fetchWithAuthentication,
 
   bootstrap,
 
