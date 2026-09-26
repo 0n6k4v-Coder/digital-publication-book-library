@@ -4,7 +4,8 @@ use time::OffsetDateTime;
 use uuid::Uuid;
 
 pub const ACCESS_TOKEN_EXPIRES_IN: u64 = 3_600;
-pub const REFRESH_TOKEN_EXPIRES_IN: u64 = 2_592_000;
+pub const AUTHENTICATION_SESSION_EXPIRES_IN: u64 = 86_400;
+pub const REFRESH_TOKEN_POLICY_EXPIRES_IN: u64 = 2_592_000;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct AuthenticatedPrincipal {
@@ -23,6 +24,7 @@ pub struct AuthenticateAccountRequest {
 pub struct AuthenticationTokens {
     pub access_token: SecretString,
     pub refresh_token: SecretString,
+    pub refresh_expires_at: OffsetDateTime,
 }
 
 #[derive(Debug, Serialize)]

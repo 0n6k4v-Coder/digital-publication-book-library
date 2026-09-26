@@ -10,6 +10,7 @@ use reqwest::{Client, Response};
 use secrecy::SecretString;
 use serde_json::{json, Value};
 use sqlx::PgPool;
+use time::{Duration, OffsetDateTime};
 use tokio::{net::TcpListener, sync::Mutex};
 use uuid::Uuid;
 
@@ -17,7 +18,8 @@ static TEST_DATABASE_LOCK: Mutex<()> = Mutex::const_new(());
 
 const TEST_PASSWORD: &str = "an extremely secure password";
 const REFRESH_COOKIE_NAME: &str = "__Host-refresh_token";
-const REFRESH_COOKIE_MAX_AGE_SECONDS: u64 = 86_400;
+const AUTHENTICATION_SESSION_EXPIRES_IN: u64 = 86_400;
+const REFRESH_TOKEN_POLICY_EXPIRES_IN: u64 = 2_592_000;
 
 async fn database() -> PgPool {
     PgPool::connect(
@@ -130,10 +132,25 @@ fn refresh_cookie_value(response: &Response) -> String {
         .to_owned()
 }
 
+fn refresh_cookie_max_age_seconds(response: &Response) -> u64 {
+    let header = response
+        .headers()
+        .get("set-cookie")
+        .expect("login response must set the refresh cookie")
+        .to_str()
+        .expect("refresh cookie must be valid ASCII");
+
+    header
+        .split(';')
+        .map(str::trim)
+        .find_map(|attribute| attribute.strip_prefix("Max-Age="))
+        .and_then(|value| value.parse::<u64>().ok())
+        .expect("refresh cookie must contain a valid Max-Age")
+}
+
 #[tokio::test]
 #[ignore = "requires PostgreSQL 18 and a built backend"]
-async fn login_end_to_end_returns_access_credentials_and_refresh_cookie_without_echoing_raw_refresh_token(
-) {
+async fn login_end_to_end_returns_access_credentials_and_session_bounded_refresh_cookie() {
     let _lock = TEST_DATABASE_LOCK.lock().await;
 
     let pool = database().await;
@@ -160,12 +177,14 @@ async fn login_end_to_end_returns_access_credentials_and_refresh_cookie_without_
         .unwrap();
 
     assert_eq!(response.status(), reqwest::StatusCode::OK);
-
     assert_eq!(response.headers()["cache-control"], "no-store");
 
     let refresh_cookie = refresh_cookie_value(&response);
+    let refresh_cookie_max_age = refresh_cookie_max_age_seconds(&response);
 
     assert_eq!(refresh_cookie.len(), 96);
+    assert!(refresh_cookie_max_age > 0);
+    assert!(refresh_cookie_max_age <= AUTHENTICATION_SESSION_EXPIRES_IN);
 
     let set_cookie = response
         .headers()
@@ -174,7 +193,6 @@ async fn login_end_to_end_returns_access_credentials_and_refresh_cookie_without_
         .to_str()
         .unwrap();
 
-    assert!(set_cookie.contains(&format!("Max-Age={REFRESH_COOKIE_MAX_AGE_SECONDS}")));
     assert!(set_cookie.contains("Path=/"));
     assert!(set_cookie.contains("Secure"));
     assert!(set_cookie.contains("HttpOnly"));
@@ -211,15 +229,33 @@ async fn login_end_to_end_returns_access_credentials_and_refresh_cookie_without_
     .await
     .unwrap();
 
-    assert_eq!(
-        access_hash,
-        sha256_token_verifier(access_token)
-    );
+    assert_eq!(access_hash, sha256_token_verifier(access_token));
+    assert_eq!(refresh_hash, sha256_token_verifier(&refresh_cookie));
 
-    assert_eq!(
-        refresh_hash,
-        sha256_token_verifier(&refresh_cookie)
-    );
+    let (refresh_expires_at, session_expires_at) =
+        sqlx::query_as::<_, (OffsetDateTime, OffsetDateTime)>(
+            r#"
+            SELECT
+                r.expires_at,
+                s.expires_at
+            FROM authentication_refresh_token AS r
+            INNER JOIN authentication_session AS s
+                ON s.id = r.session_id
+            WHERE r.token_hash = $1
+            "#,
+        )
+        .bind(&refresh_hash)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+
+    assert!(refresh_expires_at > OffsetDateTime::now_utc());
+    assert!(refresh_expires_at <= session_expires_at);
+
+    let policy_ceiling =
+        OffsetDateTime::now_utc() + Duration::seconds(REFRESH_TOKEN_POLICY_EXPIRES_IN as i64);
+
+    assert!(refresh_expires_at <= policy_ceiling);
 
     assert_ne!(access_hash, access_token);
     assert_ne!(refresh_hash, refresh_cookie);
@@ -243,11 +279,7 @@ async fn failed_login_is_generic_and_rate_limited() {
 
     seed_account(&pool, &email).await;
 
-    let email_key = sha256_token_verifier(
-        &normalize_email(&email)
-            .unwrap()
-            .normalized,
-    );
+    let email_key = sha256_token_verifier(&normalize_email(&email).unwrap().normalized);
 
     for index in 0..10 {
         sqlx::query(
@@ -281,15 +313,11 @@ async fn failed_login_is_generic_and_rate_limited() {
     );
 
     assert_eq!(response.headers()["cache-control"], "no-store");
-
     assert!(response.headers().get("www-authenticate").is_none());
 
     let body: Value = response.json().await.unwrap();
 
-    assert_eq!(
-        body["code"],
-        "AUTHENTICATION_RATE_LIMITED"
-    );
+    assert_eq!(body["code"], "AUTHENTICATION_RATE_LIMITED");
 
     server.abort();
     reset(&pool).await;

@@ -6,6 +6,7 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use secrecy::{ExposeSecret, SecretString};
+use time::OffsetDateTime;
 
 use crate::{
     app::state::AppState,
@@ -22,7 +23,6 @@ use crate::{
 
 const REFRESH_COOKIE_NAME: &str = "__Host-refresh_token";
 const REFRESH_COOKIE_PREFIX: &str = "__Host-refresh_token=";
-const REFRESH_COOKIE_MAX_AGE_SECONDS: u64 = 86_400;
 
 pub async fn login(
     ConnectInfo(remote_addr): ConnectInfo<SocketAddr>,
@@ -91,9 +91,17 @@ fn extract_refresh_token(headers: &HeaderMap) -> Option<SecretString> {
         })
 }
 
+fn refresh_cookie_max_age_seconds(refresh_expires_at: OffsetDateTime) -> u64 {
+    (refresh_expires_at - OffsetDateTime::now_utc())
+        .whole_seconds()
+        .max(0) as u64
+}
+
 fn authentication_response(tokens: AuthenticationTokens) -> Response {
+    let max_age = refresh_cookie_max_age_seconds(tokens.refresh_expires_at);
+
     let refresh_cookie = format!(
-        "{REFRESH_COOKIE_NAME}={}; Max-Age={REFRESH_COOKIE_MAX_AGE_SECONDS}; \
+        "{REFRESH_COOKIE_NAME}={}; Max-Age={max_age}; \
          Path=/; Secure; HttpOnly; SameSite=Strict",
         tokens.refresh_token.expose_secret()
     );
@@ -122,12 +130,16 @@ fn authentication_response(tokens: AuthenticationTokens) -> Response {
 mod tests {
     use axum::http::{header, HeaderMap, HeaderValue};
     use secrecy::ExposeSecret;
+    use time::{Duration, OffsetDateTime};
 
-    use super::extract_refresh_token;
+    use super::{
+        extract_refresh_token, refresh_cookie_max_age_seconds,
+    };
 
     #[test]
     fn extract_refresh_token_reads_the_browser_cookie() {
         let mut headers = HeaderMap::new();
+
         headers.insert(
             header::COOKIE,
             HeaderValue::from_static(
@@ -145,5 +157,22 @@ mod tests {
         let headers = HeaderMap::new();
 
         assert!(extract_refresh_token(&headers).is_none());
+    }
+
+    #[test]
+    fn refresh_cookie_max_age_uses_the_remaining_lifetime() {
+        let expires_at = OffsetDateTime::now_utc() + Duration::seconds(120);
+
+        let max_age = refresh_cookie_max_age_seconds(expires_at);
+
+        assert!(max_age <= 120);
+        assert!(max_age >= 119);
+    }
+
+    #[test]
+    fn refresh_cookie_max_age_expires_immediately_for_expired_tokens() {
+        let expires_at = OffsetDateTime::now_utc() - Duration::seconds(1);
+
+        assert_eq!(refresh_cookie_max_age_seconds(expires_at), 0);
     }
 }

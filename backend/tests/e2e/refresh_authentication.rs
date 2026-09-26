@@ -3,12 +3,14 @@ use std::{env, net::SocketAddr, sync::Arc};
 use axum::Router;
 use digital_publication_backend::{
     app::{router::build_router, state::AppState},
+    domains::authentication::extractor::sha256_token_verifier,
     shared::validation::{hash_password, normalize_email, PasswordBlocklist},
 };
 use reqwest::{Client, Response};
 use secrecy::SecretString;
 use serde_json::{json, Value};
 use sqlx::PgPool;
+use time::{Duration, OffsetDateTime};
 use tokio::{net::TcpListener, sync::Mutex};
 use uuid::Uuid;
 
@@ -16,6 +18,8 @@ static TEST_DATABASE_LOCK: Mutex<()> = Mutex::const_new(());
 
 const TEST_PASSWORD: &str = "an extremely secure password";
 const REFRESH_COOKIE_NAME: &str = "__Host-refresh_token";
+const AUTHENTICATION_SESSION_EXPIRES_IN: u64 = 86_400;
+const REFRESH_TOKEN_POLICY_EXPIRES_IN: u64 = 2_592_000;
 
 async fn database() -> PgPool {
     PgPool::connect(
@@ -113,7 +117,7 @@ fn refresh_cookie_value(response: &Response) -> String {
     let header = response
         .headers()
         .get("set-cookie")
-        .expect("login response must set the refresh cookie")
+        .expect("response must set the refresh cookie")
         .to_str()
         .expect("refresh cookie must be valid ASCII");
 
@@ -126,6 +130,22 @@ fn refresh_cookie_value(response: &Response) -> String {
         .next()
         .expect("refresh cookie must contain a value")
         .to_owned()
+}
+
+fn refresh_cookie_max_age_seconds(response: &Response) -> u64 {
+    let header = response
+        .headers()
+        .get("set-cookie")
+        .expect("response must set the refresh cookie")
+        .to_str()
+        .expect("refresh cookie must be valid ASCII");
+
+    header
+        .split(';')
+        .map(str::trim)
+        .find_map(|attribute| attribute.strip_prefix("Max-Age="))
+        .and_then(|value| value.parse::<u64>().ok())
+        .expect("refresh cookie must contain a valid Max-Age")
 }
 
 async fn login(client: &Client, address: SocketAddr, email: &str) -> (Value, String) {
@@ -141,7 +161,6 @@ async fn login(client: &Client, address: SocketAddr, email: &str) -> (Value, Str
         .unwrap();
 
     let refresh_token = refresh_cookie_value(&response);
-
     let body = response.json().await.unwrap();
 
     (body, refresh_token)
@@ -208,14 +227,44 @@ async fn refresh_end_to_end_rotates_the_presented_token() {
     assert_eq!(response.headers()["cache-control"], "no-store");
 
     let replacement_refresh = refresh_cookie_value(&response);
+    let replacement_cookie_max_age = refresh_cookie_max_age_seconds(&response);
 
     assert_ne!(replacement_refresh, old_refresh);
+    assert!(replacement_cookie_max_age > 0);
+    assert!(replacement_cookie_max_age <= AUTHENTICATION_SESSION_EXPIRES_IN);
 
     let body: Value = response.json().await.unwrap();
 
     assert!(body.get("refresh_token").is_none());
     assert!(body.get("refresh_expires_in").is_none());
     assert_ne!(body["access_token"], login_body["access_token"]);
+
+    let replacement_hash = sha256_token_verifier(&replacement_refresh);
+
+    let (refresh_expires_at, session_expires_at) =
+        sqlx::query_as::<_, (OffsetDateTime, OffsetDateTime)>(
+            r#"
+            SELECT
+                r.expires_at,
+                s.expires_at
+            FROM authentication_refresh_token AS r
+            INNER JOIN authentication_session AS s
+                ON s.id = r.session_id
+            WHERE r.token_hash = $1
+            "#,
+        )
+        .bind(&replacement_hash)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+
+    assert!(refresh_expires_at > OffsetDateTime::now_utc());
+    assert!(refresh_expires_at <= session_expires_at);
+
+    let policy_ceiling =
+        OffsetDateTime::now_utc() + Duration::seconds(REFRESH_TOKEN_POLICY_EXPIRES_IN as i64);
+
+    assert!(refresh_expires_at <= policy_ceiling);
 
     server.abort();
     reset(&pool).await;

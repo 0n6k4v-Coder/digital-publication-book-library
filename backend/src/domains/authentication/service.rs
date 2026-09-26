@@ -84,7 +84,7 @@ impl AuthenticationService {
         let access_token_hash = sha256_token_verifier(access_token.expose_secret());
         let refresh_token_hash = sha256_token_verifier(refresh_token.expose_secret());
 
-        let issued = self
+        let refresh_expires_at = self
             .repository
             .issue_tokens(
                 attempt_id,
@@ -94,15 +94,13 @@ impl AuthenticationService {
                 &refresh_token_hash,
             )
             .await
-            .map_err(crate::shared::error::internal_error)?;
-
-        if !issued {
-            return Err(AppError::InvalidCredentials);
-        }
+            .map_err(crate::shared::error::internal_error)?
+            .ok_or(AppError::InvalidCredentials)?;
 
         Ok(AuthenticationTokens {
             access_token,
             refresh_token,
+            refresh_expires_at,
         })
     }
 
@@ -117,7 +115,7 @@ impl AuthenticationService {
         let replacement_refresh_token_hash =
             sha256_token_verifier(replacement_refresh_token.expose_secret());
 
-        let refreshed = self
+        let refresh_expires_at = self
             .repository
             .refresh_tokens(
                 &refresh_token_hash,
@@ -125,15 +123,13 @@ impl AuthenticationService {
                 &replacement_refresh_token_hash,
             )
             .await
-            .map_err(crate::shared::error::internal_error)?;
-
-        if !refreshed {
-            return Err(AppError::InvalidRefreshToken);
-        }
+            .map_err(crate::shared::error::internal_error)?
+            .ok_or(AppError::InvalidRefreshToken)?;
 
         Ok(AuthenticationTokens {
             access_token,
             refresh_token: replacement_refresh_token,
+            refresh_expires_at,
         })
     }
 
