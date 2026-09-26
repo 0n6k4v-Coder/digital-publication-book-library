@@ -1,10 +1,4 @@
-use std::{
-    env,
-    error::Error,
-    net::SocketAddr,
-    num::NonZeroUsize,
-    sync::Arc,
-};
+use std::{env, error::Error, net::SocketAddr, num::NonZeroUsize, sync::Arc};
 
 use axum_server::tls_rustls::RustlsConfig;
 use digital_publication_backend::{
@@ -23,9 +17,7 @@ const PASSWORD_HASH_CONCURRENCY: usize = 4;
 
 #[tokio::main]
 async fn main() -> Result<(), DynError> {
-    tracing_subscriber::fmt()
-        .with_env_filter("info")
-        .init();
+    tracing_subscriber::fmt().with_env_filter("info").init();
 
     install_rustls_provider()?;
 
@@ -68,8 +60,7 @@ async fn main() -> Result<(), DynError> {
 
     let router = build_router(state);
 
-    let tls_config =
-        RustlsConfig::from_pem_file(&tls_cert_path, &tls_key_path).await?;
+    let tls_config = RustlsConfig::from_pem_file(&tls_cert_path, &tls_key_path).await?;
 
     info!(
         address = %bind_addr,
@@ -77,9 +68,7 @@ async fn main() -> Result<(), DynError> {
     );
 
     axum_server::bind_rustls(bind_addr, tls_config)
-        .serve(
-            router.into_make_service_with_connect_info::<SocketAddr>(),
-        )
+        .serve(router.into_make_service_with_connect_info::<SocketAddr>())
         .await?;
 
     Ok(())
