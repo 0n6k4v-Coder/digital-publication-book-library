@@ -54,10 +54,11 @@ services:
       [
         "cargo",
         "test",
-        "--tests",
+        "--locked",
         "--no-fail-fast",
         "--",
-        "--include-ignored"
+        "--include-ignored",
+        "--test-threads=1"
       ]
 
 volumes:
