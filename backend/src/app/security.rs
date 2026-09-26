@@ -15,6 +15,8 @@ const ALLOWED_METHODS_VALUE: &str = "GET, POST, PATCH, DELETE";
 const ALLOWED_HEADERS_VALUE: &str = "Accept, Authorization, Content-Type";
 const ACCESS_CONTROL_MAX_AGE_SECONDS: &str = "600";
 
+const AUTHENTICATION_ENDPOINTS: [&str; 3] = ["/auth/login", "/auth/refresh", "/auth/logout"];
+
 pub fn apply_security(router: Router, allowed_origins: Vec<HeaderValue>) -> Router {
     let allowed_origins = Arc::<[HeaderValue]>::from(allowed_origins);
 
@@ -32,7 +34,13 @@ async fn apply_origin_and_cors(
     next: Next,
     allowed_origins: Arc<[HeaderValue]>,
 ) -> Response {
+    let requires_origin = requires_origin_policy(&request);
+
     let Some(origin) = request.headers().get(header::ORIGIN).cloned() else {
+        if requires_origin {
+            return AppError::Forbidden.into_response();
+        }
+
         return next.run(request).await;
     };
 
@@ -53,6 +61,10 @@ async fn apply_origin_and_cors(
     add_cors_headers(response.headers_mut(), &origin);
 
     response
+}
+
+fn requires_origin_policy(request: &Request<Body>) -> bool {
+    request.method() == Method::POST && AUTHENTICATION_ENDPOINTS.contains(&request.uri().path())
 }
 
 fn origin_is_allowed(origin: &HeaderValue, allowed_origins: &[HeaderValue]) -> bool {
@@ -98,14 +110,8 @@ fn preflight_response(origin: &HeaderValue, request_headers: &HeaderMap) -> Resp
         HeaderValue::from_static(ACCESS_CONTROL_MAX_AGE_SECONDS),
     );
 
-    response.headers_mut().append(
-        header::VARY,
-        HeaderValue::from_static("Access-Control-Request-Method"),
-    );
-    response.headers_mut().append(
-        header::VARY,
-        HeaderValue::from_static("Access-Control-Request-Headers"),
-    );
+    append_vary_header(response.headers_mut(), "Access-Control-Request-Method");
+    append_vary_header(response.headers_mut(), "Access-Control-Request-Headers");
 
     response
 }
@@ -116,9 +122,24 @@ fn add_cors_headers(headers: &mut HeaderMap, origin: &HeaderValue) {
         header::ACCESS_CONTROL_ALLOW_CREDENTIALS,
         HeaderValue::from_static("true"),
     );
-    headers
-        .entry(header::VARY)
-        .or_insert_with(|| HeaderValue::from_static("Origin"));
+
+    append_vary_header(headers, "Origin");
+}
+
+fn append_vary_header(headers: &mut HeaderMap, value: &str) {
+    let already_present = headers
+        .get_all(header::VARY)
+        .iter()
+        .filter_map(|header| header.to_str().ok())
+        .flat_map(|header| header.split(','))
+        .any(|entry| entry.trim().eq_ignore_ascii_case(value));
+
+    if !already_present {
+        headers.append(
+            header::VARY,
+            HeaderValue::from_str(value).expect("static Vary value must be valid"),
+        );
+    }
 }
 
 fn method_is_allowed(method: &Method) -> bool {
