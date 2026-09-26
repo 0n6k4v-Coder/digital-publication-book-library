@@ -3,6 +3,7 @@ use std::{env, net::SocketAddr, sync::Arc};
 use axum::Router;
 use digital_publication_backend::{
     app::{router::build_router, state::AppState},
+    domains::authentication::extractor::sha256_token_verifier,
     shared::validation::{hash_password, normalize_email, PasswordBlocklist},
 };
 use reqwest::Client;
@@ -128,9 +129,47 @@ fn refresh_cookie_value(response: &reqwest::Response) -> String {
         .to_owned()
 }
 
+fn assert_refresh_cookie_deleted(response: &reqwest::Response) {
+    let header = response
+        .headers()
+        .get("set-cookie")
+        .expect("logout response must clear the refresh cookie")
+        .to_str()
+        .expect("logout cookie must be valid ASCII");
+
+    assert!(header.starts_with("__Host-refresh_token="));
+    assert!(header.contains("Max-Age=0"));
+    assert!(header.contains("Path=/"));
+    assert!(header.contains("Secure"));
+    assert!(header.contains("HttpOnly"));
+    assert!(header.contains("SameSite=Strict"));
+    assert!(!header.contains("Domain="));
+}
+
+#[tokio::test]
+async fn logout_without_refresh_cookie_is_idempotent() {
+    let pool = PgPool::connect_lazy("postgres://invalid").unwrap();
+
+    let (address, server) = start_server(test_router(pool)).await;
+
+    let response = Client::new()
+        .post(format!("http://{address}/auth/logout"))
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), reqwest::StatusCode::NO_CONTENT);
+    assert_eq!(response.headers()["cache-control"], "no-store");
+    assert!(response.headers().get("www-authenticate").is_none());
+
+    assert_refresh_cookie_deleted(&response);
+
+    server.abort();
+}
+
 #[tokio::test]
 #[ignore = "requires PostgreSQL 18 and a built backend"]
-async fn logout_end_to_end_revokes_the_session() {
+async fn logout_end_to_end_revokes_the_session_without_bearer_authentication() {
     let _lock = TEST_DATABASE_LOCK.lock().await;
 
     let pool = database().await;
@@ -158,7 +197,10 @@ async fn logout_end_to_end_revokes_the_session() {
         .await
         .unwrap();
 
+    assert_eq!(login_response.status(), reqwest::StatusCode::OK);
+
     let refresh_token = refresh_cookie_value(&login_response);
+    let refresh_token_hash = sha256_token_verifier(&refresh_token);
 
     let login: Value = login_response.json().await.unwrap();
 
@@ -168,22 +210,78 @@ async fn logout_end_to_end_revokes_the_session() {
 
     let logout = client
         .post(format!("http://{address}/auth/logout"))
-        .header("authorization", format!("Bearer {access_token}"))
+        .header(
+            "cookie",
+            format!("{REFRESH_COOKIE_NAME}={refresh_token}"),
+        )
         .send()
         .await
         .unwrap();
 
     assert_eq!(logout.status(), reqwest::StatusCode::NO_CONTENT);
     assert_eq!(logout.headers()["cache-control"], "no-store");
+    assert!(logout.headers().get("www-authenticate").is_none());
+
+    assert_refresh_cookie_deleted(&logout);
+
+    let session_revoked: bool = sqlx::query_scalar(
+        r#"
+        SELECT s.revoked_at IS NOT NULL
+        FROM authentication_session AS s
+        INNER JOIN authentication_refresh_token AS r
+            ON r.session_id = s.id
+        WHERE r.token_hash = $1
+        "#,
+    )
+    .bind(&refresh_token_hash)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+
+    assert!(session_revoked);
 
     let refresh = client
         .post(format!("http://{address}/auth/refresh"))
-        .header("cookie", format!("{REFRESH_COOKIE_NAME}={refresh_token}"))
+        .header(
+            "cookie",
+            format!("{REFRESH_COOKIE_NAME}={refresh_token}"),
+        )
         .send()
         .await
         .unwrap();
 
     assert_eq!(refresh.status(), reqwest::StatusCode::UNAUTHORIZED);
+    assert!(refresh.headers().get("www-authenticate").is_none());
+
+    let _refresh_body: Value = refresh.json().await.unwrap();
+
+    let second_logout = client
+        .post(format!("http://{address}/auth/logout"))
+        .header(
+            "cookie",
+            format!("{REFRESH_COOKIE_NAME}={refresh_token}"),
+        )
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(
+        second_logout.status(),
+        reqwest::StatusCode::NO_CONTENT
+    );
+    assert_eq!(second_logout.headers()["cache-control"], "no-store");
+    assert_refresh_cookie_deleted(&second_logout);
+
+    assert!(
+        client
+            .post(format!("http://{address}/auth/logout"))
+            .header("authorization", format!("Bearer {access_token}"))
+            .send()
+            .await
+            .unwrap()
+            .status()
+            == reqwest::StatusCode::NO_CONTENT
+    );
 
     server.abort();
     reset(&pool).await;

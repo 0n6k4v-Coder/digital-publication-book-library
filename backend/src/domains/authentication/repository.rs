@@ -358,6 +358,38 @@ impl AuthenticationRepository {
         Ok(Some(replacement_refresh_expires_at))
     }
 
+    pub async fn revoke_session_by_refresh_token(
+        &self,
+        refresh_token_hash: &str,
+    ) -> Result<(), sqlx::Error> {
+        let mut tx = self.pool.begin().await?;
+
+        sqlx::query(
+            r#"
+            UPDATE authentication_session AS s
+            SET
+                revoked_at = COALESCE(
+                    s.revoked_at,
+                    CURRENT_TIMESTAMP
+                ),
+                revocation_reason = COALESCE(
+                    s.revocation_reason,
+                    'logout'
+                )
+            FROM authentication_refresh_token AS r
+            WHERE r.session_id = s.id
+              AND r.token_hash = $1
+            "#,
+        )
+        .bind(refresh_token_hash)
+        .execute(&mut *tx)
+        .await?;
+
+        tx.commit().await?;
+
+        Ok(())
+    }
+
     pub async fn revoke_session(
         &self,
         account_id: Uuid,

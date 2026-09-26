@@ -12,8 +12,8 @@ use crate::{
     app::state::AppState,
     domains::authentication::{
         model::{
-            AuthenticateAccountRequest, AuthenticatedPrincipal, AuthenticationResponse,
-            AuthenticationTokens, ACCESS_TOKEN_EXPIRES_IN,
+            AuthenticateAccountRequest, AuthenticationResponse, AuthenticationTokens,
+            ACCESS_TOKEN_EXPIRES_IN,
         },
         repository::AuthenticationRepository,
         service::AuthenticationService,
@@ -23,6 +23,8 @@ use crate::{
 
 const REFRESH_COOKIE_NAME: &str = "__Host-refresh_token";
 const REFRESH_COOKIE_PREFIX: &str = "__Host-refresh_token=";
+const REFRESH_COOKIE_CLEAR: &str =
+    "__Host-refresh_token=; Max-Age=0; Path=/; Secure; HttpOnly; SameSite=Strict";
 
 pub async fn login(
     ConnectInfo(remote_addr): ConnectInfo<SocketAddr>,
@@ -61,18 +63,25 @@ pub async fn refresh(
 }
 
 pub async fn logout(
-    principal: AuthenticatedPrincipal,
+    headers: HeaderMap,
     State(state): State<AppState>,
 ) -> Result<Response, AppError> {
+    let refresh_token = extract_refresh_token(&headers);
+
     let service = AuthenticationService::new(
         AuthenticationRepository::new(state.pool.clone()),
         state.password_hash_semaphore.clone(),
     );
 
-    service.revoke_authentication(principal).await?;
+    service.logout_authentication(refresh_token).await?;
 
     let mut response = StatusCode::NO_CONTENT.into_response();
     add_no_store(response.headers_mut());
+
+    response.headers_mut().insert(
+        header::SET_COOKIE,
+        HeaderValue::from_static(REFRESH_COOKIE_CLEAR),
+    );
 
     Ok(response)
 }
@@ -133,7 +142,7 @@ mod tests {
     use time::{Duration, OffsetDateTime};
 
     use super::{
-        extract_refresh_token, refresh_cookie_max_age_seconds,
+        extract_refresh_token, refresh_cookie_max_age_seconds, REFRESH_COOKIE_CLEAR,
     };
 
     #[test]
@@ -174,5 +183,15 @@ mod tests {
         let expires_at = OffsetDateTime::now_utc() - Duration::seconds(1);
 
         assert_eq!(refresh_cookie_max_age_seconds(expires_at), 0);
+    }
+
+    #[test]
+    fn refresh_cookie_clear_header_uses_the_same_cookie_scope() {
+        assert!(REFRESH_COOKIE_CLEAR.contains("Max-Age=0"));
+        assert!(REFRESH_COOKIE_CLEAR.contains("Path=/"));
+        assert!(REFRESH_COOKIE_CLEAR.contains("Secure"));
+        assert!(REFRESH_COOKIE_CLEAR.contains("HttpOnly"));
+        assert!(REFRESH_COOKIE_CLEAR.contains("SameSite=Strict"));
+        assert!(!REFRESH_COOKIE_CLEAR.contains("Domain="));
     }
 }
