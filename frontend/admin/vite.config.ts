@@ -20,7 +20,7 @@ export default defineConfig(({ mode }) => {
       ? undefined
       : {
           ...apiProxy,
-          bypass: (request, _response, _options) => {
+          bypass: (request) => {
             const accept = request.headers.accept ?? "";
 
             // /admin/* is both:
