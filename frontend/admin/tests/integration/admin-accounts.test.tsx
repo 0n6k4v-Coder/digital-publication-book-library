@@ -4,7 +4,29 @@ import App from "../../src/App";
 import { authService } from "../../src/services/auth";
 
 const accessToken = "opaque-access-token";
-const refreshToken = "opaque-refresh-token";
+
+function problemResponse(status: number, code: string): Response {
+  return new Response(
+    JSON.stringify({
+      type: "https://example.invalid/problems/authentication",
+      title: "Authentication error",
+      status,
+      detail: "server detail must not reach the UI",
+      code,
+    }),
+    {
+      status,
+      headers: {
+        "Cache-Control": "no-store",
+        "Content-Type": "application/problem+json",
+      },
+    },
+  );
+}
+
+function unauthorizedResponse(): Response {
+  return problemResponse(401, "UNAUTHORIZED");
+}
 
 function loginResponse(): Response {
   return new Response(
@@ -12,8 +34,6 @@ function loginResponse(): Response {
       access_token: accessToken,
       token_type: "Bearer",
       expires_in: 3600,
-      refresh_token: refreshToken,
-      refresh_expires_in: 2592000,
     }),
     {
       status: 200,
@@ -53,29 +73,12 @@ function accountsResponse(): Response {
   );
 }
 
-function unauthorizedResponse(): Response {
-  return new Response(
-    JSON.stringify({
-      type: "https://example.invalid/problems/unauthorized",
-      title: "Unauthorized",
-      status: 401,
-      detail: "authentication is no longer valid",
-      code: "UNAUTHORIZED",
-    }),
-    {
-      status: 401,
-      headers: {
-        "Cache-Control": "no-store",
-        "Content-Type": "application/problem+json",
-      },
-    },
-  );
-}
-
-beforeEach(() => {
+beforeEach(async () => {
   window.history.replaceState({}, "", "/login");
   authService.clearClientState();
   vi.stubGlobal("fetch", vi.fn());
+  vi.mocked(fetch).mockResolvedValueOnce(unauthorizedResponse());
+  await authService.retryBootstrap();
 });
 
 afterEach(() => {
@@ -124,7 +127,7 @@ describe("Admin Accounts integration", () => {
 
     expect(window.location.pathname).toBe("/admin/accounts");
 
-    const accountCall = vi.mocked(fetch).mock.calls[1];
+    const accountCall = vi.mocked(fetch).mock.calls[2];
 
     expect(accountCall[0]).toBe("/admin/accounts?page=1&page_size=20");
     expect(accountCall[1]?.method).toBe("GET");
@@ -134,7 +137,6 @@ describe("Admin Accounts integration", () => {
 
     expect(String(accountCall[0])).not.toContain(accessToken);
     expect(document.body).not.toHaveTextContent(accessToken);
-    expect(document.body).not.toHaveTextContent(refreshToken);
   });
 
   it("redirects unauthenticated access to /admin/accounts to /login", async () => {
@@ -152,7 +154,7 @@ describe("Admin Accounts integration", () => {
       }),
     ).toBeInTheDocument();
 
-    expect(vi.mocked(fetch)).not.toHaveBeenCalled();
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1);
   });
 
   it("clears client authentication after an Accounts API 401", async () => {
@@ -173,7 +175,7 @@ describe("Admin Accounts integration", () => {
       expect(window.location.pathname).toBe("/login");
     });
 
-    expect(authService.getSnapshot()).toBe(false);
+    expect(authService.getSnapshot().authStatus).toBe("unauthenticated");
 
     expect(
       screen.getByRole("heading", {

@@ -245,19 +245,13 @@ async function bootstrapInternal(): Promise<void> {
 }
 
 async function logoutInternal(): Promise<void> {
-  if (authenticationSession === null) {
-    return;
-  }
-
-  const sessionAtRequestStart = authenticationSession;
-
   const response = await fetch(buildApiUrl("/auth/logout"), {
     method: "POST",
     headers: {
       Accept: "application/json",
-      Authorization: `${sessionAtRequestStart.tokenType} ${sessionAtRequestStart.accessToken}`,
     },
     cache: "no-store",
+    credentials: "include",
   });
 
   if (response.status === 204) {
@@ -337,10 +331,6 @@ export const authService = {
   },
 
   async logout(): Promise<void> {
-    if (authenticationSession === null) {
-      return;
-    }
-
     if (logoutRequest !== null) {
       return logoutRequest;
     }
