@@ -49,8 +49,7 @@ pub async fn refresh(
     headers: HeaderMap,
     State(state): State<AppState>,
 ) -> Result<Response, AppError> {
-    let refresh_token =
-        extract_refresh_token(&headers).ok_or(AppError::InvalidRefreshToken)?;
+    let refresh_token = extract_refresh_token(&headers).ok_or(AppError::InvalidRefreshToken)?;
 
     let service = AuthenticationService::new(
         AuthenticationRepository::new(state.pool.clone()),
@@ -141,9 +140,7 @@ mod tests {
     use secrecy::ExposeSecret;
     use time::{Duration, OffsetDateTime};
 
-    use super::{
-        extract_refresh_token, refresh_cookie_max_age_seconds, REFRESH_COOKIE_CLEAR,
-    };
+    use super::{extract_refresh_token, refresh_cookie_max_age_seconds, REFRESH_COOKIE_CLEAR};
 
     #[test]
     fn extract_refresh_token_reads_the_browser_cookie() {

@@ -1,9 +1,7 @@
 use std::{env, error::Error, fs, sync::Arc};
 
 use digital_publication_backend::{
-    shared::validation::{
-        hash_password, normalize_email, PasswordBlocklist, PasswordPolicy,
-    },
+    shared::validation::{hash_password, normalize_email, PasswordBlocklist, PasswordPolicy},
     MIGRATOR,
 };
 use secrecy::SecretString;
@@ -29,13 +27,10 @@ async fn main() -> Result<(), DynError> {
 
     let password_secret = SecretString::from(password);
 
-    let development_blocklist = PasswordBlocklist::from_hashes(
-        "development",
-        std::iter::empty::<[u8; 20]>(),
-    );
+    let development_blocklist =
+        PasswordBlocklist::from_hashes("development", std::iter::empty::<[u8; 20]>());
 
-    let password_policy =
-        PasswordPolicy::new(Arc::new(development_blocklist));
+    let password_policy = PasswordPolicy::new(Arc::new(development_blocklist));
 
     password_policy.validate(&password_secret)?;
 
@@ -48,18 +43,9 @@ async fn main() -> Result<(), DynError> {
 
     MIGRATOR.run(&pool).await?;
 
-    seed_development_admin(
-        &pool,
-        &email.canonical,
-        &email.normalized,
-        &password_hash,
-    )
-    .await?;
+    seed_development_admin(&pool, &email.canonical, &email.normalized, &password_hash).await?;
 
-    println!(
-        "Development admin ready: {}",
-        email.canonical
-    );
+    println!("Development admin ready: {}", email.canonical);
 
     Ok(())
 }
