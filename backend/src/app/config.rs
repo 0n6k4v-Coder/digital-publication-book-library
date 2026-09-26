@@ -105,7 +105,7 @@ impl PasswordBlocklistRefreshConfig {
     }
 }
 
-fn parse_allowed_origins(value: &str) -> Result<Vec<HeaderValue>, ConfigError> {
+pub fn parse_allowed_origins(value: &str) -> Result<Vec<HeaderValue>, ConfigError> {
     let origins = value
         .split(',')
         .map(str::trim)
@@ -128,7 +128,7 @@ fn parse_allowed_origins(value: &str) -> Result<Vec<HeaderValue>, ConfigError> {
                 return Err(ConfigError::Invalid("CORS_ALLOWED_ORIGINS"));
             }
 
-            if uri.path() != "/" || uri.query().is_some() {
+            if uri.path() != "/" || uri.query().is_some() || origin.ends_with('/') {
                 return Err(ConfigError::Invalid("CORS_ALLOWED_ORIGINS"));
             }
 
@@ -184,6 +184,16 @@ mod tests {
     #[test]
     fn rejects_origins_with_paths() {
         assert!(parse_allowed_origins("https://admin.example.com/login").is_err());
+    }
+
+    #[test]
+    fn rejects_origins_with_queries() {
+        assert!(parse_allowed_origins("https://admin.example.com?mode=test").is_err());
+    }
+
+    #[test]
+    fn rejects_origins_with_trailing_slashes() {
+        assert!(parse_allowed_origins("https://admin.example.com/").is_err());
     }
 
     #[test]

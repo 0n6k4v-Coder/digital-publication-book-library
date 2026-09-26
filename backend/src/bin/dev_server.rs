@@ -2,7 +2,10 @@ use std::{env, error::Error, net::SocketAddr, num::NonZeroUsize, sync::Arc};
 
 use axum_server::tls_rustls::RustlsConfig;
 use digital_publication_backend::{
-    app::{router::build_router, state::AppState},
+    app::{
+        config::parse_allowed_origins, router::build_router, security::apply_security,
+        state::AppState,
+    },
     shared::validation::PasswordBlocklist,
 };
 use sqlx::postgres::PgPoolOptions;
@@ -34,6 +37,7 @@ async fn main() -> Result<(), DynError> {
 
     let tls_cert_path = required_env("TLS_CERT_PATH")?;
     let tls_key_path = required_env("TLS_KEY_PATH")?;
+    let cors_allowed_origins = parse_allowed_origins(&required_env("CORS_ALLOWED_ORIGINS")?)?;
 
     let pool = PgPoolOptions::new()
         .max_connections(database_max_connections)
@@ -57,7 +61,7 @@ async fn main() -> Result<(), DynError> {
         NonZeroUsize::new(PASSWORD_HASH_CONCURRENCY).expect("non-zero"),
     );
 
-    let router = build_router(state);
+    let router = apply_security(build_router(state), cors_allowed_origins);
 
     let tls_config = RustlsConfig::from_pem_file(&tls_cert_path, &tls_key_path).await?;
 
