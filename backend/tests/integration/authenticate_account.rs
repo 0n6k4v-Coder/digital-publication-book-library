@@ -16,8 +16,7 @@ use digital_publication_backend::{
     domains::authentication::{
         extractor::sha256_token_verifier,
         model::{
-            ACCESS_TOKEN_EXPIRES_IN,
-            AUTHENTICATION_SESSION_EXPIRES_IN,
+            ACCESS_TOKEN_EXPIRES_IN, AUTHENTICATION_SESSION_EXPIRES_IN,
             REFRESH_TOKEN_POLICY_EXPIRES_IN,
         },
     },
@@ -121,12 +120,7 @@ async fn seed_account(
     .expect("seed account")
 }
 
-async fn seed_failed_attempts(
-    pool: &PgPool,
-    email_key: &str,
-    source_ip_key: &str,
-    count: usize,
-) {
+async fn seed_failed_attempts(pool: &PgPool, email_key: &str, source_ip_key: &str, count: usize) {
     for index in 0..count {
         sqlx::query(
             "INSERT INTO authentication_login_attempt \
@@ -229,12 +223,10 @@ async fn malformed_login_json_is_rejected_without_database_access() {
 
     let mut request = request;
 
-    request
-        .extensions_mut()
-        .insert(ConnectInfo(SocketAddr::new(
-            Ipv4Addr::LOCALHOST.into(),
-            40000,
-        )));
+    request.extensions_mut().insert(ConnectInfo(SocketAddr::new(
+        Ipv4Addr::LOCALHOST.into(),
+        40000,
+    )));
 
     let response = test_router(pool).oneshot(request).await.unwrap();
 
@@ -243,10 +235,7 @@ async fn malformed_login_json_is_rejected_without_database_access() {
         response.headers()[header::CONTENT_TYPE],
         "application/problem+json"
     );
-    assert_eq!(
-        response.headers()[header::CACHE_CONTROL],
-        "no-store"
-    );
+    assert_eq!(response.headers()[header::CACHE_CONTROL], "no-store");
 }
 
 #[tokio::test]
@@ -267,10 +256,7 @@ async fn invalid_email_is_rejected_as_an_invalid_request_without_database_access
         response.headers()[header::CONTENT_TYPE],
         "application/problem+json"
     );
-    assert_eq!(
-        response.headers()[header::CACHE_CONTROL],
-        "no-store"
-    );
+    assert_eq!(response.headers()[header::CACHE_CONTROL], "no-store");
 }
 
 #[tokio::test]
@@ -279,13 +265,15 @@ async fn successful_login_creates_session_and_token_verifiers_with_defined_lifet
     let _lock = TEST_DATABASE_LOCK.lock().await;
     let pool = database().await;
 
-    digital_publication_backend::MIGRATOR.run(&pool).await.unwrap();
+    digital_publication_backend::MIGRATOR
+        .run(&pool)
+        .await
+        .unwrap();
     reset(&pool).await;
 
     let email = format!("login-{}@example.com", Uuid::new_v4());
 
-    let account_id =
-        seed_account(&pool, &email, TEST_PASSWORD, "active", false).await;
+    let account_id = seed_account(&pool, &email, TEST_PASSWORD, "active", false).await;
 
     let source_ip: IpAddr = "192.0.2.10".parse().unwrap();
 
@@ -295,23 +283,15 @@ async fn successful_login_creates_session_and_token_verifiers_with_defined_lifet
         .unwrap();
 
     assert_eq!(response.status(), StatusCode::OK);
-    assert_eq!(
-        response.headers()[header::CONTENT_TYPE],
-        "application/json"
-    );
-    assert_eq!(
-        response.headers()[header::CACHE_CONTROL],
-        "no-store"
-    );
+    assert_eq!(response.headers()[header::CONTENT_TYPE], "application/json");
+    assert_eq!(response.headers()[header::CACHE_CONTROL], "no-store");
 
     let refresh_cookie = refresh_cookie_value(&response);
     let refresh_cookie_max_age = refresh_cookie_max_age_seconds(&response);
 
     assert_eq!(refresh_cookie.len(), 96);
     assert!(refresh_cookie_max_age > 0);
-    assert!(
-        refresh_cookie_max_age <= AUTHENTICATION_SESSION_EXPIRES_IN
-    );
+    assert!(refresh_cookie_max_age <= AUTHENTICATION_SESSION_EXPIRES_IN);
 
     let set_cookie = response
         .headers()
@@ -391,7 +371,10 @@ async fn invalid_missing_inactive_and_deleted_accounts_return_generic_credential
     let _lock = TEST_DATABASE_LOCK.lock().await;
     let pool = database().await;
 
-    digital_publication_backend::MIGRATOR.run(&pool).await.unwrap();
+    digital_publication_backend::MIGRATOR
+        .run(&pool)
+        .await
+        .unwrap();
     reset(&pool).await;
 
     let source_ip: IpAddr = "192.0.2.11".parse().unwrap();
@@ -400,31 +383,13 @@ async fn invalid_missing_inactive_and_deleted_accounts_return_generic_credential
     let inactive_email = format!("inactive-{}@example.com", Uuid::new_v4());
     let deleted_email = format!("deleted-{}@example.com", Uuid::new_v4());
 
-    seed_account(
-        &pool,
-        &inactive_email,
-        TEST_PASSWORD,
-        "inactive",
-        false,
-    )
-    .await;
+    seed_account(&pool, &inactive_email, TEST_PASSWORD, "inactive", false).await;
 
-    seed_account(
-        &pool,
-        &deleted_email,
-        TEST_PASSWORD,
-        "inactive",
-        true,
-    )
-    .await;
+    seed_account(&pool, &deleted_email, TEST_PASSWORD, "inactive", true).await;
 
     for email in [missing_email, inactive_email, deleted_email] {
         let response = test_router(pool.clone())
-            .oneshot(login_request(
-                &email,
-                TEST_PASSWORD,
-                source_ip,
-            ))
+            .oneshot(login_request(&email, TEST_PASSWORD, source_ip))
             .await
             .unwrap();
 
@@ -433,19 +398,13 @@ async fn invalid_missing_inactive_and_deleted_accounts_return_generic_credential
             response.headers()[header::CONTENT_TYPE],
             "application/problem+json"
         );
-        assert_eq!(
-            response.headers()[header::CACHE_CONTROL],
-            "no-store"
-        );
+        assert_eq!(response.headers()[header::CACHE_CONTROL], "no-store");
         assert!(response.headers().get(header::WWW_AUTHENTICATE).is_none());
 
         let body = response_json(response).await;
 
         assert_eq!(body["code"], "INVALID_CREDENTIALS");
-        assert_eq!(
-            body["detail"],
-            "The supplied credentials are invalid."
-        );
+        assert_eq!(body["detail"], "The supplied credentials are invalid.");
     }
 
     reset(&pool).await;
@@ -457,27 +416,19 @@ async fn failed_password_authentication_is_generic_and_counted() {
     let _lock = TEST_DATABASE_LOCK.lock().await;
     let pool = database().await;
 
-    digital_publication_backend::MIGRATOR.run(&pool).await.unwrap();
+    digital_publication_backend::MIGRATOR
+        .run(&pool)
+        .await
+        .unwrap();
     reset(&pool).await;
 
     let email = format!("wrong-password-{}@example.com", Uuid::new_v4());
-    seed_account(
-        &pool,
-        &email,
-        TEST_PASSWORD,
-        "active",
-        false,
-    )
-    .await;
+    seed_account(&pool, &email, TEST_PASSWORD, "active", false).await;
 
     let source_ip: IpAddr = "203.0.113.10".parse().unwrap();
 
     let response = test_router(pool.clone())
-        .oneshot(login_request(
-            &email,
-            "the wrong password",
-            source_ip,
-        ))
+        .oneshot(login_request(&email, "the wrong password", source_ip))
         .await
         .unwrap();
 
@@ -486,20 +437,12 @@ async fn failed_password_authentication_is_generic_and_counted() {
         response.headers()[header::CONTENT_TYPE],
         "application/problem+json"
     );
-    assert_eq!(
-        response.headers()[header::CACHE_CONTROL],
-        "no-store"
-    );
+    assert_eq!(response.headers()[header::CACHE_CONTROL], "no-store");
     assert!(response.headers().get(header::WWW_AUTHENTICATE).is_none());
-    assert_eq!(
-        response_json(response).await["code"],
-        "INVALID_CREDENTIALS"
-    );
+    assert_eq!(response_json(response).await["code"], "INVALID_CREDENTIALS");
 
-    let email_key =
-        sha256_token_verifier(&normalize_email(&email).unwrap().normalized);
-    let source_ip_key =
-        sha256_token_verifier(&source_ip.to_string());
+    let email_key = sha256_token_verifier(&normalize_email(&email).unwrap().normalized);
+    let source_ip_key = sha256_token_verifier(&source_ip.to_string());
 
     let counts = sqlx::query_as::<_, (i64, i64)>(
         "SELECT \
@@ -524,29 +467,19 @@ async fn login_rate_limits_email_and_source_ip_before_password_verification() {
     let _lock = TEST_DATABASE_LOCK.lock().await;
     let pool = database().await;
 
-    digital_publication_backend::MIGRATOR.run(&pool).await.unwrap();
+    digital_publication_backend::MIGRATOR
+        .run(&pool)
+        .await
+        .unwrap();
     reset(&pool).await;
 
     let email = format!("rate-{}@example.com", Uuid::new_v4());
-    seed_account(
-        &pool,
-        &email,
-        TEST_PASSWORD,
-        "active",
-        false,
-    )
-    .await;
+    seed_account(&pool, &email, TEST_PASSWORD, "active", false).await;
 
     let normalized_email = normalize_email(&email).unwrap().normalized;
     let email_key = sha256_token_verifier(&normalized_email);
 
-    seed_failed_attempts(
-        &pool,
-        &email_key,
-        "source-ip",
-        10,
-    )
-    .await;
+    seed_failed_attempts(&pool, &email_key, "source-ip", 10).await;
 
     let response = test_router(pool.clone())
         .oneshot(login_request(
@@ -562,10 +495,7 @@ async fn login_rate_limits_email_and_source_ip_before_password_verification() {
         response.headers()[header::CONTENT_TYPE],
         "application/problem+json"
     );
-    assert_eq!(
-        response.headers()[header::CACHE_CONTROL],
-        "no-store"
-    );
+    assert_eq!(response.headers()[header::CACHE_CONTROL], "no-store");
     assert!(response.headers().get(header::WWW_AUTHENTICATE).is_none());
     assert_eq!(
         response_json(response).await["code"],
@@ -576,14 +506,7 @@ async fn login_rate_limits_email_and_source_ip_before_password_verification() {
 
     let email = format!("ip-rate-{}@example.com", Uuid::new_v4());
 
-    seed_account(
-        &pool,
-        &email,
-        TEST_PASSWORD,
-        "active",
-        false,
-    )
-    .await;
+    seed_account(&pool, &email, TEST_PASSWORD, "active", false).await;
 
     let source_ip: IpAddr = "198.51.100.21".parse().unwrap();
     let source_ip_key = sha256_token_verifier(&source_ip.to_string());
@@ -591,11 +514,7 @@ async fn login_rate_limits_email_and_source_ip_before_password_verification() {
     seed_ip_failures(&pool, &source_ip_key, 50).await;
 
     let response = test_router(pool.clone())
-        .oneshot(login_request(
-            &email,
-            TEST_PASSWORD,
-            source_ip,
-        ))
+        .oneshot(login_request(&email, TEST_PASSWORD, source_ip))
         .await
         .unwrap();
 
@@ -614,21 +533,16 @@ async fn successful_login_resets_email_failures_but_preserves_existing_source_ip
     let _lock = TEST_DATABASE_LOCK.lock().await;
     let pool = database().await;
 
-    digital_publication_backend::MIGRATOR.run(&pool).await.unwrap();
+    digital_publication_backend::MIGRATOR
+        .run(&pool)
+        .await
+        .unwrap();
     reset(&pool).await;
 
     let email = format!("reset-{}@example.com", Uuid::new_v4());
-    seed_account(
-        &pool,
-        &email,
-        TEST_PASSWORD,
-        "active",
-        false,
-    )
-    .await;
+    seed_account(&pool, &email, TEST_PASSWORD, "active", false).await;
 
-    let normalized_email =
-        normalize_email(&email).unwrap().normalized;
+    let normalized_email = normalize_email(&email).unwrap().normalized;
     let email_key = sha256_token_verifier(&normalized_email);
 
     let source_ip: IpAddr = "203.0.113.25".parse().unwrap();
@@ -657,11 +571,7 @@ async fn successful_login_resets_email_failures_but_preserves_existing_source_ip
     .unwrap();
 
     let response = test_router(pool.clone())
-        .oneshot(login_request(
-            &email,
-            TEST_PASSWORD,
-            source_ip,
-        ))
+        .oneshot(login_request(&email, TEST_PASSWORD, source_ip))
         .await
         .unwrap();
 

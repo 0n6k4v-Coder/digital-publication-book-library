@@ -164,11 +164,7 @@ async fn json_body(response: axum::response::Response) -> Value {
     serde_json::from_slice(&body).unwrap()
 }
 
-async fn login(
-    pool: PgPool,
-    email: &str,
-    source_ip: IpAddr,
-) -> (Value, String) {
+async fn login(pool: PgPool, email: &str, source_ip: IpAddr) -> (Value, String) {
     let response = test_router(pool)
         .oneshot(login_request(email, TEST_PASSWORD, source_ip))
         .await
@@ -202,10 +198,7 @@ async fn refresh_requires_the_browser_managed_cookie_without_database_access() {
     assert_eq!(response.headers()[header::CACHE_CONTROL], "no-store");
     assert!(response.headers().get(header::WWW_AUTHENTICATE).is_none());
 
-    assert_eq!(
-        json_body(response).await["code"],
-        "INVALID_REFRESH_TOKEN"
-    );
+    assert_eq!(json_body(response).await["code"], "INVALID_REFRESH_TOKEN");
 }
 
 #[tokio::test]
@@ -213,7 +206,10 @@ async fn refresh_requires_the_browser_managed_cookie_without_database_access() {
 async fn refresh_rotates_tokens_and_preserves_absolute_session_state() {
     let _lock = TEST_DATABASE_LOCK.lock().await;
     let pool = database().await;
-    digital_publication_backend::MIGRATOR.run(&pool).await.unwrap();
+    digital_publication_backend::MIGRATOR
+        .run(&pool)
+        .await
+        .unwrap();
     reset(&pool).await;
 
     let email = format!("refresh-{}@example.com", Uuid::new_v4());
@@ -246,10 +242,7 @@ async fn refresh_rotates_tokens_and_preserves_absolute_session_state() {
     let body = json_body(response).await;
     let new_access = body["access_token"].as_str().unwrap();
 
-    assert_ne!(
-        new_access,
-        login_body["access_token"].as_str().unwrap()
-    );
+    assert_ne!(new_access, login_body["access_token"].as_str().unwrap());
     assert_ne!(new_refresh, old_refresh);
     assert_eq!(body["token_type"], "Bearer");
     assert!(body.get("refresh_token").is_none());
@@ -306,18 +299,17 @@ async fn refresh_rotates_tokens_and_preserves_absolute_session_state() {
 async fn replayed_refresh_token_is_rejected_without_issuing_more_credentials() {
     let _lock = TEST_DATABASE_LOCK.lock().await;
     let pool = database().await;
-    digital_publication_backend::MIGRATOR.run(&pool).await.unwrap();
+    digital_publication_backend::MIGRATOR
+        .run(&pool)
+        .await
+        .unwrap();
     reset(&pool).await;
 
     let email = format!("replay-{}@example.com", Uuid::new_v4());
     seed_account(&pool, &email, TEST_PASSWORD).await;
 
-    let (_login_body, refresh_token) = login(
-        pool.clone(),
-        &email,
-        "192.0.2.31".parse().unwrap(),
-    )
-    .await;
+    let (_login_body, refresh_token) =
+        login(pool.clone(), &email, "192.0.2.31".parse().unwrap()).await;
 
     let first = test_router(pool.clone())
         .oneshot(refresh_request(&refresh_token))
@@ -327,12 +319,10 @@ async fn replayed_refresh_token_is_rejected_without_issuing_more_credentials() {
     assert_eq!(first.status(), StatusCode::OK);
 
     let token_count_before =
-        sqlx::query_scalar::<_, i64>(
-            "SELECT COUNT(*) FROM authentication_access_token",
-        )
-        .fetch_one(&pool)
-        .await
-        .unwrap();
+        sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM authentication_access_token")
+            .fetch_one(&pool)
+            .await
+            .unwrap();
 
     let replay = test_router(pool.clone())
         .oneshot(refresh_request(&refresh_token))
@@ -342,18 +332,13 @@ async fn replayed_refresh_token_is_rejected_without_issuing_more_credentials() {
     assert_eq!(replay.status(), StatusCode::UNAUTHORIZED);
     assert_eq!(replay.headers()[header::CACHE_CONTROL], "no-store");
     assert!(replay.headers().get(header::WWW_AUTHENTICATE).is_none());
-    assert_eq!(
-        json_body(replay).await["code"],
-        "INVALID_REFRESH_TOKEN"
-    );
+    assert_eq!(json_body(replay).await["code"], "INVALID_REFRESH_TOKEN");
 
     let token_count_after =
-        sqlx::query_scalar::<_, i64>(
-            "SELECT COUNT(*) FROM authentication_access_token",
-        )
-        .fetch_one(&pool)
-        .await
-        .unwrap();
+        sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM authentication_access_token")
+            .fetch_one(&pool)
+            .await
+            .unwrap();
 
     assert_eq!(token_count_after, token_count_before);
 
@@ -365,7 +350,10 @@ async fn replayed_refresh_token_is_rejected_without_issuing_more_credentials() {
 async fn expired_revoked_or_account_invalid_refresh_tokens_are_rejected() {
     let _lock = TEST_DATABASE_LOCK.lock().await;
     let pool = database().await;
-    digital_publication_backend::MIGRATOR.run(&pool).await.unwrap();
+    digital_publication_backend::MIGRATOR
+        .run(&pool)
+        .await
+        .unwrap();
     reset(&pool).await;
 
     for case in [
@@ -379,12 +367,8 @@ async fn expired_revoked_or_account_invalid_refresh_tokens_are_rejected() {
         let email = format!("{case}-{}@example.com", Uuid::new_v4());
         let account_id = seed_account(&pool, &email, TEST_PASSWORD).await;
 
-        let (_login_body, refresh_token) = login(
-            pool.clone(),
-            &email,
-            "192.0.2.32".parse().unwrap(),
-        )
-        .await;
+        let (_login_body, refresh_token) =
+            login(pool.clone(), &email, "192.0.2.32".parse().unwrap()).await;
 
         let session_id = sqlx::query_scalar::<_, Uuid>(
             "SELECT id FROM authentication_session WHERE account_id = $1",

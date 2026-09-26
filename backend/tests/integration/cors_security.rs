@@ -14,10 +14,7 @@ fn app() -> Router {
     apply_security(
         Router::new()
             .route("/health", get(|| async { StatusCode::OK }))
-            .route(
-                "/auth/logout",
-                post(|| async { StatusCode::NO_CONTENT }),
-            ),
+            .route("/auth/logout", post(|| async { StatusCode::NO_CONTENT })),
         vec![HeaderValue::from_static(ALLOWED_ORIGIN)],
     )
 }
@@ -51,13 +48,11 @@ async fn allowed_origin_gets_credentialed_cors_headers() {
             .and_then(|value| value.to_str().ok()),
         Some("true")
     );
-    assert!(
-        response
-            .headers()
-            .get_all(header::VARY)
-            .iter()
-            .any(|value| value == "Origin")
-    );
+    assert!(response
+        .headers()
+        .get_all(header::VARY)
+        .iter()
+        .any(|value| value == "Origin"));
 }
 
 #[tokio::test]
@@ -75,12 +70,10 @@ async fn disallowed_origin_is_rejected_server_side() {
         .unwrap();
 
     assert_eq!(response.status(), StatusCode::FORBIDDEN);
-    assert!(
-        response
-            .headers()
-            .get(header::ACCESS_CONTROL_ALLOW_ORIGIN)
-            .is_none()
-    );
+    assert!(response
+        .headers()
+        .get(header::ACCESS_CONTROL_ALLOW_ORIGIN)
+        .is_none());
 }
 
 #[tokio::test]
@@ -91,10 +84,7 @@ async fn allowed_preflight_returns_the_required_cors_contract() {
                 .method("OPTIONS")
                 .uri("/health")
                 .header(header::ORIGIN, ALLOWED_ORIGIN)
-                .header(
-                    header::ACCESS_CONTROL_REQUEST_METHOD,
-                    "POST",
-                )
+                .header(header::ACCESS_CONTROL_REQUEST_METHOD, "POST")
                 .header(
                     header::ACCESS_CONTROL_REQUEST_HEADERS,
                     "authorization,content-type",
@@ -141,27 +131,21 @@ async fn allowed_preflight_returns_the_required_cors_contract() {
             .and_then(|value| value.to_str().ok()),
         Some("600")
     );
-    assert!(
-        response
-            .headers()
-            .get_all(header::VARY)
-            .iter()
-            .any(|value| value == "Origin")
-    );
-    assert!(
-        response
-            .headers()
-            .get_all(header::VARY)
-            .iter()
-            .any(|value| value == "Access-Control-Request-Method")
-    );
-    assert!(
-        response
-            .headers()
-            .get_all(header::VARY)
-            .iter()
-            .any(|value| value == "Access-Control-Request-Headers")
-    );
+    assert!(response
+        .headers()
+        .get_all(header::VARY)
+        .iter()
+        .any(|value| value == "Origin"));
+    assert!(response
+        .headers()
+        .get_all(header::VARY)
+        .iter()
+        .any(|value| value == "Access-Control-Request-Method"));
+    assert!(response
+        .headers()
+        .get_all(header::VARY)
+        .iter()
+        .any(|value| value == "Access-Control-Request-Headers"));
 }
 
 #[tokio::test]
@@ -172,14 +156,8 @@ async fn preflight_rejects_an_unapproved_request_header() {
                 .method("OPTIONS")
                 .uri("/health")
                 .header(header::ORIGIN, ALLOWED_ORIGIN)
-                .header(
-                    header::ACCESS_CONTROL_REQUEST_METHOD,
-                    "POST",
-                )
-                .header(
-                    header::ACCESS_CONTROL_REQUEST_HEADERS,
-                    "x-not-allowed",
-                )
+                .header(header::ACCESS_CONTROL_REQUEST_METHOD, "POST")
+                .header(header::ACCESS_CONTROL_REQUEST_HEADERS, "x-not-allowed")
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -267,10 +245,8 @@ async fn requests_without_an_origin_remain_non_cors_requests() {
         .unwrap();
 
     assert_eq!(response.status(), StatusCode::OK);
-    assert!(
-        response
-            .headers()
-            .get(header::ACCESS_CONTROL_ALLOW_ORIGIN)
-            .is_none()
-    );
+    assert!(response
+        .headers()
+        .get(header::ACCESS_CONTROL_ALLOW_ORIGIN)
+        .is_none());
 }

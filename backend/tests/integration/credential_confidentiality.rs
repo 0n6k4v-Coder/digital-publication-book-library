@@ -43,8 +43,8 @@ impl<'a> MakeWriter<'a> for SharedLogWriter {
 }
 
 fn test_router() -> axum::Router {
-    let pool = sqlx::PgPool::connect_lazy("postgres://invalid")
-        .expect("build lazy PostgreSQL pool");
+    let pool =
+        sqlx::PgPool::connect_lazy("postgres://invalid").expect("build lazy PostgreSQL pool");
     let blocklist = PasswordBlocklist::from_hashes("test", Vec::<[u8; 20]>::new());
 
     build_router(AppState::new(
@@ -78,19 +78,12 @@ async fn application_logging_never_records_credentials_or_query_parameters() {
         .expect("build request");
 
     let _subscriber_guard = tracing::subscriber::set_default(subscriber);
-    let response = test_router()
-        .oneshot(request)
-        .await
-        .expect("run request");
+    let response = test_router().oneshot(request).await.expect("run request");
 
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 
-    let log_output = String::from_utf8(
-        logs.lock()
-            .expect("lock log buffer")
-            .clone(),
-    )
-    .expect("decode logs");
+    let log_output =
+        String::from_utf8(logs.lock().expect("lock log buffer").clone()).expect("decode logs");
 
     assert!(log_output.contains("http request completed"));
     assert!(log_output.contains("/auth/login"));

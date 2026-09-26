@@ -14,8 +14,7 @@ use axum::{
 use digital_publication_backend::{
     app::{router::build_router, state::AppState},
     domains::authentication::{
-        extractor::sha256_token_verifier,
-        repository::AuthenticationRepository,
+        extractor::sha256_token_verifier, repository::AuthenticationRepository,
     },
     shared::validation::{hash_password, normalize_email, PasswordBlocklist},
 };
@@ -41,11 +40,9 @@ fn test_router(pool: PgPool) -> Router {
 }
 
 async fn database() -> PgPool {
-    PgPool::connect(
-        &env::var("TEST_DATABASE_URL").expect("TEST_DATABASE_URL must be set"),
-    )
-    .await
-    .unwrap()
+    PgPool::connect(&env::var("TEST_DATABASE_URL").expect("TEST_DATABASE_URL must be set"))
+        .await
+        .unwrap()
 }
 
 async fn reset(pool: &PgPool) {
@@ -73,8 +70,7 @@ async fn reset(pool: &PgPool) {
 async fn seed_account(pool: &PgPool, email: &str) -> Uuid {
     let email = normalize_email(email).unwrap();
 
-    let password_hash =
-        hash_password(SecretString::from(TEST_PASSWORD.to_owned())).unwrap();
+    let password_hash = hash_password(SecretString::from(TEST_PASSWORD.to_owned())).unwrap();
 
     sqlx::query_scalar::<_, Uuid>(
         r#"
@@ -111,15 +107,13 @@ fn login_request(email: &str, source_ip: IpAddr) -> Request<Body> {
         .method("POST")
         .uri("/auth/login")
         .header(header::CONTENT_TYPE, "application/json")
-        .body(
-            Body::from(
-                json!({
-                    "email": email,
-                    "password": TEST_PASSWORD
-                })
-                .to_string(),
-            ),
-        )
+        .body(Body::from(
+            json!({
+                "email": email,
+                "password": TEST_PASSWORD
+            })
+            .to_string(),
+        ))
         .unwrap();
 
     request
@@ -197,9 +191,7 @@ fn assert_refresh_cookie_deleted(response: &axum::response::Response) {
 }
 
 async fn json_body(response: axum::response::Response) -> Value {
-    let body = to_bytes(response.into_body(), 64 * 1024)
-        .await
-        .unwrap();
+    let body = to_bytes(response.into_body(), 64 * 1024).await.unwrap();
 
     serde_json::from_slice(&body).unwrap()
 }
@@ -226,7 +218,10 @@ async fn logout_revokes_only_the_current_session_and_invalidates_its_access_toke
     let _lock = TEST_DATABASE_LOCK.lock().await;
     let pool = database().await;
 
-    digital_publication_backend::MIGRATOR.run(&pool).await.unwrap();
+    digital_publication_backend::MIGRATOR
+        .run(&pool)
+        .await
+        .unwrap();
     reset(&pool).await;
 
     let email = format!("logout-{}@example.com", Uuid::new_v4());
@@ -234,33 +229,21 @@ async fn logout_revokes_only_the_current_session_and_invalidates_its_access_toke
     let account_id = seed_account(&pool, &email).await;
 
     let first_login = test_router(pool.clone())
-        .oneshot(login_request(
-            &email,
-            "192.0.2.40".parse().unwrap(),
-        ))
+        .oneshot(login_request(&email, "192.0.2.40".parse().unwrap()))
         .await
         .unwrap();
 
     let first_refresh = refresh_cookie_value(&first_login);
     let first_body = json_body(first_login).await;
-    let first_access = first_body["access_token"]
-        .as_str()
-        .unwrap()
-        .to_owned();
+    let first_access = first_body["access_token"].as_str().unwrap().to_owned();
 
     let second_login = test_router(pool.clone())
-        .oneshot(login_request(
-            &email,
-            "192.0.2.41".parse().unwrap(),
-        ))
+        .oneshot(login_request(&email, "192.0.2.41".parse().unwrap()))
         .await
         .unwrap();
 
     let second_body = json_body(second_login).await;
-    let second_access = second_body["access_token"]
-        .as_str()
-        .unwrap()
-        .to_owned();
+    let second_access = second_body["access_token"].as_str().unwrap().to_owned();
 
     let logout = test_router(pool.clone())
         .oneshot(logout_request(Some(&first_refresh)))
@@ -290,10 +273,7 @@ async fn logout_revokes_only_the_current_session_and_invalidates_its_access_toke
         .await
         .unwrap();
 
-    assert_eq!(
-        first_refresh_response.status(),
-        StatusCode::UNAUTHORIZED
-    );
+    assert_eq!(first_refresh_response.status(), StatusCode::UNAUTHORIZED);
     assert!(first_refresh_response
         .headers()
         .get(header::WWW_AUTHENTICATE)
@@ -305,21 +285,17 @@ async fn logout_revokes_only_the_current_session_and_invalidates_its_access_toke
 
     let authentication_repository = AuthenticationRepository::new(pool.clone());
 
-    assert!(
-        authentication_repository
-            .validate_access_token(&sha256_token_verifier(&first_access))
-            .await
-            .unwrap()
-            .is_none()
-    );
+    assert!(authentication_repository
+        .validate_access_token(&sha256_token_verifier(&first_access))
+        .await
+        .unwrap()
+        .is_none());
 
-    assert!(
-        authentication_repository
-            .validate_access_token(&sha256_token_verifier(&second_access))
-            .await
-            .unwrap()
-            .is_some()
-    );
+    assert!(authentication_repository
+        .validate_access_token(&sha256_token_verifier(&second_access))
+        .await
+        .unwrap()
+        .is_some());
 
     reset(&pool).await;
 }

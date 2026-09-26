@@ -10,8 +10,7 @@ use tower::ServiceExt;
 const ALLOWED_ORIGIN: &str = "https://admin.example.com";
 const DISALLOWED_ORIGIN: &str = "https://attacker.example.com";
 
-const AUTHENTICATION_ENDPOINTS: [&str; 3] =
-    ["/auth/login", "/auth/refresh", "/auth/logout"];
+const AUTHENTICATION_ENDPOINTS: [&str; 3] = ["/auth/login", "/auth/refresh", "/auth/logout"];
 
 async fn authentication_stub() -> StatusCode {
     StatusCode::NO_CONTENT
@@ -129,14 +128,8 @@ async fn login_preflight_accepts_the_browser_json_request_contract() {
                 .method("OPTIONS")
                 .uri("/auth/login")
                 .header(header::ORIGIN, ALLOWED_ORIGIN)
-                .header(
-                    header::ACCESS_CONTROL_REQUEST_METHOD,
-                    "POST",
-                )
-                .header(
-                    header::ACCESS_CONTROL_REQUEST_HEADERS,
-                    "content-type",
-                )
+                .header(header::ACCESS_CONTROL_REQUEST_METHOD, "POST")
+                .header(header::ACCESS_CONTROL_REQUEST_HEADERS, "content-type")
                 .body(Body::empty())
                 .unwrap(),
         )
