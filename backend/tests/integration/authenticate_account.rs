@@ -13,7 +13,14 @@ use axum::{
 };
 use digital_publication_backend::{
     app::{router::build_router, state::AppState},
-    domains::authentication::extractor::sha256_token_verifier,
+    domains::authentication::{
+        extractor::sha256_token_verifier,
+        model::{
+            ACCESS_TOKEN_EXPIRES_IN,
+            AUTHENTICATION_SESSION_EXPIRES_IN,
+            REFRESH_TOKEN_POLICY_EXPIRES_IN,
+        },
+    },
     shared::validation::{hash_password, normalize_email, PasswordBlocklist},
 };
 use secrecy::SecretString;
@@ -26,6 +33,7 @@ use uuid::Uuid;
 static TEST_DATABASE_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 
 const TEST_PASSWORD: &str = "an extremely secure password";
+const REFRESH_COOKIE_NAME: &str = "__Host-refresh_token";
 
 fn test_router(pool: PgPool) -> Router {
     let blocklist = PasswordBlocklist::from_hashes("test", Vec::<[u8; 20]>::new());
@@ -165,6 +173,41 @@ fn login_request(email: &str, password: &str, source_ip: IpAddr) -> Request<Body
     request
 }
 
+fn refresh_cookie_value(response: &axum::response::Response) -> String {
+    let header = response
+        .headers()
+        .get(header::SET_COOKIE)
+        .expect("login response must set the refresh cookie")
+        .to_str()
+        .expect("refresh cookie must be valid ASCII");
+
+    let prefix = format!("{REFRESH_COOKIE_NAME}=");
+
+    header
+        .strip_prefix(&prefix)
+        .expect("refresh cookie must use the required __Host- name")
+        .split(';')
+        .next()
+        .expect("refresh cookie must contain a value")
+        .to_owned()
+}
+
+fn refresh_cookie_max_age_seconds(response: &axum::response::Response) -> u64 {
+    let header = response
+        .headers()
+        .get(header::SET_COOKIE)
+        .expect("login response must set the refresh cookie")
+        .to_str()
+        .expect("refresh cookie must be valid ASCII");
+
+    header
+        .split(';')
+        .map(str::trim)
+        .find_map(|attribute| attribute.strip_prefix("Max-Age="))
+        .and_then(|value| value.parse::<u64>().ok())
+        .expect("refresh cookie must contain a valid Max-Age")
+}
+
 async fn response_json(response: axum::response::Response) -> Value {
     let body = to_bytes(response.into_body(), 64 * 1024)
         .await
@@ -261,15 +304,37 @@ async fn successful_login_creates_session_and_token_verifiers_with_defined_lifet
         "no-store"
     );
 
+    let refresh_cookie = refresh_cookie_value(&response);
+    let refresh_cookie_max_age = refresh_cookie_max_age_seconds(&response);
+
+    assert_eq!(refresh_cookie.len(), 96);
+    assert!(refresh_cookie_max_age > 0);
+    assert!(
+        refresh_cookie_max_age <= AUTHENTICATION_SESSION_EXPIRES_IN
+    );
+
+    let set_cookie = response
+        .headers()
+        .get(header::SET_COOKIE)
+        .unwrap()
+        .to_str()
+        .unwrap();
+
+    assert!(set_cookie.contains("Path=/"));
+    assert!(set_cookie.contains("Secure"));
+    assert!(set_cookie.contains("HttpOnly"));
+    assert!(set_cookie.contains("SameSite=Strict"));
+    assert!(!set_cookie.contains("Domain="));
+
     let body = response_json(response).await;
     let access_token = body["access_token"].as_str().unwrap();
-    let refresh_token = body["refresh_token"].as_str().unwrap();
 
     assert_eq!(body["token_type"], "Bearer");
-    assert_eq!(body["expires_in"], 3600);
-    assert_eq!(body["refresh_expires_in"], 2_592_000);
+    assert_eq!(body["expires_in"], ACCESS_TOKEN_EXPIRES_IN);
+    assert!(body.get("refresh_token").is_none());
+    assert!(body.get("refresh_expires_in").is_none());
+    assert!(!body.to_string().contains(&refresh_cookie));
     assert_eq!(access_token.len(), 96);
-    assert_eq!(refresh_token.len(), 96);
 
     let session = sqlx::query_as::<_, (Uuid, i64, OffsetDateTime)>(
         "SELECT id, \
@@ -283,7 +348,7 @@ async fn successful_login_creates_session_and_token_verifiers_with_defined_lifet
     .await
     .unwrap();
 
-    assert_eq!(session.1, 86_400);
+    assert_eq!(session.1, AUTHENTICATION_SESSION_EXPIRES_IN as i64);
     assert!(session.2 <= OffsetDateTime::now_utc());
 
     let access = sqlx::query_as::<_, (String, i64)>(
@@ -299,7 +364,7 @@ async fn successful_login_creates_session_and_token_verifiers_with_defined_lifet
 
     assert_eq!(access.0, sha256_token_verifier(access_token));
     assert_ne!(access.0, access_token);
-    assert_eq!(access.1, 3_600);
+    assert_eq!(access.1, ACCESS_TOKEN_EXPIRES_IN as i64);
 
     let refresh = sqlx::query_as::<_, (String, i64)>(
         "SELECT token_hash, \
@@ -312,9 +377,10 @@ async fn successful_login_creates_session_and_token_verifiers_with_defined_lifet
     .await
     .unwrap();
 
-    assert_eq!(refresh.0, sha256_token_verifier(refresh_token));
-    assert_ne!(refresh.0, refresh_token);
-    assert_eq!(refresh.1, 2_592_000);
+    assert_eq!(refresh.0, sha256_token_verifier(&refresh_cookie));
+    assert_ne!(refresh.0, refresh_cookie);
+    assert!(refresh.1 <= AUTHENTICATION_SESSION_EXPIRES_IN as i64);
+    assert!(refresh.1 <= REFRESH_TOKEN_POLICY_EXPIRES_IN as i64);
 
     reset(&pool).await;
 }

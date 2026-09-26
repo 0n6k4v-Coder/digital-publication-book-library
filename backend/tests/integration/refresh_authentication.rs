@@ -25,9 +25,11 @@ use uuid::Uuid;
 
 static TEST_DATABASE_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 const TEST_PASSWORD: &str = "an extremely secure password";
+const REFRESH_COOKIE_NAME: &str = "__Host-refresh_token";
 
 fn test_router(pool: PgPool) -> Router {
     let blocklist = PasswordBlocklist::from_hashes("test", Vec::<[u8; 20]>::new());
+
     build_router(AppState::new(
         pool,
         Arc::new(blocklist),
@@ -97,7 +99,9 @@ async fn seed_account(pool: &PgPool, email: &str, password: &str) -> Uuid {
 async fn seed_failed_attempts(pool: &PgPool, email_key: &str, source_ip_key: &str, count: usize) {
     for index in 0..count {
         sqlx::query(
-            "INSERT INTO authentication_login_attempt (email_key, source_ip_key, failed, email_counted, source_ip_counted) VALUES ($1, $2, TRUE, TRUE, TRUE)",
+            "INSERT INTO authentication_login_attempt \
+             (email_key, source_ip_key, failed, email_counted, source_ip_counted) \
+             VALUES ($1, $2, TRUE, TRUE, TRUE)",
         )
         .bind(email_key)
         .bind(format!("{source_ip_key}-{index}"))
@@ -116,9 +120,11 @@ fn login_request(email: &str, password: &str, source_ip: IpAddr) -> Request<Body
             json!({"email": email, "password": password}).to_string(),
         ))
         .unwrap();
+
     request
         .extensions_mut()
         .insert(ConnectInfo(SocketAddr::new(source_ip, 40000)));
+
     request
 }
 
@@ -126,11 +132,31 @@ fn refresh_request(refresh_token: &str) -> Request<Body> {
     Request::builder()
         .method("POST")
         .uri("/auth/refresh")
-        .header(header::CONTENT_TYPE, "application/json")
-        .body(Body::from(
-            json!({"refresh_token": refresh_token}).to_string(),
-        ))
+        .header(
+            header::COOKIE,
+            format!("{REFRESH_COOKIE_NAME}={refresh_token}"),
+        )
+        .body(Body::empty())
         .unwrap()
+}
+
+fn refresh_cookie_value(response: &axum::response::Response) -> String {
+    let header = response
+        .headers()
+        .get(header::SET_COOKIE)
+        .expect("response must set the refresh cookie")
+        .to_str()
+        .expect("refresh cookie must be valid ASCII");
+
+    let prefix = format!("{REFRESH_COOKIE_NAME}=");
+
+    header
+        .strip_prefix(&prefix)
+        .expect("refresh cookie must use the required __Host- name")
+        .split(';')
+        .next()
+        .expect("refresh cookie must contain a value")
+        .to_owned()
 }
 
 async fn json_body(response: axum::response::Response) -> Value {
@@ -138,33 +164,48 @@ async fn json_body(response: axum::response::Response) -> Value {
     serde_json::from_slice(&body).unwrap()
 }
 
-async fn login(pool: PgPool, email: &str, source_ip: IpAddr) -> Value {
+async fn login(
+    pool: PgPool,
+    email: &str,
+    source_ip: IpAddr,
+) -> (Value, String) {
     let response = test_router(pool)
         .oneshot(login_request(email, TEST_PASSWORD, source_ip))
         .await
         .unwrap();
+
     assert_eq!(response.status(), StatusCode::OK);
-    json_body(response).await
+
+    let refresh_token = refresh_cookie_value(&response);
+    let body = json_body(response).await;
+
+    (body, refresh_token)
 }
 
 #[tokio::test]
-async fn malformed_refresh_json_is_rejected_without_database_access() {
+async fn refresh_requires_the_browser_managed_cookie_without_database_access() {
     let pool = sqlx::PgPool::connect_lazy("postgres://invalid").unwrap();
+
     let request = Request::builder()
         .method("POST")
         .uri("/auth/refresh")
-        .header(header::CONTENT_TYPE, "application/json")
-        .body(Body::from("{"))
+        .body(Body::empty())
         .unwrap();
 
     let response = test_router(pool).oneshot(request).await.unwrap();
 
-    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
     assert_eq!(
         response.headers()[header::CONTENT_TYPE],
         "application/problem+json"
     );
     assert_eq!(response.headers()[header::CACHE_CONTROL], "no-store");
+    assert!(response.headers().get(header::WWW_AUTHENTICATE).is_none());
+
+    assert_eq!(
+        json_body(response).await["code"],
+        "INVALID_REFRESH_TOKEN"
+    );
 }
 
 #[tokio::test]
@@ -178,8 +219,7 @@ async fn refresh_rotates_tokens_and_preserves_absolute_session_state() {
     let email = format!("refresh-{}@example.com", Uuid::new_v4());
     let account_id = seed_account(&pool, &email, TEST_PASSWORD).await;
     let source_ip: IpAddr = "192.0.2.30".parse().unwrap();
-    let login_body = login(pool.clone(), &email, source_ip).await;
-    let old_refresh = login_body["refresh_token"].as_str().unwrap().to_owned();
+    let (login_body, old_refresh) = login(pool.clone(), &email, source_ip).await;
     let old_refresh_hash = sha256_token_verifier(&old_refresh);
 
     let session_before = sqlx::query_as::<_, (Uuid, OffsetDateTime, OffsetDateTime)>(
@@ -201,14 +241,19 @@ async fn refresh_rotates_tokens_and_preserves_absolute_session_state() {
 
     assert_eq!(response.status(), StatusCode::OK);
     assert_eq!(response.headers()[header::CACHE_CONTROL], "no-store");
+
+    let new_refresh = refresh_cookie_value(&response);
     let body = json_body(response).await;
     let new_access = body["access_token"].as_str().unwrap();
-    let new_refresh = body["refresh_token"].as_str().unwrap();
+
     assert_ne!(
         new_access,
         login_body["access_token"].as_str().unwrap()
     );
     assert_ne!(new_refresh, old_refresh);
+    assert_eq!(body["token_type"], "Bearer");
+    assert!(body.get("refresh_token").is_none());
+    assert!(body.get("refresh_expires_in").is_none());
 
     let session_after = sqlx::query_as::<_, (OffsetDateTime, OffsetDateTime)>(
         "SELECT expires_at, last_authenticated_at FROM authentication_session WHERE id = $1",
@@ -217,6 +262,7 @@ async fn refresh_rotates_tokens_and_preserves_absolute_session_state() {
     .fetch_one(&pool)
     .await
     .unwrap();
+
     assert_eq!(session_after.0, session_before.1);
     assert_eq!(session_after.1, session_before.2);
 
@@ -227,9 +273,10 @@ async fn refresh_rotates_tokens_and_preserves_absolute_session_state() {
     .fetch_one(&pool)
     .await
     .unwrap();
+
     assert!(old_refresh_row.is_some());
 
-    let new_refresh_hash = sha256_token_verifier(new_refresh);
+    let new_refresh_hash = sha256_token_verifier(&new_refresh);
     let replacement_count = sqlx::query_scalar::<_, i64>(
         "SELECT COUNT(*) FROM authentication_refresh_token WHERE token_hash = $1 AND session_id = $2",
     )
@@ -238,6 +285,7 @@ async fn refresh_rotates_tokens_and_preserves_absolute_session_state() {
     .fetch_one(&pool)
     .await
     .unwrap();
+
     assert_eq!(replacement_count, 1);
 
     let email_failure_count = sqlx::query_scalar::<_, i64>(
@@ -247,6 +295,7 @@ async fn refresh_rotates_tokens_and_preserves_absolute_session_state() {
     .fetch_one(&pool)
     .await
     .unwrap();
+
     assert_eq!(email_failure_count, 10);
 
     reset(&pool).await;
@@ -262,18 +311,19 @@ async fn replayed_refresh_token_is_rejected_without_issuing_more_credentials() {
 
     let email = format!("replay-{}@example.com", Uuid::new_v4());
     seed_account(&pool, &email, TEST_PASSWORD).await;
-    let login_body = login(
+
+    let (_login_body, refresh_token) = login(
         pool.clone(),
         &email,
         "192.0.2.31".parse().unwrap(),
     )
     .await;
-    let refresh_token = login_body["refresh_token"].as_str().unwrap().to_owned();
 
     let first = test_router(pool.clone())
         .oneshot(refresh_request(&refresh_token))
         .await
         .unwrap();
+
     assert_eq!(first.status(), StatusCode::OK);
 
     let token_count_before =
@@ -288,6 +338,7 @@ async fn replayed_refresh_token_is_rejected_without_issuing_more_credentials() {
         .oneshot(refresh_request(&refresh_token))
         .await
         .unwrap();
+
     assert_eq!(replay.status(), StatusCode::UNAUTHORIZED);
     assert_eq!(replay.headers()[header::CACHE_CONTROL], "no-store");
     assert!(replay.headers().get(header::WWW_AUTHENTICATE).is_none());
@@ -303,6 +354,7 @@ async fn replayed_refresh_token_is_rejected_without_issuing_more_credentials() {
         .fetch_one(&pool)
         .await
         .unwrap();
+
     assert_eq!(token_count_after, token_count_before);
 
     reset(&pool).await;
@@ -326,13 +378,14 @@ async fn expired_revoked_or_account_invalid_refresh_tokens_are_rejected() {
     ] {
         let email = format!("{case}-{}@example.com", Uuid::new_v4());
         let account_id = seed_account(&pool, &email, TEST_PASSWORD).await;
-        let login_body = login(
+
+        let (_login_body, refresh_token) = login(
             pool.clone(),
             &email,
             "192.0.2.32".parse().unwrap(),
         )
         .await;
-        let refresh_token = login_body["refresh_token"].as_str().unwrap().to_owned();
+
         let session_id = sqlx::query_scalar::<_, Uuid>(
             "SELECT id FROM authentication_session WHERE account_id = $1",
         )
@@ -340,6 +393,7 @@ async fn expired_revoked_or_account_invalid_refresh_tokens_are_rejected() {
         .fetch_one(&pool)
         .await
         .unwrap();
+
         let refresh_hash = sqlx::query_scalar::<_, String>(
             "SELECT token_hash FROM authentication_refresh_token WHERE session_id = $1 AND used_at IS NULL",
         )
@@ -408,6 +462,7 @@ async fn expired_revoked_or_account_invalid_refresh_tokens_are_rejected() {
             .oneshot(refresh_request(&refresh_token))
             .await
             .unwrap();
+
         assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
 
         reset(&pool).await;

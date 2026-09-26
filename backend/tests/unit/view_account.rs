@@ -10,6 +10,7 @@ fn account_response_contains_only_the_documented_fields() {
     let account = ViewedAccount {
         id,
         email: "admin@example.com".to_owned(),
+        display_name: Some("Administrator".to_owned()),
         status: "active".to_owned(),
         created_at: timestamp,
         updated_at: timestamp,
@@ -20,6 +21,7 @@ fn account_response_contains_only_the_documented_fields() {
 
     assert_eq!(payload["id"], id.to_string());
     assert_eq!(payload["email"], "admin@example.com");
+    assert_eq!(payload["display_name"], "Administrator");
     assert_eq!(payload["status"], "active");
     assert_eq!(payload["deleted_at"], Value::Null);
     assert!(payload.get("password").is_none());
@@ -36,6 +38,7 @@ fn account_response_maps_all_account_timestamps() {
     let account = ViewedAccount {
         id,
         email: "inactive@example.com".to_owned(),
+        display_name: Some("Inactive User".to_owned()),
         status: "inactive".to_owned(),
         created_at,
         updated_at,

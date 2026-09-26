@@ -4,7 +4,9 @@ use axum::{
 };
 use digital_publication_backend::{
     domains::authentication::model::{
-        ACCESS_TOKEN_EXPIRES_IN, REFRESH_TOKEN_EXPIRES_IN,
+        ACCESS_TOKEN_EXPIRES_IN,
+        AUTHENTICATION_SESSION_EXPIRES_IN,
+        REFRESH_TOKEN_POLICY_EXPIRES_IN,
     },
     shared::error::AppError,
 };
@@ -12,7 +14,8 @@ use digital_publication_backend::{
 #[test]
 fn token_lifetimes_match_the_authentication_contract() {
     assert_eq!(ACCESS_TOKEN_EXPIRES_IN, 3_600);
-    assert_eq!(REFRESH_TOKEN_EXPIRES_IN, 2_592_000);
+    assert_eq!(AUTHENTICATION_SESSION_EXPIRES_IN, 86_400);
+    assert_eq!(REFRESH_TOKEN_POLICY_EXPIRES_IN, 2_592_000);
 }
 
 #[test]
