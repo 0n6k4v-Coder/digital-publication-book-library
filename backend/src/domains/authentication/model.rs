@@ -19,11 +19,6 @@ pub struct AuthenticateAccountRequest {
     pub password: SecretString,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct RefreshAuthenticationRequest {
-    pub refresh_token: SecretString,
-}
-
 #[derive(Debug)]
 pub struct AuthenticationTokens {
     pub access_token: SecretString,

@@ -2,17 +2,17 @@ use std::net::SocketAddr;
 
 use axum::{
     extract::{rejection::JsonRejection, ConnectInfo, Json, State},
-    http::{header, HeaderValue, StatusCode},
+    http::{header, HeaderMap, HeaderValue, StatusCode},
     response::{IntoResponse, Response},
 };
-use secrecy::ExposeSecret;
+use secrecy::{ExposeSecret, SecretString};
 
 use crate::{
     app::state::AppState,
     domains::authentication::{
         model::{
             AuthenticateAccountRequest, AuthenticatedPrincipal, AuthenticationResponse,
-            AuthenticationTokens, RefreshAuthenticationRequest, ACCESS_TOKEN_EXPIRES_IN,
+            AuthenticationTokens, ACCESS_TOKEN_EXPIRES_IN,
         },
         repository::AuthenticationRepository,
         service::AuthenticationService,
@@ -21,6 +21,7 @@ use crate::{
 };
 
 const REFRESH_COOKIE_NAME: &str = "__Host-refresh_token";
+const REFRESH_COOKIE_PREFIX: &str = "__Host-refresh_token=";
 const REFRESH_COOKIE_MAX_AGE_SECONDS: u64 = 86_400;
 
 pub async fn login(
@@ -43,17 +44,18 @@ pub async fn login(
 }
 
 pub async fn refresh(
+    headers: HeaderMap,
     State(state): State<AppState>,
-    request: Result<Json<RefreshAuthenticationRequest>, JsonRejection>,
 ) -> Result<Response, AppError> {
-    let Json(request) = request.map_err(|_| crate::shared::error::invalid_json_response())?;
+    let refresh_token =
+        extract_refresh_token(&headers).ok_or(AppError::InvalidRefreshToken)?;
 
     let service = AuthenticationService::new(
         AuthenticationRepository::new(state.pool.clone()),
         state.password_hash_semaphore.clone(),
     );
 
-    let tokens = service.refresh_authentication(request).await?;
+    let tokens = service.refresh_authentication(refresh_token).await?;
 
     Ok(authentication_response(tokens))
 }
@@ -73,6 +75,20 @@ pub async fn logout(
     add_no_store(response.headers_mut());
 
     Ok(response)
+}
+
+fn extract_refresh_token(headers: &HeaderMap) -> Option<SecretString> {
+    headers
+        .get_all(header::COOKIE)
+        .iter()
+        .filter_map(|value| value.to_str().ok())
+        .flat_map(|value| value.split(';'))
+        .map(str::trim)
+        .find_map(|pair| {
+            pair.strip_prefix(REFRESH_COOKIE_PREFIX)
+                .filter(|value| !value.is_empty())
+                .map(|value| SecretString::from(value.to_owned()))
+        })
 }
 
 fn authentication_response(tokens: AuthenticationTokens) -> Response {
@@ -100,4 +116,34 @@ fn authentication_response(tokens: AuthenticationTokens) -> Response {
         .insert(header::SET_COOKIE, cookie_header);
 
     response
+}
+
+#[cfg(test)]
+mod tests {
+    use axum::http::{header, HeaderMap, HeaderValue};
+    use secrecy::ExposeSecret;
+
+    use super::extract_refresh_token;
+
+    #[test]
+    fn extract_refresh_token_reads_the_browser_cookie() {
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            header::COOKIE,
+            HeaderValue::from_static(
+                "theme=dark; __Host-refresh_token=refresh-token-value; other=value",
+            ),
+        );
+
+        let token = extract_refresh_token(&headers).expect("refresh cookie should be present");
+
+        assert_eq!(token.expose_secret(), "refresh-token-value");
+    }
+
+    #[test]
+    fn extract_refresh_token_returns_none_when_cookie_is_missing() {
+        let headers = HeaderMap::new();
+
+        assert!(extract_refresh_token(&headers).is_none());
+    }
 }

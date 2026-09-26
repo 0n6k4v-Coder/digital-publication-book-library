@@ -13,10 +13,7 @@ use crate::shared::{
 
 use super::{
     extractor::sha256_token_verifier,
-    model::{
-        AuthenticateAccountRequest, AuthenticatedPrincipal, AuthenticationTokens,
-        RefreshAuthenticationRequest,
-    },
+    model::{AuthenticateAccountRequest, AuthenticatedPrincipal, AuthenticationTokens},
     repository::AuthenticationRepository,
 };
 
@@ -111,13 +108,14 @@ impl AuthenticationService {
 
     pub async fn refresh_authentication(
         &self,
-        request: RefreshAuthenticationRequest,
+        refresh_token: SecretString,
     ) -> Result<AuthenticationTokens, AppError> {
         let access_token = generate_opaque_token();
-        let refresh_token = generate_opaque_token();
-        let refresh_token_hash = sha256_token_verifier(request.refresh_token.expose_secret());
+        let replacement_refresh_token = generate_opaque_token();
+        let refresh_token_hash = sha256_token_verifier(refresh_token.expose_secret());
         let access_token_hash = sha256_token_verifier(access_token.expose_secret());
-        let replacement_refresh_token_hash = sha256_token_verifier(refresh_token.expose_secret());
+        let replacement_refresh_token_hash =
+            sha256_token_verifier(replacement_refresh_token.expose_secret());
 
         let refreshed = self
             .repository
@@ -135,7 +133,7 @@ impl AuthenticationService {
 
         Ok(AuthenticationTokens {
             access_token,
-            refresh_token,
+            refresh_token: replacement_refresh_token,
         })
     }
 

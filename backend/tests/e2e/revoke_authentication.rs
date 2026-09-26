@@ -7,7 +7,7 @@ use digital_publication_backend::{
 };
 use reqwest::Client;
 use secrecy::SecretString;
-use serde_json::{json, Value};
+use serde_json::Value;
 use sqlx::PgPool;
 use tokio::{net::TcpListener, sync::Mutex};
 use uuid::Uuid;
@@ -19,8 +19,7 @@ const REFRESH_COOKIE_NAME: &str = "__Host-refresh_token";
 
 async fn database() -> PgPool {
     PgPool::connect(
-        &env::var("TEST_DATABASE_URL")
-            .expect("TEST_DATABASE_URL must be set"),
+        &env::var("TEST_DATABASE_URL").expect("TEST_DATABASE_URL must be set"),
     )
     .await
     .unwrap()
@@ -48,17 +47,10 @@ async fn reset(pool: &PgPool) {
         .unwrap();
 }
 
-async fn seed_account(
-    pool: &PgPool,
-    email: &str,
-) -> Uuid {
+async fn seed_account(pool: &PgPool, email: &str) -> Uuid {
     let email = normalize_email(email).unwrap();
 
-    let password_hash =
-        hash_password(
-            SecretString::from(TEST_PASSWORD.to_owned()),
-        )
-        .unwrap();
+    let password_hash = hash_password(SecretString::from(TEST_PASSWORD.to_owned())).unwrap();
 
     sqlx::query_scalar::<_, Uuid>(
         r#"
@@ -91,11 +83,7 @@ async fn seed_account(
 }
 
 fn test_router(pool: PgPool) -> Router {
-    let blocklist =
-        PasswordBlocklist::from_hashes(
-            "test",
-            Vec::<[u8; 20]>::new(),
-        );
+    let blocklist = PasswordBlocklist::from_hashes("test", Vec::<[u8; 20]>::new());
 
     build_router(AppState::new(
         pool,
@@ -104,19 +92,10 @@ fn test_router(pool: PgPool) -> Router {
     ))
 }
 
-async fn start_server(
-    app: Router,
-) -> (
-    SocketAddr,
-    tokio::task::JoinHandle<()>,
-) {
-    let listener =
-        TcpListener::bind("127.0.0.1:0")
-            .await
-            .unwrap();
+async fn start_server(app: Router) -> (SocketAddr, tokio::task::JoinHandle<()>) {
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
 
-    let address =
-        listener.local_addr().unwrap();
+    let address = listener.local_addr().unwrap();
 
     let task = tokio::spawn(async move {
         axum::serve(
@@ -130,9 +109,7 @@ async fn start_server(
     (address, task)
 }
 
-fn refresh_cookie_value(
-    response: &reqwest::Response,
-) -> String {
+fn refresh_cookie_value(response: &reqwest::Response) -> String {
     let header = response
         .headers()
         .get("set-cookie")
@@ -140,8 +117,7 @@ fn refresh_cookie_value(
         .to_str()
         .expect("refresh cookie must be valid ASCII");
 
-    let prefix =
-        format!("{REFRESH_COOKIE_NAME}=");
+    let prefix = format!("{REFRESH_COOKIE_NAME}=");
 
     header
         .strip_prefix(&prefix)
@@ -155,40 +131,26 @@ fn refresh_cookie_value(
 #[tokio::test]
 #[ignore = "requires PostgreSQL 18 and a built backend"]
 async fn logout_end_to_end_revokes_the_session() {
-    let _lock =
-        TEST_DATABASE_LOCK.lock().await;
+    let _lock = TEST_DATABASE_LOCK.lock().await;
 
     let pool = database().await;
 
-    sqlx::migrate!()
-        .run(&pool)
-        .await
-        .unwrap();
+    sqlx::migrate!().run(&pool).await.unwrap();
 
     reset(&pool).await;
 
-    let email = format!(
-        "e2e-logout-{}@example.com",
-        Uuid::new_v4()
-    );
+    let email = format!("e2e-logout-{}@example.com", Uuid::new_v4());
 
     seed_account(&pool, &email).await;
 
-    let (address, server) =
-        start_server(test_router(pool.clone()))
-            .await;
+    let (address, server) = start_server(test_router(pool.clone())).await;
 
     let client = Client::new();
 
     let login_response = client
-        .post(format!(
-            "http://{address}/auth/login"
-        ))
-        .header(
-            "content-type",
-            "application/json",
-        )
-        .json(&json!({
+        .post(format!("http://{address}/auth/login"))
+        .header("content-type", "application/json")
+        .json(&serde_json::json!({
             "email": email,
             "password": TEST_PASSWORD
         }))
@@ -196,67 +158,32 @@ async fn logout_end_to_end_revokes_the_session() {
         .await
         .unwrap();
 
-    let refresh_token =
-        refresh_cookie_value(&login_response);
+    let refresh_token = refresh_cookie_value(&login_response);
 
-    let login: Value =
-        login_response
-            .json()
-            .await
-            .unwrap();
+    let login: Value = login_response.json().await.unwrap();
 
-    assert!(
-        login
-            .get("refresh_token")
-            .is_none()
-    );
+    assert!(login.get("refresh_token").is_none());
 
-    let access_token =
-        login["access_token"]
-            .as_str()
-            .unwrap();
+    let access_token = login["access_token"].as_str().unwrap();
 
     let logout = client
-        .post(format!(
-            "http://{address}/auth/logout"
-        ))
-        .header(
-            "authorization",
-            format!("Bearer {access_token}"),
-        )
+        .post(format!("http://{address}/auth/logout"))
+        .header("authorization", format!("Bearer {access_token}"))
         .send()
         .await
         .unwrap();
 
-    assert_eq!(
-        logout.status(),
-        reqwest::StatusCode::NO_CONTENT
-    );
-
-    assert_eq!(
-        logout.headers()["cache-control"],
-        "no-store"
-    );
+    assert_eq!(logout.status(), reqwest::StatusCode::NO_CONTENT);
+    assert_eq!(logout.headers()["cache-control"], "no-store");
 
     let refresh = client
-        .post(format!(
-            "http://{address}/auth/refresh"
-        ))
-        .header(
-            "content-type",
-            "application/json",
-        )
-        .json(&json!({
-            "refresh_token": refresh_token
-        }))
+        .post(format!("http://{address}/auth/refresh"))
+        .header("cookie", format!("{REFRESH_COOKIE_NAME}={refresh_token}"))
         .send()
         .await
         .unwrap();
 
-    assert_eq!(
-        refresh.status(),
-        reqwest::StatusCode::UNAUTHORIZED
-    );
+    assert_eq!(refresh.status(), reqwest::StatusCode::UNAUTHORIZED);
 
     server.abort();
     reset(&pool).await;

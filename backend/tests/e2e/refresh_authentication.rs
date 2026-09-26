@@ -19,8 +19,7 @@ const REFRESH_COOKIE_NAME: &str = "__Host-refresh_token";
 
 async fn database() -> PgPool {
     PgPool::connect(
-        &env::var("TEST_DATABASE_URL")
-            .expect("TEST_DATABASE_URL must be set"),
+        &env::var("TEST_DATABASE_URL").expect("TEST_DATABASE_URL must be set"),
     )
     .await
     .unwrap()
@@ -84,10 +83,7 @@ async fn seed_account(pool: &PgPool, email: &str) -> Uuid {
 }
 
 fn test_router(pool: PgPool) -> Router {
-    let blocklist = PasswordBlocklist::from_hashes(
-        "test",
-        Vec::<[u8; 20]>::new(),
-    );
+    let blocklist = PasswordBlocklist::from_hashes("test", Vec::<[u8; 20]>::new());
 
     build_router(AppState::new(
         pool,
@@ -96,19 +92,10 @@ fn test_router(pool: PgPool) -> Router {
     ))
 }
 
-async fn start_server(
-    app: Router,
-) -> (
-    SocketAddr,
-    tokio::task::JoinHandle<()>,
-) {
-    let listener =
-        TcpListener::bind("127.0.0.1:0")
-            .await
-            .unwrap();
+async fn start_server(app: Router) -> (SocketAddr, tokio::task::JoinHandle<()>) {
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
 
-    let address =
-        listener.local_addr().unwrap();
+    let address = listener.local_addr().unwrap();
 
     let task = tokio::spawn(async move {
         axum::serve(
@@ -141,11 +128,7 @@ fn refresh_cookie_value(response: &Response) -> String {
         .to_owned()
 }
 
-async fn login(
-    client: &Client,
-    address: SocketAddr,
-    email: &str,
-) -> (Value, String) {
+async fn login(client: &Client, address: SocketAddr, email: &str) -> (Value, String) {
     let response = client
         .post(format!("http://{address}/auth/login"))
         .header("content-type", "application/json")
@@ -165,79 +148,74 @@ async fn login(
 }
 
 #[tokio::test]
+async fn refresh_requires_the_browser_managed_cookie() {
+    let pool = PgPool::connect_lazy("postgres://invalid").unwrap();
+
+    let (address, server) = start_server(test_router(pool)).await;
+
+    let response = Client::new()
+        .post(format!("http://{address}/auth/refresh"))
+        .header("content-type", "application/json")
+        .json(&json!({
+            "refresh_token": "json-refresh-token-must-not-be-used"
+        }))
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), reqwest::StatusCode::UNAUTHORIZED);
+    assert!(response.headers().get("www-authenticate").is_none());
+    assert_eq!(response.headers()["cache-control"], "no-store");
+
+    let body: Value = response.json().await.unwrap();
+
+    assert_eq!(body["code"], "INVALID_REFRESH_TOKEN");
+
+    server.abort();
+}
+
+#[tokio::test]
 #[ignore = "requires PostgreSQL 18 and a built backend"]
 async fn refresh_end_to_end_rotates_the_presented_token() {
     let _lock = TEST_DATABASE_LOCK.lock().await;
 
     let pool = database().await;
 
-    sqlx::migrate!()
-        .run(&pool)
-        .await
-        .unwrap();
+    sqlx::migrate!().run(&pool).await.unwrap();
 
     reset(&pool).await;
 
-    let email = format!(
-        "e2e-refresh-{}@example.com",
-        Uuid::new_v4()
-    );
+    let email = format!("e2e-refresh-{}@example.com", Uuid::new_v4());
 
     seed_account(&pool, &email).await;
 
-    let (address, server) =
-        start_server(test_router(pool.clone()))
-            .await;
+    let (address, server) = start_server(test_router(pool.clone())).await;
 
     let client = Client::new();
 
-    let (login_body, old_refresh) =
-        login(&client, address, &email).await;
+    let (login_body, old_refresh) = login(&client, address, &email).await;
 
     assert!(login_body.get("refresh_token").is_none());
 
     let response = client
-        .post(format!(
-            "http://{address}/auth/refresh"
-        ))
-        .header(
-            "content-type",
-            "application/json",
-        )
-        .json(&json!({
-            "refresh_token": old_refresh
-        }))
+        .post(format!("http://{address}/auth/refresh"))
+        .header("cookie", format!("{REFRESH_COOKIE_NAME}={old_refresh}"))
         .send()
         .await
         .unwrap();
 
-    assert_eq!(
-        response.status(),
-        reqwest::StatusCode::OK
-    );
-
-    assert_eq!(
-        response.headers()["cache-control"],
-        "no-store"
-    );
+    assert_eq!(response.status(), reqwest::StatusCode::OK);
+    assert_eq!(response.headers()["cache-control"], "no-store");
 
     let replacement_refresh = refresh_cookie_value(&response);
 
-    assert_ne!(
-        replacement_refresh,
-        old_refresh
-    );
+    assert_ne!(replacement_refresh, old_refresh);
 
-    let body: Value =
-        response.json().await.unwrap();
+    let body: Value = response.json().await.unwrap();
 
     assert!(body.get("refresh_token").is_none());
     assert!(body.get("refresh_expires_in").is_none());
-
-    assert_ne!(
-        body["access_token"],
-        login_body["access_token"]
-    );
+    assert_ne!(body["access_token"], login_body["access_token"]);
 
     server.abort();
     reset(&pool).await;
@@ -250,88 +228,43 @@ async fn replayed_refresh_end_to_end_returns_401_without_a_bearer_challenge() {
 
     let pool = database().await;
 
-    sqlx::migrate!()
-        .run(&pool)
-        .await
-        .unwrap();
+    sqlx::migrate!().run(&pool).await.unwrap();
 
     reset(&pool).await;
 
-    let email = format!(
-        "e2e-refresh-replay-{}@example.com",
-        Uuid::new_v4()
-    );
+    let email = format!("e2e-refresh-replay-{}@example.com", Uuid::new_v4());
 
     seed_account(&pool, &email).await;
 
-    let (address, server) =
-        start_server(test_router(pool.clone()))
-            .await;
+    let (address, server) = start_server(test_router(pool.clone())).await;
 
     let client = Client::new();
 
-    let (_login_body, old_refresh) =
-        login(&client, address, &email).await;
+    let (_login_body, old_refresh) = login(&client, address, &email).await;
 
     let first = client
-        .post(format!(
-            "http://{address}/auth/refresh"
-        ))
-        .header(
-            "content-type",
-            "application/json",
-        )
-        .json(&json!({
-            "refresh_token": old_refresh
-        }))
+        .post(format!("http://{address}/auth/refresh"))
+        .header("cookie", format!("{REFRESH_COOKIE_NAME}={old_refresh}"))
         .send()
         .await
         .unwrap();
 
-    assert_eq!(
-        first.status(),
-        reqwest::StatusCode::OK
-    );
+    assert_eq!(first.status(), reqwest::StatusCode::OK);
 
     let replay = client
-        .post(format!(
-            "http://{address}/auth/refresh"
-        ))
-        .header(
-            "content-type",
-            "application/json",
-        )
-        .json(&json!({
-            "refresh_token": old_refresh
-        }))
+        .post(format!("http://{address}/auth/refresh"))
+        .header("cookie", format!("{REFRESH_COOKIE_NAME}={old_refresh}"))
         .send()
         .await
         .unwrap();
 
-    assert_eq!(
-        replay.status(),
-        reqwest::StatusCode::UNAUTHORIZED
-    );
+    assert_eq!(replay.status(), reqwest::StatusCode::UNAUTHORIZED);
+    assert!(replay.headers().get("www-authenticate").is_none());
+    assert_eq!(replay.headers()["cache-control"], "no-store");
 
-    assert!(
-        replay
-            .headers()
-            .get("www-authenticate")
-            .is_none()
-    );
+    let body: Value = replay.json().await.unwrap();
 
-    assert_eq!(
-        replay.headers()["cache-control"],
-        "no-store"
-    );
-
-    let body: Value =
-        replay.json().await.unwrap();
-
-    assert_eq!(
-        body["code"],
-        "INVALID_REFRESH_TOKEN"
-    );
+    assert_eq!(body["code"], "INVALID_REFRESH_TOKEN");
 
     server.abort();
     reset(&pool).await;
