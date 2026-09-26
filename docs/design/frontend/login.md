@@ -2,146 +2,264 @@
 
 ## Table of Contents
 
-1. [Scope](#scope)
-2. [Route](#route)
-3. [Requirements](#requirements)
-4. [UI](#ui)
-5. [Authentication Flow](#authentication-flow)
-6. [API Contract](#api-contract)
-7. [UI States](#ui-states)
-8. [Security](#security)
-9. [Accessibility](#accessibility)
-10. [Testing](#testing)
-11. [Implementation Criteria](#implementation-criteria)
+1. [Scope](#1-scope)
+2. [Route Contract](#2-route-contract)
+3. [Requirements](#3-requirements)
+4. [UI Contract](#4-ui-contract)
+5. [Authentication Flow](#5-authentication-flow)
+6. [API Contract](#6-api-contract)
+7. [Authentication State](#7-authentication-state)
+8. [Security Contract](#8-security-contract)
+9. [Accessibility](#9-accessibility)
+10. [Implementation Criteria](#10-implementation-criteria)
 
 ---
 
 # 1. Scope
 
-This document defines the **Admin Login page** and its **frontend behavior**.
+This document is the frontend source of truth for the Admin Login page and browser authentication behavior.
 
-| Item | Reference |
-| --- | --- |
-| Frontend Scope | Admin Login page and frontend behavior |
-| Authentication Source of Truth | Backend Authentication domain |
-| Backend Use Case | `AU_UC_01 — Authenticate Account` |
-| Backend API | `AU_API_01 — POST /auth/login` |
-| Backend Owns | Authentication rules, credentials, tokens, sessions, security, and error contracts |
+| ID                  | Item                 | Definition                                                                                                   |
+| ------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `FE_LOGIN_SCOPE_01` | Frontend Scope       | Admin Login page and frontend authentication behavior                                                        |
+| `FE_LOGIN_SCOPE_02` | Auth Source of Truth | Backend Authentication domain                                                                                |
+| `FE_LOGIN_SCOPE_03` | Backend Use Case     | `AU_UC_01 — Authenticate Account`                                                                            |
+| `FE_LOGIN_SCOPE_04` | Login API            | `POST /auth/login`                                                                                           |
+| `FE_LOGIN_SCOPE_05` | Access Token         | In-memory only                                                                                               |
+| `FE_LOGIN_SCOPE_06` | Refresh Credential   | Server-managed `HttpOnly` cookie                                                                             |
+| `FE_LOGIN_SCOPE_07` | Frontend Ownership   | Frontend owns only in-memory access-token state                                                              |
+| `FE_LOGIN_SCOPE_08` | Backend Ownership    | Authentication rules, credentials, tokens, sessions, rotation, replay detection, and authentication security |
+
+The frontend must never read, copy, manually persist, or manually send the refresh credential.
 
 ---
 
-# 2. Route
+# 2. Route Contract
 
-| ID | Route | Access | Purpose | Behavior |
-| --- | --- | --- | --- | --- |
-| `FE_LOGIN_ROUTE_01` | `/login` | Unauthenticated | Admin authentication | Display Login page |
-| `FE_LOGIN_ROUTE_02` | `/login` | Authenticated | Admin authentication | Redirect to `/admin` |
-| `FE_LOGIN_ROUTE_03` | `/admin` | Unauthenticated | Admin application | Redirect to `/login` |
+| ID                  | Route    | State                  | Behavior                                                                        |
+| ------------------- | -------- | ---------------------- | ------------------------------------------------------------------------------- |
+| `FE_LOGIN_ROUTE_01` | `/login` | `unknown`              | Show bootstrap pending state; do not redirect                                   |
+| `FE_LOGIN_ROUTE_02` | `/login` | `unauthenticated`      | Show Login page                                                                 |
+| `FE_LOGIN_ROUTE_03` | `/login` | `authenticated`        | Redirect to `/admin`                                                            |
+| `FE_LOGIN_ROUTE_04` | `/login` | `authentication-error` | Show Login page with retry/error UI                                             |
+| `FE_LOGIN_ROUTE_05` | `/admin` | `unknown`              | Show bootstrap pending state; do not redirect                                   |
+| `FE_LOGIN_ROUTE_06` | `/admin` | `unauthenticated`      | Redirect to `/login`                                                            |
+| `FE_LOGIN_ROUTE_07` | `/admin` | `authenticated`        | Show Admin Shell                                                                |
+| `FE_LOGIN_ROUTE_08` | `/admin` | `authentication-error` | Show authentication retry/error UI; do not redirect solely because of the error |
+
+Route protection must wait for authentication bootstrap to resolve.
 
 ---
 
 # 3. Requirements
 
-| ID            | Requirement                                                                                  |
-| ------------- | -------------------------------------------------------------------------------------------- |
-| `FE_LOGIN_01` | Display the Admin Login page at `/login`.                                                    |
-| `FE_LOGIN_02` | Accept an email address and password.                                                        |
-| `FE_LOGIN_03` | Submit credentials to `POST /auth/login`.                                                    |
-| `FE_LOGIN_04` | Show a loading state while authentication is in progress.                                    |
-| `FE_LOGIN_05` | Show validation errors for invalid required input.                                           |
-| `FE_LOGIN_06` | Show a generic authentication error for invalid credentials.                                 |
-| `FE_LOGIN_07` | Show a generic rate-limit error for `429 AUTHENTICATION_RATE_LIMITED`.                       |
-| `FE_LOGIN_08` | On successful authentication, establish authenticated client state and navigate to `/admin`. |
-| `FE_LOGIN_09` | Do not expose authentication tokens in the UI.                                               |
-| `FE_LOGIN_10` | Do not log passwords, access tokens, or refresh tokens.                                      |
+## Authentication
+
+| ID                | Requirement                                                              |
+| ----------------- | ------------------------------------------------------------------------ |
+| `FE_LOGIN_REQ_01` | Display Admin Login at `/login`.                                         |
+| `FE_LOGIN_REQ_02` | Accept email and password.                                               |
+| `FE_LOGIN_REQ_03` | Submit credentials to `POST /auth/login`.                                |
+| `FE_LOGIN_REQ_04` | Restore authentication after document reload using `POST /auth/refresh`. |
+| `FE_LOGIN_REQ_05` | Keep the access token in memory only.                                    |
+| `FE_LOGIN_REQ_06` | Keep the refresh credential inaccessible to JavaScript.                  |
+| `FE_LOGIN_REQ_07` | Establish authenticated state after successful login or bootstrap.       |
+| `FE_LOGIN_REQ_08` | Navigate authenticated users to `/admin`.                                |
+
+## Error Handling
+
+| ID                | Requirement                                                           |
+| ----------------- | --------------------------------------------------------------------- |
+| `FE_LOGIN_REQ_09` | Show generic invalid-credentials errors.                              |
+| `FE_LOGIN_REQ_10` | Show generic `429 AUTHENTICATION_RATE_LIMITED` errors.                |
+| `FE_LOGIN_REQ_11` | Treat refresh `401` as unauthenticated.                               |
+| `FE_LOGIN_REQ_12` | Do not treat non-`401` bootstrap/refresh failures as unauthenticated. |
+| `FE_LOGIN_REQ_13` | Provide a retryable `authentication-error` state.                     |
+
+## Refresh and Retry
+
+| ID                | Requirement                                                                                                                                       |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `FE_LOGIN_REQ_14` | Allow only one shared in-flight refresh per browser application context.                                                                          |
+| `FE_LOGIN_REQ_15` | Retry each affected protected request at most once.                                                                                               |
+| `FE_LOGIN_REQ_16` | Never recursively refresh the refresh request itself.                                                                                             |
+| `FE_LOGIN_REQ_17` | Never loop indefinitely between `401`, refresh, and retry.                                                                                        |
+| `FE_LOGIN_REQ_18` | Do not automatically retry a failed bootstrap request. Bootstrap retry is user-triggered through the retry UI.                                    |
+| `FE_LOGIN_REQ_19` | Do not automatically retry a failed refresh used for protected-request recovery. One refresh attempt is allowed for each protected request cycle. |
+| `FE_LOGIN_REQ_20` | Follow the backend-defined cross-context refresh/replay policy.                                                                                   |
+
+## Secret Handling
+
+| ID                | Requirement                                                 |
+| ----------------- | ----------------------------------------------------------- |
+| `FE_LOGIN_REQ_21` | Never expose authentication tokens in UI.                   |
+| `FE_LOGIN_REQ_22` | Never log passwords, access tokens, or refresh credentials. |
+| `FE_LOGIN_REQ_23` | Never send authentication tokens in query parameters.       |
 
 ---
 
-# 4. UI
+# 4. UI Contract
 
-## Components
+## Form
 
-| ID               | Component      |
-| ---------------- | -------------- |
-| `FE_LOGIN_UI_01` | Email field    |
-| `FE_LOGIN_UI_02` | Password field |
-| `FE_LOGIN_UI_03` | Sign In action |
+| ID               | Element         | Requirement                                                               |
+| ---------------- | --------------- | ------------------------------------------------------------------------- |
+| `FE_LOGIN_UI_01` | Email           | `type="email"`, required, `autocomplete="username"`                       |
+| `FE_LOGIN_UI_02` | Password        | `type="password"`, required, `autocomplete="current-password"`            |
+| `FE_LOGIN_UI_03` | Submit          | Sign In action                                                            |
+| `FE_LOGIN_UI_04` | Validation      | Basic required-field validation only                                      |
+| `FE_LOGIN_UI_05` | Server Rules    | Authentication rules remain server-side                                   |
+| `FE_LOGIN_UI_06` | Password Policy | Frontend must not reject a request using additional password-policy rules |
 
-## Email
+## UI Error States
 
-| Property     | Value      |
-| ------------ | ---------- |
-| Type         | `email`    |
-| Required     | Yes        |
-| Autocomplete | `username` |
-
-## Password
-
-| Property     | Value              |
-| ------------ | ------------------ |
-| Type         | `password`         |
-| Required     | Yes                |
-| Autocomplete | `current-password` |
-
-## Validation
-
-| ID               | Requirement                                                                             |
-| ---------------- | --------------------------------------------------------------------------------------- |
-| `FE_LOGIN_UI_04` | Perform basic required-field validation                                                 |
-| `FE_LOGIN_UI_05` | Authentication rules remain server-side                                                 |
-| `FE_LOGIN_UI_06` | Do not add password-policy validation that could prevent a valid authentication request |
+| ID               | State                | Behavior                                       |
+| ---------------- | -------------------- | ---------------------------------------------- |
+| `FE_LOGIN_UI_07` | Invalid Request      | Show request/validation error                  |
+| `FE_LOGIN_UI_08` | Invalid Credentials  | Show generic authentication error              |
+| `FE_LOGIN_UI_09` | Rate Limited         | Show generic rate-limit error                  |
+| `FE_LOGIN_UI_10` | Authentication Error | Show retryable bootstrap/refresh error         |
+| `FE_LOGIN_UI_11` | Loading              | Prevent duplicate submission and show progress |
 
 ---
 
 # 5. Authentication Flow
 
-## Success Flow
+## 5.1 Bootstrap
 
-| Step | Action                                          |
-| ---- | ----------------------------------------------- |
-| 1    | User opens `/login`                             |
-| 2    | User enters email and password                  |
-| 3    | User submits the Login form                     |
-| 4    | Frontend sends `POST /auth/login`               |
-| 5    | Authentication succeeds                         |
-| 6    | Frontend establishes authenticated client state |
-| 7    | Frontend navigates to `/admin`                  |
+```mermaid
+flowchart TD
+    A["Application loads"] --> B["authStatus = unknown"]
+    B --> C["POST /auth/refresh<br/>credentials: include"]
+    C -->|200| D["Store access token in memory"]
+    D --> E["authStatus = authenticated"]
+    C -->|401| F["Clear access token"]
+    F --> G["authStatus = unauthenticated"]
+    C -->|Other error| H["authStatus = authentication-error"]
+    H --> I["Show retry UI"]
+    I -->|User retries| C
+```
 
-## Failure Flow
+| ID                 | Step                                                              |
+| ------------------ | ----------------------------------------------------------------- |
+| `FE_LOGIN_FLOW_01` | Start `authStatus` as `unknown`.                                  |
+| `FE_LOGIN_FLOW_02` | Call `POST /auth/refresh` with `credentials: "include"`.          |
+| `FE_LOGIN_FLOW_03` | Let the browser manage the refresh cookie.                        |
+| `FE_LOGIN_FLOW_04` | On success, store only the access token in memory.                |
+| `FE_LOGIN_FLOW_05` | On refresh `401`, transition to `unauthenticated`.                |
+| `FE_LOGIN_FLOW_06` | On other bootstrap failure, transition to `authentication-error`. |
+| `FE_LOGIN_FLOW_07` | Bootstrap is not automatically retried after a non-`401` failure. |
+| `FE_LOGIN_FLOW_08` | User-triggered retry starts a new bootstrap attempt.              |
+| `FE_LOGIN_FLOW_09` | Never redirect `unknown` directly to `/login`.                    |
 
-| Step | Action                                          |
-| ---- | ----------------------------------------------- |
-| 1    | User submits the Login form                     |
-| 2    | Frontend sends `POST /auth/login`               |
-| 3    | Authentication fails                            |
-| 4    | User remains on `/login`                        |
-| 5    | Frontend displays the appropriate generic error |
+## 5.2 Login
 
-## Related Behavior
+```mermaid
+flowchart LR
+    A["Login page"] --> B["Submit email + password"]
+    B --> C["POST /auth/login"]
+    C -->|200| D["Refresh cookie issued"]
+    D --> E["Access token in memory"]
+    E --> F["authStatus = authenticated"]
+    F --> G["Navigate /admin"]
+    C -->|400/401/429| H["Show appropriate error"]
+```
 
-| Behavior                           | Source           |
-| ---------------------------------- | ---------------- |
-| Unauthenticated access to `/admin` | `admin-shell.md` |
-| Logout behavior                    | `admin-shell.md` |
+| ID                 | Step                                                            |
+| ------------------ | --------------------------------------------------------------- |
+| `FE_LOGIN_FLOW_10` | Submit email/password only to `POST /auth/login`.               |
+| `FE_LOGIN_FLOW_11` | Use `credentials: "include"` when browser cookies are required. |
+| `FE_LOGIN_FLOW_12` | Backend issues the refresh cookie.                              |
+| `FE_LOGIN_FLOW_13` | Backend returns the access token only.                          |
+| `FE_LOGIN_FLOW_14` | Store the access token in memory.                               |
+| `FE_LOGIN_FLOW_15` | Transition to `authenticated`.                                  |
+| `FE_LOGIN_FLOW_16` | Navigate to `/admin`.                                           |
+
+## 5.3 Protected Request Recovery
+
+```mermaid
+flowchart TD
+    A["Protected request"] --> B{401?}
+    B -->|No| C["Return response"]
+    B -->|Yes| D{"Retry already used?"}
+    D -->|Yes| E["Return 401"]
+    D -->|No| F{"Refresh already running?"}
+    F -->|Yes| G["Wait for shared refresh"]
+    F -->|No| H["Start one refresh"]
+    H --> I{Refresh result}
+    G --> I
+    I -->|200| J["Replace in-memory access token"]
+    J --> K["Retry original request once"]
+    I -->|401| L["authStatus = unauthenticated"]
+    I -->|Other error| M["authStatus = authentication-error"]
+```
+
+| ID                 | Rule                                                                                        |
+| ------------------ | ------------------------------------------------------------------------------------------- |
+| `FE_LOGIN_FLOW_17` | At most one refresh is active per browser application context.                              |
+| `FE_LOGIN_FLOW_18` | Concurrent protected-request `401`s wait for the same refresh.                              |
+| `FE_LOGIN_FLOW_19` | Retry each original protected request at most once.                                         |
+| `FE_LOGIN_FLOW_20` | The refresh request is excluded from refresh-on-`401` handling.                             |
+| `FE_LOGIN_FLOW_21` | If the original request has already been retried, return its `401` without another refresh. |
+| `FE_LOGIN_FLOW_22` | A failed refresh is not automatically retried.                                              |
+| `FE_LOGIN_FLOW_23` | Never retain an old refresh credential for manual retry.                                    |
+
+## 5.4 Logout
+
+| ID                 | Rule                                                                               |
+| ------------------ | ---------------------------------------------------------------------------------- |
+| `FE_LOGIN_FLOW_24` | Logout uses the browser-managed refresh credential.                                |
+| `FE_LOGIN_FLOW_25` | Logout does not require an unexpired access token.                                 |
+| `FE_LOGIN_FLOW_26` | Successful logout clears the server authentication session.                        |
+| `FE_LOGIN_FLOW_27` | Successful logout expires the browser refresh cookie.                              |
+| `FE_LOGIN_FLOW_28` | Frontend clears in-memory access-token state and transitions to `unauthenticated`. |
 
 ---
 
 # 6. API Contract
 
-## Request
+## 6.1 Cookie Policy
 
-| Property     | Value              |
-| ------------ | ------------------ |
-| Method       | `POST`             |
-| Endpoint     | `/auth/login`      |
-| Content-Type | `application/json` |
+Cookie attributes are deployment-dependent.
 
-### Request Body
+### Same-Site Deployment
 
-| Field      | Type     | Required | Description           |
-| ---------- | -------- | -------- | --------------------- |
-| `email`    | `string` | Yes      | Account email address |
-| `password` | `string` | Yes      | Account password      |
+```text
+__Host-refresh_token=<opaque>
+Max-Age=<seconds-until-session-expiry>
+Path=/
+Secure
+HttpOnly
+SameSite=Strict
+```
+
+### Cross-Site Deployment
+
+```text
+__Host-refresh_token=<opaque>
+Max-Age=<seconds-until-session-expiry>
+Path=/
+Secure
+HttpOnly
+SameSite=None
+```
+
+For cross-site deployment, explicit Origin validation, credentialed CORS, and CSRF protections are required.
+
+The frontend never constructs or sends a `Cookie` header manually.
+
+The frontend never reads `Set-Cookie`.
+
+## 6.2 Login
+
+| Property    | Contract      |
+| ----------- | ------------- |
+| Method      | `POST`        |
+| Endpoint    | `/auth/login` |
+| Request     | JSON          |
+| Credentials | `include`     |
+
+### Request
 
 ```json
 {
@@ -150,263 +268,292 @@ This document defines the **Admin Login page** and its **frontend behavior**.
 }
 ```
 
-## Success
+### Success
 
-| Property      | Value              |
-| ------------- | ------------------ |
-| Status        | `200 OK`           |
-| Content-Type  | `application/json` |
-| Cache-Control | `no-store`         |
-
-### Response Body
-
-| Field                | Type     | Description                       |
-| -------------------- | -------- | --------------------------------- |
-| `access_token`       | `string` | Opaque access token               |
-| `token_type`         | `string` | Authentication token type         |
-| `expires_in`         | `number` | Access-token lifetime in seconds  |
-| `refresh_token`      | `string` | Opaque refresh token              |
-| `refresh_expires_in` | `number` | Refresh-token lifetime in seconds |
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+Cache-Control: no-store
+Set-Cookie: __Host-refresh_token=<opaque>; Max-Age=<seconds-until-session-expiry>; Path=/; Secure; HttpOnly; SameSite=<deployment-policy>
+```
 
 ```json
 {
   "access_token": "opaque-access-token",
   "token_type": "Bearer",
-  "expires_in": 3600,
-  "refresh_token": "opaque-refresh-token",
-  "refresh_expires_in": 2592000
+  "expires_in": 3600
 }
 ```
 
-| ID                | Requirement                                                                                 |
+| ID                | Requirement                                                                      |
+| ----------------- | -------------------------------------------------------------------------------- |
+| `FE_LOGIN_API_01` | Response must not contain `refresh_token`.                                       |
+| `FE_LOGIN_API_02` | Frontend must not read `Set-Cookie`.                                             |
+| `FE_LOGIN_API_03` | Frontend must not construct a `Cookie` header.                                   |
+| `FE_LOGIN_API_04` | Refresh credential expiration must not exceed authentication-session expiration. |
+
+## 6.3 Refresh
+
+| Property    | Contract        |
+| ----------- | --------------- |
+| Method      | `POST`          |
+| Endpoint    | `/auth/refresh` |
+| Body        | None            |
+| Credentials | `include`       |
+
+```http
+POST /auth/refresh
+```
+
+The browser attaches the refresh cookie when the deployment's cookie policy permits it.
+
+### Success
+
+```http
+HTTP/1.1 200 OK
+Cache-Control: no-store
+Set-Cookie: __Host-refresh_token=<new-opaque>; Max-Age=<seconds-until-session-expiry>; Path=/; Secure; HttpOnly; SameSite=<deployment-policy>
+```
+
+```json
+{
+  "access_token": "new-opaque-access-token",
+  "token_type": "Bearer",
+  "expires_in": 3600
+}
+```
+
+| ID                | Requirement                                                                |
+| ----------------- | -------------------------------------------------------------------------- |
+| `FE_LOGIN_API_05` | Server rotates the refresh credential.                                     |
+| `FE_LOGIN_API_06` | Replacement refresh credential preserves the original absolute expiration. |
+| `FE_LOGIN_API_07` | Response contains access-token data only.                                  |
+| `FE_LOGIN_API_08` | `401 INVALID_REFRESH_TOKEN` transitions frontend to `unauthenticated`.     |
+| `FE_LOGIN_API_09` | Other refresh failures transition frontend to `authentication-error`.      |
+| `FE_LOGIN_API_10` | A failed refresh is not automatically retried.                             |
+
+## 6.4 Logout
+
+| Property    | Contract       |
+| ----------- | -------------- |
+| Method      | `POST`         |
+| Endpoint    | `/auth/logout` |
+| Body        | None           |
+| Credentials | `include`      |
+
+### Success
+
+```http
+HTTP/1.1 204 No Content
+Cache-Control: no-store
+Set-Cookie: __Host-refresh_token=; Max-Age=0; Path=/; Secure; HttpOnly; SameSite=<deployment-policy>
+```
+
+| ID                | Requirement                                                                               |
+| ----------------- | ----------------------------------------------------------------------------------------- |
+| `FE_LOGIN_API_11` | Logout does not require a bearer access token.                                            |
+| `FE_LOGIN_API_12` | Logout invalidates the authentication session.                                            |
+| `FE_LOGIN_API_13` | Logout is idempotent.                                                                     |
+| `FE_LOGIN_API_14` | Invalid or missing refresh credentials may still produce `204` while expiring the cookie. |
+
+## 6.5 Error Contract
+
+| ID                | Status | Code                          | Frontend Behavior                 |
+| ----------------- | ------ | ----------------------------- | --------------------------------- |
+| `FE_LOGIN_ERR_01` | `400`  | `INVALID_REQUEST`             | Show request/validation error     |
+| `FE_LOGIN_ERR_02` | `401`  | `INVALID_CREDENTIALS`         | Show generic authentication error |
+| `FE_LOGIN_ERR_03` | `401`  | `INVALID_REFRESH_TOKEN`       | Become unauthenticated            |
+| `FE_LOGIN_ERR_04` | `429`  | `AUTHENTICATION_RATE_LIMITED` | Show generic rate-limit error     |
+
+---
+
+# 7. Authentication State
+
+## 7.1 Persistent Authentication State
+
+`authStatus` is the route-protection state.
+
+| ID                  | State                  | Meaning                                                 |
+| ------------------- | ---------------------- | ------------------------------------------------------- |
+| `FE_LOGIN_STATE_01` | `unknown`              | Bootstrap has not resolved                              |
+| `FE_LOGIN_STATE_02` | `authenticated`        | Valid in-memory access token exists                     |
+| `FE_LOGIN_STATE_03` | `unauthenticated`      | Authentication has been determined to be absent/invalid |
+| `FE_LOGIN_STATE_04` | `authentication-error` | Backend failure did not prove unauthenticated           |
+
+## 7.2 Transient Refresh State
+
+`refreshInFlight` is a separate transient operation state and is not an `authStatus`.
+
+| ID                  | State        | Meaning                                    |
+| ------------------- | ------------ | ------------------------------------------ |
+| `FE_LOGIN_STATE_05` | `idle`       | No refresh is running                      |
+| `FE_LOGIN_STATE_06` | `refreshing` | One refresh operation is currently running |
+
+This separation allows an authenticated application to temporarily refresh an access token without changing its route-protection state unless the refresh result requires a state transition.
+
+### State Rules
+
+| ID                  | Rule                                                                           |
+| ------------------- | ------------------------------------------------------------------------------ |
+| `FE_LOGIN_STATE_07` | `unknown` must not redirect to `/login`.                                       |
+| `FE_LOGIN_STATE_08` | `authentication-error` must not automatically redirect to `/login`.            |
+| `FE_LOGIN_STATE_09` | `401` from `/auth/refresh` transitions `authStatus` to `unauthenticated`.      |
+| `FE_LOGIN_STATE_10` | Other refresh failures transition `authStatus` to `authentication-error`.      |
+| `FE_LOGIN_STATE_11` | Access tokens exist only while held in memory.                                 |
+| `FE_LOGIN_STATE_12` | Refresh credentials are never part of frontend application state.              |
+| `FE_LOGIN_STATE_13` | `refreshInFlight` permits at most one refresh per browser application context. |
+
+---
+
+# 8. Security Contract
+
+## 8.1 Token Storage
+
+| ID                | Rule                                                                                                                      |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `FE_LOGIN_SEC_01` | Access token: memory only.                                                                                                |
+| `FE_LOGIN_SEC_02` | Refresh credential: browser-managed `HttpOnly` cookie only.                                                               |
+| `FE_LOGIN_SEC_03` | Never use `localStorage`, `sessionStorage`, IndexedDB, or other JavaScript-accessible storage for the refresh credential. |
+| `FE_LOGIN_SEC_04` | Never send authentication tokens in query parameters.                                                                     |
+| `FE_LOGIN_SEC_05` | Never log authentication secrets.                                                                                         |
+| `FE_LOGIN_SEC_06` | Never display authentication secrets.                                                                                     |
+
+## 8.2 Cookie Policy
+
+| ID                   | Rule                                                                                                           |
+| -------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `FE_LOGIN_COOKIE_01` | The refresh cookie uses the `__Host-` prefix, `Secure`, `HttpOnly`, `Path=/`, and no `Domain`.                 |
+| `FE_LOGIN_COOKIE_02` | Same-site deployments use `SameSite=Strict` by default.                                                        |
+| `FE_LOGIN_COOKIE_03` | Explicit cross-site deployments use `SameSite=None; Secure`.                                                   |
+| `FE_LOGIN_COOKIE_04` | `credentials: "include"` does not override browser cookie policy.                                              |
+| `FE_LOGIN_COOKIE_05` | Cross-site deployments must account for browser/privacy policies that block cross-site or third-party cookies. |
+
+## 8.3 CSRF, Origin, CORS
+
+| ID                | Rule                                                                                        |
 | ----------------- | ------------------------------------------------------------------------------------------- |
-| `FE_LOGIN_API_01` | The frontend authentication service owns the received authentication state                  |
-| `FE_LOGIN_API_02` | Raw authentication tokens must never be rendered, logged, or exposed through application UI |
+| `FE_LOGIN_SEC_07` | `/auth/login`, `/auth/refresh`, and `/auth/logout` must follow the backend `Origin` policy. |
+| `FE_LOGIN_SEC_08` | Cookie-authenticated state-changing endpoints must use the backend's CSRF protections.      |
+| `FE_LOGIN_SEC_09` | Credentialed cross-origin requests use explicit allowed origins.                            |
+| `FE_LOGIN_SEC_10` | Credentialed CORS must not use `Access-Control-Allow-Origin: *`.                            |
+| `FE_LOGIN_SEC_11` | Credentialed cross-origin requests use `Access-Control-Allow-Credentials: true`.            |
+| `FE_LOGIN_SEC_12` | Fetch Metadata protections follow the backend Authentication domain contract.               |
 
-## Errors
+## 8.4 Refresh Security
 
-| ID                    | Status | Code                          | Frontend Behavior                    |
-| --------------------- | ------ | ----------------------------- | ------------------------------------ |
-| `FE_LOGIN_API_ERR_01` | `400`  | `INVALID_REQUEST`             | Display request/validation error     |
-| `FE_LOGIN_API_ERR_02` | `401`  | `INVALID_CREDENTIALS`         | Display generic authentication error |
-| `FE_LOGIN_API_ERR_03` | `429`  | `AUTHENTICATION_RATE_LIMITED` | Display generic rate-limit error     |
-
-| ID                    | Requirement                                                 |
-| --------------------- | ----------------------------------------------------------- |
-| `FE_LOGIN_API_SEC_01` | The frontend must not distinguish whether an account exists |
-
----
-
-# 7. UI States
-
-| ID                  | State                | Behavior                                                      |
-| ------------------- | -------------------- | ------------------------------------------------------------- |
-| `FE_LOGIN_STATE_01` | Initial              | Show empty login form                                         |
-| `FE_LOGIN_STATE_02` | Editing              | Allow credential entry                                        |
-| `FE_LOGIN_STATE_03` | Submitting           | Disable submission and show loading state                     |
-| `FE_LOGIN_STATE_04` | Invalid Request      | Display validation/request error                              |
-| `FE_LOGIN_STATE_05` | Invalid Credentials  | Display generic authentication error                          |
-| `FE_LOGIN_STATE_06` | Rate Limited         | Display generic rate-limit error                              |
-| `FE_LOGIN_STATE_07` | Success              | Establish authenticated state and navigate to `/admin`        |
-| `FE_LOGIN_STATE_08` | Duplicate Submission | Prevent duplicate submissions while authentication is pending |
-
----
-
-# 8. Security
-
-The frontend must follow the Authentication domain security contract.
-
-| ID                | Security Rule                 | Requirement                                                                    |
-| ----------------- | ----------------------------- | ------------------------------------------------------------------------------ |
-| `FE_LOGIN_SEC_01` | Transport                     | Use HTTPS                                                                      |
-| `FE_LOGIN_SEC_02` | Credentials                   | Send credentials only to `POST /auth/login`                                    |
-| `FE_LOGIN_SEC_03` | Token Query Parameters        | Do not send tokens in query parameters                                         |
-| `FE_LOGIN_SEC_04` | Token Endpoints               | Do not send tokens to unrelated endpoints                                      |
-| `FE_LOGIN_SEC_05` | Password Logging              | Never log passwords                                                            |
-| `FE_LOGIN_SEC_06` | Access Token Logging          | Never log access tokens                                                        |
-| `FE_LOGIN_SEC_07` | Refresh Token Logging         | Never log refresh tokens                                                       |
-| `FE_LOGIN_SEC_08` | Token Display                 | Never display tokens                                                           |
-| `FE_LOGIN_SEC_09` | Error Messages                | Do not expose authentication credentials                                       |
-| `FE_LOGIN_SEC_10` | Account Existence             | Do not reveal whether an account exists                                        |
-| `FE_LOGIN_SEC_11` | Authentication Authority      | Treat the backend as the authority for authentication                          |
-| `FE_LOGIN_SEC_12` | `401 Unauthorized`            | Treat `401 Unauthorized` as unauthenticated                                    |
-| `FE_LOGIN_SEC_13` | Frontend Authentication Rules | Do not implement authentication or account-state rules independently in the UI |
-
-### Backend Security References
-
-| Frontend ID       | Backend Reference  |
-| ----------------- | ------------------ |
-| `FE_LOGIN_SEC_01` | `AU_REQ_NON_FC_01` |
-| `FE_LOGIN_SEC_02` | `AU_REQ_NON_FC_04` |
-| `FE_LOGIN_SEC_03` | `AU_REQ_NON_FC_06` |
-| `FE_LOGIN_SEC_04` | `AU_REQ_NON_FC_06` |
-| `FE_LOGIN_SEC_05` | `AU_REQ_NON_FC_07` |
-| `FE_LOGIN_SEC_06` | `AU_SEC_REQ_08`    |
-| `FE_LOGIN_SEC_07` | `AU_SEC_REQ_08`    |
-| `FE_LOGIN_SEC_08` | `AU_SEC_REQ_08`    |
-| `FE_LOGIN_SEC_09` | `AU_SEC_REQ_09`    |
-| `FE_LOGIN_SEC_10` | `AU_SEC_REQ_09`    |
-| `FE_LOGIN_SEC_11` | `AU_SEC_REQ_08`    |
-| `FE_LOGIN_SEC_12` | `AU_SEC_REQ_09`    |
-| `FE_LOGIN_SEC_13` | `AU_SEC_REQ_09`    |
+| ID                | Rule                                                                                                     |
+| ----------------- | -------------------------------------------------------------------------------------------------------- |
+| `FE_LOGIN_SEC_13` | Refresh tokens are rotated according to the backend Authentication domain contract.                      |
+| `FE_LOGIN_SEC_14` | Rotation must not extend the original refresh/session expiration.                                        |
+| `FE_LOGIN_SEC_15` | The frontend never replays an old refresh credential manually.                                           |
+| `FE_LOGIN_SEC_16` | Cross-tab/window refresh behavior follows the backend replay/rotation policy.                            |
+| `FE_LOGIN_SEC_17` | Protected-request refresh must be serialized per browser application context.                            |
+| `FE_LOGIN_SEC_18` | Refresh-on-`401` must be bounded to one refresh attempt and one retry per original protected request.    |
+| `FE_LOGIN_SEC_19` | Bootstrap automatically executes once; subsequent bootstrap attempts are user-triggered by the retry UI. |
+| `FE_LOGIN_SEC_20` | A failed protected-request refresh is not automatically retried.                                         |
 
 ---
 
 # 9. Accessibility
 
-| ID                 | Accessibility Requirement                                                        |
-| ------------------ | -------------------------------------------------------------------------------- |
-| `FE_LOGIN_A11Y_01` | Use a visible label for each form field                                          |
-| `FE_LOGIN_A11Y_02` | Associate validation errors with their fields when applicable                    |
-| `FE_LOGIN_A11Y_03` | Support keyboard submission                                                      |
-| `FE_LOGIN_A11Y_04` | Provide visible focus states                                                     |
-| `FE_LOGIN_A11Y_05` | Use semantic form controls                                                       |
-| `FE_LOGIN_A11Y_06` | Communicate loading and error states to assistive technologies where appropriate |
-| `FE_LOGIN_A11Y_07` | Keep the Sign In action accessible while the form is usable                      |
+| ID                 | Requirement                                                  |
+| ------------------ | ------------------------------------------------------------ |
+| `FE_LOGIN_A11Y_01` | Each form field has a visible label.                         |
+| `FE_LOGIN_A11Y_02` | Validation errors are associated with their relevant fields. |
+| `FE_LOGIN_A11Y_03` | Form submission works from the keyboard.                     |
+| `FE_LOGIN_A11Y_04` | Focus states are visible.                                    |
+| `FE_LOGIN_A11Y_05` | Semantic form controls are used.                             |
+| `FE_LOGIN_A11Y_06` | Loading and error states are announced appropriately.        |
+| `FE_LOGIN_A11Y_07` | Sign In remains accessible while the form is usable.         |
 
 ---
 
-# 11. Implementation Criteria
+# 10. Implementation Criteria
 
-### Status Values
+## Status
 
-| Status         | Meaning                                                |
-| -------------- | ------------------------------------------------------ |
-| ⚪ Not Started  | Criteria has not been implemented or verified          |
-| 🟡 In Progress | Implementation exists but verification is not complete |
-| 🟢 Implemented | Implementation is complete and verified                |
-| 🔴 Blocked     | Implementation cannot proceed because of a blocker     |
+| Status         | Meaning                                                          |
+| -------------- | ---------------------------------------------------------------- |
+| ⚪ Not Started  | Not implemented or not verified                                  |
+| 🟡 In Progress | Partially implemented or verification incomplete                 |
+| 🟢 Implemented | Implemented and verified                                         |
+| 🔴 Blocked     | Cannot proceed because a required dependency/contract is missing |
 
-## Routes
+## 10.1 Routes
 
-| ID                  | Criteria                                                            | Status         | Reason                                                                       |
-| ------------------- | ------------------------------------------------------------------- | -------------- | ---------------------------------------------------------------------------- |
-| `FE_LOGIN_ROUTE_01` | `/login` displays the Admin Login page for unauthenticated users    | 🟢 Implemented | `frontend/admin/src/App.tsx`, `frontend/admin/src/pages/login/LoginPage.tsx` |
-| `FE_LOGIN_ROUTE_02` | Authenticated users accessing `/login` are redirected to `/admin`   | 🟢 Implemented | `frontend/admin/src/App.tsx`, `frontend/admin/src/services/navigation.ts`    |
-| `FE_LOGIN_ROUTE_03` | Unauthenticated users accessing `/admin` are redirected to `/login` | 🟢 Implemented | `frontend/admin/src/App.tsx`, `frontend/admin/src/services/navigation.ts`    |
+| ID                       | Criteria                                                             | Status         | Current Reason                                       |
+| ------------------------ | -------------------------------------------------------------------- | -------------- | ---------------------------------------------------- |
+| `FE_LOGIN_IMPL_ROUTE_01` | Bootstrap `unknown` state exists                                     | 🔴 Blocked     | Not implemented in `App.tsx`                         |
+| `FE_LOGIN_IMPL_ROUTE_02` | `/login` waits for bootstrap                                         | 🔴 Blocked     | Current guard treats missing auth as unauthenticated |
+| `FE_LOGIN_IMPL_ROUTE_03` | `/login` redirects authenticated users to `/admin`                   | 🟡 In Progress | Existing volatile-memory guard                       |
+| `FE_LOGIN_IMPL_ROUTE_04` | `/admin` waits for bootstrap                                         | 🔴 Blocked     | Current guard redirects before bootstrap             |
+| `FE_LOGIN_IMPL_ROUTE_05` | `/admin` redirects unauthenticated users to `/login` after bootstrap | 🟡 In Progress | Existing protection requires bootstrap integration   |
+| `FE_LOGIN_IMPL_ROUTE_06` | `/admin` renders Admin Shell when authenticated                      | 🟢 Implemented | Existing route/layout                                |
 
-## Requirements
+## 10.2 Authentication Service
 
-| ID            | Criteria                                                                                      | Status         | Reason                                                                                                           |
-| ------------- | --------------------------------------------------------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `FE_LOGIN_01` | Display the Admin Login page at `/login`                                                      | 🟢 Implemented | `frontend/admin/src/pages/login/LoginPage.tsx`                                                                   |
-| `FE_LOGIN_02` | Accept an email address and password                                                          | 🟢 Implemented | `frontend/admin/src/pages/login/LoginPage.tsx`                                                                   |
-| `FE_LOGIN_03` | Submit credentials to `POST /auth/login`                                                      | 🟢 Implemented | `frontend/admin/src/services/auth.ts`                                                                            |
-| `FE_LOGIN_04` | Show a loading state while authentication is in progress                                      | 🟢 Implemented | `frontend/admin/src/pages/login/LoginPage.tsx`                                                                   |
-| `FE_LOGIN_05` | Show validation errors for invalid required input                                             | 🟢 Implemented | `frontend/admin/src/pages/login/LoginPage.tsx`                                                                   |
-| `FE_LOGIN_06` | Show a generic authentication error for invalid credentials                                   | 🟢 Implemented | `frontend/admin/src/pages/login/LoginPage.tsx`, `frontend/admin/src/services/auth.ts`                            |
-| `FE_LOGIN_07` | Show a generic rate-limit error for `429 AUTHENTICATION_RATE_LIMITED`                         | 🟢 Implemented | `frontend/admin/src/pages/login/LoginPage.tsx`, `frontend/admin/src/services/auth.ts`                            |
-| `FE_LOGIN_08` | Establish authenticated client state and navigate to `/admin` after successful authentication | 🟢 Implemented | `frontend/admin/src/services/auth.ts`, `frontend/admin/src/App.tsx`, `frontend/admin/src/services/navigation.ts` |
-| `FE_LOGIN_09` | Do not expose authentication tokens in the UI                                                 | 🟢 Implemented | `frontend/admin/src/services/auth.ts`, `frontend/admin/src/pages/login/LoginPage.tsx`                            |
-| `FE_LOGIN_10` | Do not log passwords, access tokens, or refresh tokens                                        | 🟢 Implemented | No console logging or token-storage references found in frontend source                                          |
+| ID                      | Criteria                                                         | Status         | Current Reason                                                |
+| ----------------------- | ---------------------------------------------------------------- | -------------- | ------------------------------------------------------------- |
+| `FE_LOGIN_IMPL_AUTH_01` | Access token is memory-only                                      | 🟢 Implemented | Current auth service uses module memory                       |
+| `FE_LOGIN_IMPL_AUTH_02` | Refresh token is removed from frontend state                     | 🔴 Blocked     | Current `AuthenticationSession` still contains `refreshToken` |
+| `FE_LOGIN_IMPL_AUTH_03` | Login uses browser credentials                                   | 🔴 Blocked     | `credentials: "include"` not implemented                      |
+| `FE_LOGIN_IMPL_AUTH_04` | Bootstrap calls `/auth/refresh`                                  | 🔴 Blocked     | Not implemented                                               |
+| `FE_LOGIN_IMPL_AUTH_05` | Refresh rotates browser credential                               | 🔴 Blocked     | Cookie refresh not implemented                                |
+| `FE_LOGIN_IMPL_AUTH_06` | Refresh `401` becomes unauthenticated                            | 🔴 Blocked     | Refresh flow not implemented                                  |
+| `FE_LOGIN_IMPL_AUTH_07` | Non-`401` refresh failures become authentication-error           | 🔴 Blocked     | Error state not implemented                                   |
+| `FE_LOGIN_IMPL_AUTH_08` | Protected `401` refresh is serialized                            | 🔴 Blocked     | Refresh coordinator not implemented                           |
+| `FE_LOGIN_IMPL_AUTH_09` | Protected request retries at most once                           | 🔴 Blocked     | Retry mechanism not implemented                               |
+| `FE_LOGIN_IMPL_AUTH_10` | Refresh request is excluded from recursive refresh handling      | 🔴 Blocked     | Refresh interceptor not implemented                           |
+| `FE_LOGIN_IMPL_AUTH_11` | Bootstrap does not automatically retry after a non-`401` failure | 🔴 Blocked     | Retry policy not implemented                                  |
+| `FE_LOGIN_IMPL_AUTH_12` | Failed protected-request refresh is not automatically retried    | 🔴 Blocked     | Bounded refresh policy not implemented                        |
+| `FE_LOGIN_IMPL_AUTH_13` | Refresh credentials are never logged/exposed                     | 🟢 Implemented | No secret rendering/logging found                             |
+| `FE_LOGIN_IMPL_AUTH_14` | Logout uses browser-managed refresh credential                   | 🔴 Blocked     | Current logout uses bearer access token                       |
 
-## UI
+## 10.3 Backend Contract Dependencies
 
-| ID               | Criteria                                                                                 | Status         | Reason                                                                                |
-| ---------------- | ---------------------------------------------------------------------------------------- | -------------- | ------------------------------------------------------------------------------------- |
-| `FE_LOGIN_UI_01` | Email field is implemented                                                               | 🟢 Implemented | `frontend/admin/src/pages/login/LoginPage.tsx`                                        |
-| `FE_LOGIN_UI_02` | Password field is implemented                                                            | 🟢 Implemented | `frontend/admin/src/pages/login/LoginPage.tsx`                                        |
-| `FE_LOGIN_UI_03` | Sign In action is implemented                                                            | 🟢 Implemented | `frontend/admin/src/pages/login/LoginPage.tsx`                                        |
-| `FE_LOGIN_UI_04` | Basic required-field validation is implemented                                           | 🟢 Implemented | `frontend/admin/src/pages/login/LoginPage.tsx`                                        |
-| `FE_LOGIN_UI_05` | Authentication rules remain server-side                                                  | 🟢 Implemented | `frontend/admin/src/pages/login/LoginPage.tsx`, `frontend/admin/src/services/auth.ts` |
-| `FE_LOGIN_UI_06` | No password-policy validation is added that could prevent a valid authentication request | 🟢 Implemented | `frontend/admin/src/pages/login/LoginPage.tsx`                                        |
+| ID                         | Criteria                                                                            | Status     | Current Reason                                           |
+| -------------------------- | ----------------------------------------------------------------------------------- | ---------- | -------------------------------------------------------- |
+| `FE_LOGIN_IMPL_BACKEND_01` | Login sets the server-managed refresh cookie with deployment-appropriate attributes | 🔴 Blocked | Backend cookie contract not implemented                  |
+| `FE_LOGIN_IMPL_BACKEND_02` | Refresh accepts browser cookie and returns access token only                        | 🔴 Blocked | Current refresh contract uses request-body refresh token |
+| `FE_LOGIN_IMPL_BACKEND_03` | Logout authenticates through refresh/session cookie                                 | 🔴 Blocked | Current logout requires bearer access token              |
+| `FE_LOGIN_IMPL_BACKEND_04` | Refresh expiry cannot exceed session expiry                                         | 🔴 Blocked | Backend lifetime policy requires update                  |
+| `FE_LOGIN_IMPL_BACKEND_05` | Origin/CSRF policy is implemented                                                   | 🔴 Blocked | Backend policy requires update                           |
+| `FE_LOGIN_IMPL_BACKEND_06` | Cross-context refresh/replay policy is implemented                                  | 🔴 Blocked | Backend policy requires update                           |
 
-## API Contract
+## 10.4 Testing
 
-| ID                    | Criteria                                                                        | Status         | Reason                                                                                |
-| --------------------- | ------------------------------------------------------------------------------- | -------------- | ------------------------------------------------------------------------------------- |
-| `FE_LOGIN_API_01`     | Frontend authentication service owns the received authentication state          | 🟢 Implemented | `frontend/admin/src/services/auth.ts`                                                 |
-| `FE_LOGIN_API_02`     | Raw authentication tokens are never rendered, logged, or exposed through the UI | 🟢 Implemented | `frontend/admin/src/services/auth.ts`, `frontend/admin/src/pages/login/LoginPage.tsx` |
-| `FE_LOGIN_API_ERR_01` | `400 INVALID_REQUEST` is handled correctly                                      | 🟢 Implemented | `frontend/admin/src/services/auth.ts`, `frontend/admin/src/pages/login/LoginPage.tsx` |
-| `FE_LOGIN_API_ERR_02` | `401 INVALID_CREDENTIALS` is handled with a generic authentication error        | 🟢 Implemented | `frontend/admin/src/services/auth.ts`, `frontend/admin/src/pages/login/LoginPage.tsx` |
-| `FE_LOGIN_API_ERR_03` | `429 AUTHENTICATION_RATE_LIMITED` is handled with a generic rate-limit error    | 🟢 Implemented | `frontend/admin/src/services/auth.ts`, `frontend/admin/src/pages/login/LoginPage.tsx` |
-| `FE_LOGIN_API_SEC_01` | Frontend does not distinguish whether an account exists                         | 🟢 Implemented | `frontend/admin/src/pages/login/LoginPage.tsx`, `frontend/admin/src/services/auth.ts` |
+| ID                 | Test                                                                        |
+| ------------------ | --------------------------------------------------------------------------- |
+| `FE_LOGIN_TEST_01` | Login succeeds and creates authenticated frontend state.                    |
+| `FE_LOGIN_TEST_02` | Login failure remains on `/login`.                                          |
+| `FE_LOGIN_TEST_03` | Application bootstrap remains `unknown` until refresh resolves.             |
+| `FE_LOGIN_TEST_04` | Bootstrap refresh `200` restores authenticated state.                       |
+| `FE_LOGIN_TEST_05` | Bootstrap refresh `401` becomes unauthenticated.                            |
+| `FE_LOGIN_TEST_06` | Bootstrap non-`401` failure becomes authentication-error.                   |
+| `FE_LOGIN_TEST_07` | Bootstrap failure requires an explicit user-triggered retry.                |
+| `FE_LOGIN_TEST_08` | Full document reload restores authentication through `/auth/refresh`.       |
+| `FE_LOGIN_TEST_09` | Protected `401` starts one shared refresh.                                  |
+| `FE_LOGIN_TEST_10` | Concurrent protected `401`s share the same refresh.                         |
+| `FE_LOGIN_TEST_11` | Each original protected request retries at most once.                       |
+| `FE_LOGIN_TEST_12` | Failed protected-request refresh is not automatically retried.              |
+| `FE_LOGIN_TEST_13` | Refresh endpoint cannot recursively trigger refresh.                        |
+| `FE_LOGIN_TEST_14` | Logout clears server session and in-memory access state.                    |
+| `FE_LOGIN_TEST_15` | Refresh credential never appears in frontend application state.             |
+| `FE_LOGIN_TEST_16` | Cross-context refresh behavior follows the backend Authentication contract. |
 
-## UI States
+## 10.5 Current Verification Status
 
-| ID                  | Criteria                                                                | Status         | Reason                                                                                |
-| ------------------- | ----------------------------------------------------------------------- | -------------- | ------------------------------------------------------------------------------------- |
-| `FE_LOGIN_STATE_01` | Initial state shows the empty login form                                | 🟢 Implemented | `frontend/admin/src/pages/login/LoginPage.tsx`                                        |
-| `FE_LOGIN_STATE_02` | Editing state allows credential entry                                   | 🟢 Implemented | `frontend/admin/src/pages/login/LoginPage.tsx`                                        |
-| `FE_LOGIN_STATE_03` | Submitting state disables submission and shows loading state            | 🟢 Implemented | `frontend/admin/src/pages/login/LoginPage.tsx`                                        |
-| `FE_LOGIN_STATE_04` | Invalid Request state displays the validation/request error             | 🟢 Implemented | `frontend/admin/src/pages/login/LoginPage.tsx`                                        |
-| `FE_LOGIN_STATE_05` | Invalid Credentials state displays the generic authentication error     | 🟢 Implemented | `frontend/admin/src/pages/login/LoginPage.tsx`                                        |
-| `FE_LOGIN_STATE_06` | Rate Limited state displays the generic rate-limit error                | 🟢 Implemented | `frontend/admin/src/pages/login/LoginPage.tsx`                                        |
-| `FE_LOGIN_STATE_07` | Success state establishes authenticated state and navigates to `/admin` | 🟢 Implemented | `frontend/admin/src/services/auth.ts`, `frontend/admin/src/App.tsx`                   |
-| `FE_LOGIN_STATE_08` | Duplicate submissions are prevented while authentication is pending     | 🟢 Implemented | `frontend/admin/src/pages/login/LoginPage.tsx`, `frontend/admin/src/services/auth.ts` |
+| Area                            | Status         |
+| ------------------------------- | -------------- |
+| Login form UI                   | 🟢 Implemented |
+| Basic validation                | 🟢 Implemented |
+| In-memory access token          | 🟢 Implemented |
+| Reload-safe authentication      | 🔴 Blocked     |
+| HttpOnly refresh cookie         | 🔴 Blocked     |
+| Bootstrap refresh               | 🔴 Blocked     |
+| Protected-request refresh/retry | 🔴 Blocked     |
+| Cookie-based logout             | 🔴 Blocked     |
+| Origin/CSRF/CORS policy         | 🔴 Blocked     |
+| Cross-context refresh policy    | 🔴 Blocked     |
 
-## Security
-
-| ID                | Criteria                                                                       | Status         | Reason                                                                                       |
-| ----------------- | ------------------------------------------------------------------------------ | -------------- | -------------------------------------------------------------------------------------------- |
-| `FE_LOGIN_SEC_01` | Use HTTPS                                                                      | 🟢 Implemented | `frontend/admin/src/services/auth.ts` enforces HTTPS for production requests                 |
-| `FE_LOGIN_SEC_02` | Send credentials only to `POST /auth/login`                                    | 🟢 Implemented | `frontend/admin/src/services/auth.ts`                                                        |
-| `FE_LOGIN_SEC_03` | Do not send tokens in query parameters                                         | 🟢 Implemented | `frontend/admin/src/services/auth.ts`                                                        |
-| `FE_LOGIN_SEC_04` | Do not send tokens to unrelated endpoints                                      | 🟢 Implemented | Bearer token is used only by `/auth/logout`                                                  |
-| `FE_LOGIN_SEC_05` | Never log passwords                                                            | 🟢 Implemented | No password logging found                                                                    |
-| `FE_LOGIN_SEC_06` | Never log access tokens                                                        | 🟢 Implemented | No access-token logging found                                                                |
-| `FE_LOGIN_SEC_07` | Never log refresh tokens                                                       | 🟢 Implemented | No refresh-token logging found                                                               |
-| `FE_LOGIN_SEC_08` | Never display tokens                                                           | 🟢 Implemented | Tokens remain inside `authService` state                                                     |
-| `FE_LOGIN_SEC_09` | Do not expose authentication credentials through error messages                | 🟢 Implemented | UI maps backend errors to generic messages                                                   |
-| `FE_LOGIN_SEC_10` | Do not reveal whether an account exists                                        | 🟢 Implemented | Invalid-credential UI is generic                                                             |
-| `FE_LOGIN_SEC_11` | Treat the backend as the authority for authentication                          | 🟢 Implemented | Authentication state is established from backend response                                    |
-| `FE_LOGIN_SEC_12` | Treat `401 Unauthorized` as unauthenticated                                    | 🟢 Implemented | `401` logout clears client authentication state; route guard redirects unauthenticated users |
-| `FE_LOGIN_SEC_13` | Do not implement authentication or account-state rules independently in the UI | 🟢 Implemented | UI performs only basic required-field validation                                             |
-
-## Accessibility
-
-| ID                 | Criteria                                                                         | Status         | Reason                                                |
-| ------------------ | -------------------------------------------------------------------------------- | -------------- | ----------------------------------------------------- |
-| `FE_LOGIN_A11Y_01` | Use a visible label for each form field                                          | 🟢 Implemented | `frontend/admin/src/pages/login/LoginPage.tsx`        |
-| `FE_LOGIN_A11Y_02` | Associate validation errors with their fields when applicable                    | 🟢 Implemented | `aria-describedby`, `aria-invalid` in `LoginPage.tsx` |
-| `FE_LOGIN_A11Y_03` | Support keyboard submission                                                      | 🟢 Implemented | Semantic `<form>` submission                          |
-| `FE_LOGIN_A11Y_04` | Provide visible focus states                                                     | 🟢 Implemented | `frontend/admin/src/styles/index.css`                 |
-| `FE_LOGIN_A11Y_05` | Use semantic form controls                                                       | 🟢 Implemented | Semantic form, label, input, and button elements      |
-| `FE_LOGIN_A11Y_06` | Communicate loading and error states to assistive technologies where appropriate | 🟢 Implemented | `role="status"`, `aria-live`, and `role="alert"`      |
-| `FE_LOGIN_A11Y_07` | Keep the Sign In action accessible while the form is usable                      | 🟢 Implemented | Accessible submit button and pending state            |
-
-## Testing — Unit
-
-| ID                      | Criteria                                                      | Status         | Reason                                                                                    |
-| ----------------------- | ------------------------------------------------------------- | -------------- | ----------------------------------------------------------------------------------------- |
-| `FE_LOGIN_TEST_UNIT_01` | Login form renders correctly                                  | 🟡 In Progress | Test exists in `frontend/admin/tests/unit/login.test.tsx`; execution result not available |
-| `FE_LOGIN_TEST_UNIT_02` | Required-field validation works                               | 🟡 In Progress | Test exists in `frontend/admin/tests/unit/login.test.tsx`; execution result not available |
-| `FE_LOGIN_TEST_UNIT_03` | Loading state is displayed correctly                          | 🟡 In Progress | Test exists in `frontend/admin/tests/unit/login.test.tsx`; execution result not available |
-| `FE_LOGIN_TEST_UNIT_04` | Error states are rendered correctly                           | 🟡 In Progress | Test exists in `frontend/admin/tests/unit/login.test.tsx`; execution result not available |
-| `FE_LOGIN_TEST_UNIT_05` | Submit action is disabled while authentication is in progress | 🟡 In Progress | Test exists in `frontend/admin/tests/unit/login.test.tsx`; execution result not available |
-
-## Testing — Integration
-
-| ID                     | Criteria                                               | Status         | Reason                                                                                           |
-| ---------------------- | ------------------------------------------------------ | -------------- | ------------------------------------------------------------------------------------------------ |
-| `FE_LOGIN_TEST_INT_01` | Form submission works correctly                        | 🟡 In Progress | Test exists in `frontend/admin/tests/integration/login.test.tsx`; execution result not available |
-| `FE_LOGIN_TEST_INT_02` | `POST /auth/login` request is sent correctly           | 🟡 In Progress | Test exists in `frontend/admin/tests/integration/login.test.tsx`; execution result not available |
-| `FE_LOGIN_TEST_INT_03` | Successful authentication is handled correctly         | 🟡 In Progress | Test exists in `frontend/admin/tests/integration/login.test.tsx`; execution result not available |
-| `FE_LOGIN_TEST_INT_04` | `400 INVALID_REQUEST` is handled correctly             | 🟡 In Progress | Test exists in `frontend/admin/tests/integration/login.test.tsx`; execution result not available |
-| `FE_LOGIN_TEST_INT_05` | `401 INVALID_CREDENTIALS` is handled correctly         | 🟡 In Progress | Test exists in `frontend/admin/tests/integration/login.test.tsx`; execution result not available |
-| `FE_LOGIN_TEST_INT_06` | `429 AUTHENTICATION_RATE_LIMITED` is handled correctly | 🟡 In Progress | Test exists in `frontend/admin/tests/integration/login.test.tsx`; execution result not available |
-| `FE_LOGIN_TEST_INT_07` | Successful authentication navigates to `/admin`        | 🟡 In Progress | Test exists in `frontend/admin/tests/integration/login.test.tsx`; execution result not available |
-| `FE_LOGIN_TEST_INT_08` | Authenticated client state is created correctly        | 🟡 In Progress | Test exists in `frontend/admin/tests/integration/login.test.tsx`; execution result not available |
-
-## Testing — E2E
-
-| ID                     | Criteria                                         | Status         | Reason                                                                                  |
-| ---------------------- | ------------------------------------------------ | -------------- | --------------------------------------------------------------------------------------- |
-| `FE_LOGIN_TEST_E2E_01` | User can open `/login`                           | 🟡 In Progress | Test exists in `frontend/admin/tests/e2e/login.spec.ts`; execution result not available |
-| `FE_LOGIN_TEST_E2E_02` | User can enter valid credentials                 | 🟡 In Progress | Test exists in `frontend/admin/tests/e2e/login.spec.ts`; execution result not available |
-| `FE_LOGIN_TEST_E2E_03` | User can submit the Login form                   | 🟡 In Progress | Test exists in `frontend/admin/tests/e2e/login.spec.ts`; execution result not available |
-| `FE_LOGIN_TEST_E2E_04` | Successful login displays the Admin Shell        | 🟡 In Progress | Test exists in `frontend/admin/tests/e2e/login.spec.ts`; execution result not available |
-| `FE_LOGIN_TEST_E2E_05` | Logout returns the user to `/login`              | 🟡 In Progress | Test exists in `frontend/admin/tests/e2e/login.spec.ts`; execution result not available |
-| `FE_LOGIN_TEST_E2E_06` | Invalid credentials do not enter the Admin Shell | 🟡 In Progress | Test exists in `frontend/admin/tests/e2e/login.spec.ts`; execution result not available |
-
-## Testing — Manual
-
-| ID                        | Criteria                                                 | Status        | Reason                                        |
-| ------------------------- | -------------------------------------------------------- | ------------- | --------------------------------------------- |
-| `FE_LOGIN_TEST_MANUAL_01` | Visual layout is correct                                 | ⚪ Not Started | No manual verification evidence in repository |
-| `FE_LOGIN_TEST_MANUAL_02` | Keyboard interaction works correctly                     | ⚪ Not Started | No manual verification evidence in repository |
-| `FE_LOGIN_TEST_MANUAL_03` | Loading behavior is correct                              | ⚪ Not Started | No manual verification evidence in repository |
-| `FE_LOGIN_TEST_MANUAL_04` | Error messages are correct                               | ⚪ Not Started | No manual verification evidence in repository |
-| `FE_LOGIN_TEST_MANUAL_05` | Responsive behavior is correct                           | ⚪ Not Started | No manual verification evidence in repository |
-| `FE_LOGIN_TEST_MANUAL_06` | Accessibility behavior is correct                        | ⚪ Not Started | No manual verification evidence in repository |
-| `FE_LOGIN_TEST_MANUAL_07` | Successful transition to the Admin Shell works correctly | ⚪ Not Started | No manual verification evidence in repository |
+**Source-of-truth rule:** implementation status describes the current code, not the target architecture.
