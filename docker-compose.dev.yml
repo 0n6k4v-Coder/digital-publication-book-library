@@ -187,7 +187,14 @@ services:
 
     environment:
       NODE_ENV: development
-      VITE_API_ORIGIN: https://localhost:3000
+
+      # Keep browser authentication same-origin with the HTTPS frontend.
+      VITE_API_ORIGIN: ""
+
+      # Vite runs inside this container, so use the Compose service name.
+      # The existing Vite proxy has secure: false for this development target.
+      BACKEND_PROXY_TARGET: "https://backend:3000"
+
       DEV_HTTPS_CERT_PATH: /workspace/.dev/tls/frontend/frontend.crt
       DEV_HTTPS_KEY_PATH: /workspace/.dev/tls/frontend/frontend.key
 
