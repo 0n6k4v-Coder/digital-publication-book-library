@@ -9,6 +9,7 @@ use digital_publication_backend::{
     app::{
         config::{Config, PasswordBlocklistRefreshConfig},
         router::build_router,
+        security::apply_security,
         state::AppState,
     },
     shared::validation::{PasswordBlocklist, PASSWORD_BLOCKLIST_MAX_AGE},
@@ -36,8 +37,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     let config = Config::from_env()?;
 
-    // Fail closed before database/router/listener startup if no valid
-    // immutable blocklist snapshot exists.
     let blocklist = Arc::new(PasswordBlocklist::load_active(
         &config.password_blocklist_path,
     )?);
@@ -58,7 +57,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         .await?;
 
     let state = AppState::new(pool, blocklist, config.password_hash_concurrency);
-    let router = build_router(state);
+
+    let router = apply_security(build_router(state), config.cors_allowed_origins.clone());
 
     let tls_config =
         RustlsConfig::from_pem_file(&config.tls_cert_path, &config.tls_key_path).await?;
@@ -128,8 +128,6 @@ fn spawn_password_blocklist_refresh(
                     }
                 }
                 Err(_) => {
-                    // Deliberately do not log refresh errors because a request-derived
-                    // hash prefix or other credential-adjacent value must not reach logs.
                     warn!(
                         "password blocklist refresh failed; retaining the last known good snapshot"
                     );
@@ -141,8 +139,6 @@ fn spawn_password_blocklist_refresh(
 }
 
 fn install_rustls_provider() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    // Rustls returns an error when a process-wide provider was already installed.
-    // The application has no need to replace an existing provider.
     match rustls::crypto::ring::default_provider().install_default() {
         Ok(()) | Err(_) => Ok(()),
     }
