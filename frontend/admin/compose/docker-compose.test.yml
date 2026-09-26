@@ -8,6 +8,8 @@ services:
 
     init: true
 
+    network_mode: host
+
     environment:
       CI: "true"
       PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
