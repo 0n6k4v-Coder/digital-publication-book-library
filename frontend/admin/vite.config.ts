@@ -14,6 +14,33 @@ export default defineConfig(({ mode }) => {
         }
       : undefined;
 
+  const adminApiProxy =
+    apiProxy === undefined
+      ? undefined
+      : {
+          ...apiProxy,
+          bypass: (request: {
+            method?: string;
+            headers: Record<string, string | string[] | undefined>;
+            url?: string;
+          }) => {
+            const accept = request.headers.accept ?? "";
+
+            // /admin/* is both:
+            //   1. an SPA navigation path, and
+            //   2. the backend Admin API path.
+            //
+            // Browser navigations request HTML, so let Vite handle
+            // the SPA fallback. Fetch/XHR requests from the application
+            // request JSON and are proxied to the backend.
+            if (request.method === "GET" && accept.includes("text/html")) {
+              return request.url;
+            }
+
+            return undefined;
+          },
+        };
+
   return {
     plugins: [react()],
     server: {
@@ -25,6 +52,7 @@ export default defineConfig(({ mode }) => {
           ? undefined
           : {
               "/auth": apiProxy,
+              "/admin": adminApiProxy,
             },
     },
     preview: {
