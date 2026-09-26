@@ -6,7 +6,6 @@ use digital_publication_backend::{
     shared::validation::PasswordBlocklist,
 };
 use sqlx::postgres::PgPoolOptions;
-use tokio::net::TcpListener;
 use tracing::info;
 
 type DynError = Box<dyn Error + Send + Sync>;
