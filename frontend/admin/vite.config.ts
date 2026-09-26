@@ -1,11 +1,12 @@
 import { defineConfig, loadEnv } from "vite";
+import type { ProxyOptions } from "vite";
 import react from "@vitejs/plugin-react";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, ".", "");
   const backendProxyTarget = env.BACKEND_PROXY_TARGET?.trim() ?? "";
 
-  const apiProxy =
+  const apiProxy: ProxyOptions | undefined =
     backendProxyTarget.length > 0
       ? {
           target: backendProxyTarget,
@@ -14,16 +15,12 @@ export default defineConfig(({ mode }) => {
         }
       : undefined;
 
-  const adminApiProxy =
+  const adminApiProxy: ProxyOptions | undefined =
     apiProxy === undefined
       ? undefined
       : {
           ...apiProxy,
-          bypass: (request: {
-            method?: string;
-            headers: Record<string, string | string[] | undefined>;
-            url?: string;
-          }) => {
+          bypass: (request, _response, _options) => {
             const accept = request.headers.accept ?? "";
 
             // /admin/* is both:
@@ -41,19 +38,21 @@ export default defineConfig(({ mode }) => {
           },
         };
 
+  const proxy =
+    apiProxy === undefined
+      ? undefined
+      : {
+          "/auth": apiProxy,
+          ...(adminApiProxy === undefined ? {} : { "/admin": adminApiProxy }),
+        };
+
   return {
     plugins: [react()],
     server: {
       host: "127.0.0.1",
       port: 5173,
       strictPort: true,
-      proxy:
-        apiProxy === undefined
-          ? undefined
-          : {
-              "/auth": apiProxy,
-              "/admin": adminApiProxy,
-            },
+      proxy,
     },
     preview: {
       host: "127.0.0.1",

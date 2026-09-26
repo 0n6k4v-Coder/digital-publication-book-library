@@ -66,6 +66,10 @@ describe("accountsService", () => {
     expect(init?.body).toBeUndefined();
     expect(init?.cache).toBe("no-store");
     expect(String(url)).not.toContain("opaque-access-token");
+    expect(data.items[0]).toMatchObject({
+      email: "admin@example.com",
+      displayName: null,
+    });
     expect(data.items[0]).not.toHaveProperty("password");
     expect(data.items[0]).not.toHaveProperty("password_hash");
   });
@@ -170,7 +174,7 @@ describe("accountsService", () => {
   });
 
   it("uses POST mutations without token bodies or tokenized URLs", async () => {
-    vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status: 200 }));
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status: 204 }));
 
     await accountsService.mutate(
       "restore",
@@ -182,7 +186,11 @@ describe("accountsService", () => {
       "/admin/accounts/01900000-0000-7000-8000-000000000001/restore",
     );
     expect(init?.method).toBe("POST");
+    expect(new Headers(init?.headers).get("authorization")).toBe(
+      "Bearer opaque-access-token",
+    );
     expect(init?.body).toBeUndefined();
+    expect(init?.cache).toBe("no-store");
     expect(String(url)).not.toContain("opaque-access-token");
   });
 });
