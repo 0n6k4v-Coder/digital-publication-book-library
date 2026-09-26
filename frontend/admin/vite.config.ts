@@ -1,10 +1,28 @@
 import { defineConfig, loadEnv } from "vite";
 import type { ProxyOptions } from "vite";
+import { readFileSync } from "node:fs";
 import react from "@vitejs/plugin-react";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, ".", "");
   const backendProxyTarget = env.BACKEND_PROXY_TARGET?.trim() ?? "";
+
+  const devHttpsKeyPath = env.DEV_HTTPS_KEY_PATH?.trim() ?? "";
+  const devHttpsCertPath = env.DEV_HTTPS_CERT_PATH?.trim() ?? "";
+
+  if ((devHttpsKeyPath.length === 0) !== (devHttpsCertPath.length === 0)) {
+    throw new Error(
+      "DEV_HTTPS_KEY_PATH and DEV_HTTPS_CERT_PATH must be provided together.",
+    );
+  }
+
+  const devHttps =
+    devHttpsKeyPath.length === 0
+      ? undefined
+      : {
+          key: readFileSync(devHttpsKeyPath),
+          cert: readFileSync(devHttpsCertPath),
+        };
 
   const apiProxy: ProxyOptions | undefined =
     backendProxyTarget.length > 0
@@ -52,6 +70,7 @@ export default defineConfig(({ mode }) => {
       host: "127.0.0.1",
       port: 5173,
       strictPort: true,
+      ...(devHttps === undefined ? {} : { https: devHttps }),
       proxy,
     },
     preview: {

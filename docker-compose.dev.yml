@@ -41,14 +41,34 @@ services:
     init: true
 
     volumes:
-      - backend-dev-tls:/workspace/.dev/tls
+      - backend-dev-tls:/workspace/.dev/tls/backend
+      - frontend-dev-tls:/workspace/.dev/tls/frontend
 
     command:
-      [
-        "sh",
-        "-ec",
-        "if [ ! -s /workspace/.dev/tls/backend.crt ] || [ ! -s /workspace/.dev/tls/backend.key ]; then openssl req -x509 -newkey rsa:2048 -nodes -sha256 -days 30 -keyout /workspace/.dev/tls/backend.key -out /workspace/.dev/tls/backend.crt -subj '/CN=backend' -addext 'subjectAltName=DNS:backend,DNS:localhost,IP:127.0.0.1'; fi",
-      ]
+      - "sh"
+      - "-ec"
+      - |
+        mkdir -p /workspace/.dev/tls/backend /workspace/.dev/tls/frontend
+
+        if [ ! -s /workspace/.dev/tls/backend/backend.crt ] || [ ! -s /workspace/.dev/tls/backend/backend.key ]; then
+          openssl req -x509 -newkey rsa:2048 -nodes -sha256 -days 30 \
+            -keyout /workspace/.dev/tls/backend/backend.key \
+            -out /workspace/.dev/tls/backend/backend.crt \
+            -subj '/CN=backend' \
+            -addext 'subjectAltName=DNS:backend,DNS:localhost,IP:127.0.0.1'
+        fi
+
+        if [ ! -s /workspace/.dev/tls/frontend/frontend.crt ] || [ ! -s /workspace/.dev/tls/frontend/frontend.key ]; then
+          openssl req -x509 -newkey rsa:2048 -nodes -sha256 -days 30 \
+            -keyout /workspace/.dev/tls/frontend/frontend.key \
+            -out /workspace/.dev/tls/frontend/frontend.crt \
+            -subj '/CN=frontend' \
+            -addext 'subjectAltName=DNS:localhost,IP:127.0.0.1'
+        fi
+
+        chown -R 1000:1000 /workspace/.dev/tls/frontend
+        chmod 600 /workspace/.dev/tls/frontend/frontend.key
+        chmod 644 /workspace/.dev/tls/frontend/frontend.crt
 
   bootstrap:
     build:
@@ -104,15 +124,16 @@ services:
 
     environment:
       BIND_ADDR: 0.0.0.0:3000
+      CORS_ALLOWED_ORIGINS: https://localhost:5173
       DATABASE_MAX_CONNECTIONS: "10"
-      TLS_CERT_PATH: /workspace/.dev/tls/backend.crt
-      TLS_KEY_PATH: /workspace/.dev/tls/backend.key
+      TLS_CERT_PATH: /workspace/.dev/tls/backend/backend.crt
+      TLS_KEY_PATH: /workspace/.dev/tls/backend/backend.key
 
     ports:
       - "127.0.0.1:3000:3000"
 
     volumes:
-      - backend-dev-tls:/workspace/.dev/tls
+      - backend-dev-tls:/workspace/.dev/tls/backend
       - backend-dev-cargo-target:/workspace/target
       - backend-dev-cargo-registry:/usr/local/cargo/registry
 
@@ -166,14 +187,16 @@ services:
 
     environment:
       NODE_ENV: development
-      VITE_API_ORIGIN: ""
-      BACKEND_PROXY_TARGET: https://backend:3000
+      VITE_API_ORIGIN: https://localhost:3000
+      DEV_HTTPS_CERT_PATH: /workspace/.dev/tls/frontend/frontend.crt
+      DEV_HTTPS_KEY_PATH: /workspace/.dev/tls/frontend/frontend.key
 
     ports:
       - "127.0.0.1:5173:5173"
 
     volumes:
       - frontend-admin-dev-node-modules:/workspace/node_modules
+      - frontend-dev-tls:/workspace/.dev/tls/frontend:ro
 
     command:
       [
@@ -229,6 +252,8 @@ volumes:
   postgres-dev-data:
 
   backend-dev-tls:
+
+  frontend-dev-tls:
 
   backend-dev-cargo-target:
 
