@@ -101,12 +101,8 @@ test.describe("real HTTPS authentication session", () => {
 
     const loginHeaders = loginResponse.headers();
 
-    expect(loginHeaders["access-control-allow-origin"]).toBe(
-      frontendOrigin,
-    );
-    expect(
-      loginHeaders["access-control-allow-credentials"],
-    ).toBe("true");
+    expect(loginHeaders["access-control-allow-origin"]).toBe(frontendOrigin);
+    expect(loginHeaders["access-control-allow-credentials"]).toBe("true");
 
     const loginBody = await loginResponse.json();
 
@@ -156,9 +152,7 @@ test.describe("real HTTPS authentication session", () => {
     ).toBeVisible();
 
     await expect
-      .poll(() => refreshResponses.length, {
-        timeout: 10_000,
-      })
+      .poll(() => refreshResponses.length, { timeout: 10_000 })
       .toBe(1);
 
     expect(refreshResponses[0]).toEqual({
@@ -197,14 +191,14 @@ test.describe("real HTTPS authentication session", () => {
 
     const logoutHeaders = logoutResponse.headers();
 
-    expect(logoutHeaders["access-control-allow-origin"]).toBe(
-      frontendOrigin,
-    );
-    expect(
-      logoutHeaders["access-control-allow-credentials"],
-    ).toBe("true");
+    expect(logoutHeaders["access-control-allow-origin"]).toBe(frontendOrigin);
+    expect(logoutHeaders["access-control-allow-credentials"]).toBe("true");
 
-    const clearedCookie = logoutHeaders["set-cookie"] ?? "";
+    const clearedCookies = await logoutResponse.headerValues("set-cookie");
+
+    expect(clearedCookies).toHaveLength(1);
+
+    const clearedCookie = clearedCookies[0] ?? "";
 
     expect(clearedCookie).toContain("__Host-refresh_token=");
     expect(clearedCookie).toContain("Max-Age=0");
