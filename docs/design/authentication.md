@@ -629,24 +629,41 @@ Authentication must not accept or trust client-supplied `account_id`, `session_i
 
 ## 6.1 API Rules
 
-| Rule                          | Definition                                                                                                                                                                      |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Base Path                     | `/auth`                                                                                                                                                                         |
-| Success Content-Type          | `application/json` for token responses; empty body for logout                                                                                                                   |
-| Error Content-Type            | `application/problem+json`                                                                                                                                                      |
-| Protected API Authentication  | `Authorization: Bearer <access-token>`                                                                                                                                          |
-| Browser Session Credential    | `__Host-refresh_token` HTTP cookie                                                                                                                                              |
-| Access Token Query Parameter  | Not accepted                                                                                                                                                                    |
-| Refresh Token Query Parameter | Not accepted                                                                                                                                                                    |
-| Refresh Token Body Parameter  | Not accepted                                                                                                                                                                    |
-| Caching                       | `Cache-Control: no-store`                                                                                                                                                       |
-| TLS                           | Required                                                                                                                                                                        |
-| Browser Cookie                | `HttpOnly; Secure; Path=/; no Domain; SameSite=Strict` by default                                                                                                               |
-| Cross-Site Cookie             | `SameSite=None; Secure` only when explicitly configured for a cross-site frontend/API deployment                                                                                |
-| CORS                          | Explicit allowed origins + `Access-Control-Allow-Credentials: true`; wildcard origins forbidden                                                                                 |
-| CSRF                          | Exact `Origin` allowlist required for browser-authenticated state-changing requests                                                                                             |
-| Fetch Metadata                | `Sec-Fetch-Site: cross-site` rejected by default; accepted only for an explicitly configured cross-site frontend/API deployment whose `Origin` matches the configured allowlist |
-| Authorization                 | Protected feature permissions remain handled by Authorization domain                                                                                                            |
+| ID | Rule | Contract |
+| --- | --- | --- |
+| `AU_API_RULE_01` | Base Path | `/auth` |
+| `AU_API_RULE_02` | Success Content-Type | `application/json` for token responses; empty body for logout |
+| `AU_API_RULE_03` | Error Content-Type | `application/problem+json` |
+| `AU_API_RULE_04` | Protected API Authentication | `Authorization: Bearer <access-token>` |
+| `AU_API_RULE_05` | Browser Session Credential | `__Host-refresh_token` HTTP cookie |
+| `AU_API_RULE_06` | Cookie JavaScript Access | Forbidden; cookie is `HttpOnly` |
+| `AU_API_RULE_07` | Cookie Transport | HTTPS only; cookie is `Secure` |
+| `AU_API_RULE_08` | Cookie Path | `/` |
+| `AU_API_RULE_09` | Cookie Domain | Must not be set |
+| `AU_API_RULE_10` | Default SameSite | `Strict` |
+| `AU_API_RULE_11` | Cross-Site SameSite | `None; Secure` only for an explicitly configured cross-site deployment |
+| `AU_API_RULE_12` | Cookie Lifetime | Must not exceed the remaining authentication-session lifetime |
+| `AU_API_RULE_13` | Refresh Rotation | Every successful refresh invalidates the presented refresh credential and issues a replacement cookie |
+| `AU_API_RULE_14` | Logout Cookie | Expire `__Host-refresh_token` with `Max-Age=0` |
+| `AU_API_RULE_15` | Access Token Query Parameter | Not accepted |
+| `AU_API_RULE_16` | Refresh Token Query Parameter | Not accepted |
+| `AU_API_RULE_17` | Refresh Token Body Parameter | Not accepted |
+| `AU_API_RULE_18` | Caching | `Cache-Control: no-store` |
+| `AU_API_RULE_19` | TLS | Required |
+| `AU_API_RULE_20` | CORS | Explicit allowed origins + `Access-Control-Allow-Credentials: true`; wildcard origins forbidden |
+| `AU_API_RULE_21` | CSRF Origin | Exact `Origin` allowlist required for browser-authenticated state-changing requests |
+| `AU_API_RULE_22` | Fetch Metadata | `Sec-Fetch-Site: cross-site` rejected by default; exceptions require explicit cross-site configuration and matching `Origin` |
+
+### Browser Credential Ownership
+
+| ID | Requirement |
+| --- | --- |
+| `AU_BROWSER_CRED_01` | The browser owns storage and transport of `__Host-refresh_token`. |
+| `AU_BROWSER_CRED_02` | Frontend JavaScript never reads the refresh credential. |
+| `AU_BROWSER_CRED_03` | Frontend JavaScript never stores the refresh credential. |
+| `AU_BROWSER_CRED_04` | Frontend JavaScript never constructs a `Cookie` header. |
+| `AU_BROWSER_CRED_05` | Frontend JavaScript never reads or parses `Set-Cookie`. |
+| `AU_BROWSER_CRED_06` | The access token remains the only authentication credential held in frontend runtime memory. |
 
 ## 6.2 Authentication Endpoints
 
@@ -909,85 +926,124 @@ A transaction failure must not produce partial Authentication cleanup. SQLx tran
 
 ## 7.4 Browser Client Authentication Persistence Contract
 
-The browser Admin application uses a split credential model:
+The Admin browser application uses a split credential model.
 
-```text
-Access Token
-    ↓
-JavaScript memory only
+```mermaid
+flowchart TD
+    A["Authentication session"] --> B["Access token"]
+    A --> C["Refresh credential"]
 
-Refresh Credential
-    ↓
-__Host-refresh_token cookie
-    ↓
-HttpOnly + Secure + Path=/ + no Domain
+    B --> D["Frontend JavaScript memory only"]
+
+    C --> E["__Host-refresh_token"]
+    E --> F["HttpOnly"]
+    E --> G["Secure"]
+    E --> H["Path=/"]
+    E --> I["No Domain"]
+    E --> J["SameSite=Strict by default"]
 ```
+
+### Browser Cookie Contract
+
+| ID | Requirement |
+| --- | --- |
+| `AU_BROWSER_COOKIE_01` | Cookie name is exactly `__Host-refresh_token`. |
+| `AU_BROWSER_COOKIE_02` | Cookie is issued only through the authentication API response. |
+| `AU_BROWSER_COOKIE_03` | Cookie is `HttpOnly`. |
+| `AU_BROWSER_COOKIE_04` | Cookie is `Secure`. |
+| `AU_BROWSER_COOKIE_05` | Cookie uses `Path=/`. |
+| `AU_BROWSER_COOKIE_06` | Cookie has no `Domain` attribute. |
+| `AU_BROWSER_COOKIE_07` | Cookie uses `SameSite=Strict` by default. |
+| `AU_BROWSER_COOKIE_08` | `SameSite=None; Secure` is allowed only for an explicitly configured cross-site frontend/API deployment. |
+| `AU_BROWSER_COOKIE_09` | Cookie lifetime never exceeds the remaining authentication-session lifetime. |
+| `AU_BROWSER_COOKIE_10` | Successful refresh replaces the cookie with the rotated refresh credential. |
+| `AU_BROWSER_COOKIE_11` | Logout expires the cookie with `Max-Age=0`. |
+| `AU_BROWSER_COOKIE_12` | Frontend JavaScript never reads, copies, logs, persists, or manually sends the refresh credential. |
+| `AU_BROWSER_COOKIE_13` | Frontend JavaScript never constructs a `Cookie` header. |
+| `AU_BROWSER_COOKIE_14` | Frontend JavaScript never reads or parses `Set-Cookie`. |
+
+### Cookie Policy by Deployment
+
+| ID | Deployment | Cookie Policy | Required Fetch Behavior |
+| --- | --- | --- | --- |
+| `AU_BROWSER_POLICY_01` | Same-origin | `Secure; HttpOnly; Path=/; no Domain; SameSite=Strict` | `credentials: "include"` |
+| `AU_BROWSER_POLICY_02` | Cross-origin, same-site | `Secure; HttpOnly; Path=/; no Domain; SameSite=Strict` | `credentials: "include"` + explicit credentialed CORS |
+| `AU_BROWSER_POLICY_03` | Cross-site | `Secure; HttpOnly; Path=/; no Domain; SameSite=None` | `credentials: "include"` + explicit credentialed CORS + Origin/CSRF protections |
 
 ### Browser Bootstrap
 
-On every application startup or full document reload:
+| ID | Requirement |
+| --- | --- |
+| `AU_BROWSER_BOOTSTRAP_01` | Authentication state starts as `unknown` on application startup and full document reload. |
+| `AU_BROWSER_BOOTSTRAP_02` | The frontend sends `POST /auth/refresh` with `credentials: "include"`. |
+| `AU_BROWSER_BOOTSTRAP_03` | The browser determines whether the refresh cookie is attached according to cookie policy. |
+| `AU_BROWSER_BOOTSTRAP_04` | A successful refresh returns access-token data only and rotates the refresh cookie. |
+| `AU_BROWSER_BOOTSTRAP_05` | A valid refresh response transitions authentication state to `authenticated`. |
+| `AU_BROWSER_BOOTSTRAP_06` | A `401 INVALID_REFRESH_TOKEN` response clears the in-memory access token and transitions to `unauthenticated`. |
+| `AU_BROWSER_BOOTSTRAP_07` | Any other bootstrap failure clears the in-memory access token and transitions to `authentication-error`. |
+| `AU_BROWSER_BOOTSTRAP_08` | Bootstrap failure is not automatically retried. |
+| `AU_BROWSER_BOOTSTRAP_09` | Bootstrap retry is explicitly user-triggered. |
 
-1. Authentication state begins as `unknown`.
-2. The frontend must not redirect `/admin` to `/login` while authentication state is `unknown`.
-3. The frontend sends `POST /auth/refresh` with browser credentials enabled.
-4. If refresh succeeds, the returned access token is stored in memory and authentication state becomes `authenticated`.
-5. If refresh fails with `401`, the access-token memory state is empty and authentication state becomes `unauthenticated`.
-6. The frontend then applies the route rules for the resulting authenticated state.
+### Login
 
-### Access Token Lifetime
-
-The access token:
-
-* is stored only in JavaScript memory;
-* is never stored in `localStorage`;
-* is never stored in `sessionStorage`;
-* is never written to cookies;
-* is never written to URLs;
-* is never logged.
-
-### Refresh Rotation
-
-Every successful `POST /auth/refresh`:
-
-* invalidates the presented refresh token;
-* issues a replacement refresh token;
-* updates the `__Host-refresh_token` cookie;
-* returns only a new access token in the JSON response;
-* never changes the authentication session expiration.
+| ID | Requirement |
+| --- | --- |
+| `AU_BROWSER_LOGIN_01` | Successful `POST /auth/login` creates the authentication session. |
+| `AU_BROWSER_LOGIN_02` | The response sets `__Host-refresh_token` through `Set-Cookie`. |
+| `AU_BROWSER_LOGIN_03` | The response does not expose the refresh credential in JSON. |
+| `AU_BROWSER_LOGIN_04` | The frontend stores only the returned access token in memory. |
 
 ### Protected API Recovery
 
-When a protected Admin API request receives `401 Unauthorized` because the access token is invalid or expired:
+```mermaid
+flowchart TD
+    A["Protected API request"] --> B{"401?"}
+    B -->|No| C["Return response"]
 
-1. The frontend may perform one serialized `POST /auth/refresh`.
-2. On successful refresh, the frontend replaces the in-memory access token.
-3. The original protected request may be retried once.
-4. If refresh fails, the frontend clears client authentication state and treats the user as unauthenticated.
-5. The frontend must not loop indefinitely between refresh and protected-request retry.
+    B -->|Yes| D{"Retry already used?"}
+    D -->|Yes| E["Fail request with 401"]
+    D -->|No| F{"Refresh already running?"}
+
+    F -->|Yes| G["Await shared refresh"]
+    F -->|No| H["Start one refresh"]
+
+    G --> I{"Refresh result"}
+    H --> I
+
+    I -->|200| J["Replace access token in memory"]
+    J --> K["Retry original request once"]
+
+    I -->|401| L["Clear access token"]
+    L --> M["authStatus = unauthenticated"]
+    M --> N["Fail original request"]
+
+    I -->|Other failure| O["Clear access token"]
+    O --> P["authStatus = authentication-error"]
+    P --> Q["Fail original request"]
+```
+
+| ID | Requirement |
+| --- | --- |
+| `AU_BROWSER_RECOVERY_01` | A protected-request `401` may trigger one serialized refresh operation. |
+| `AU_BROWSER_RECOVERY_02` | Concurrent protected requests share the same in-flight refresh operation. |
+| `AU_BROWSER_RECOVERY_03` | The `/auth/refresh` request is excluded from refresh-on-`401` handling. |
+| `AU_BROWSER_RECOVERY_04` | A successful refresh replaces the in-memory access token. |
+| `AU_BROWSER_RECOVERY_05` | Each original protected request may be retried at most once. |
+| `AU_BROWSER_RECOVERY_06` | A refresh `401` clears the access token and transitions to `unauthenticated`. |
+| `AU_BROWSER_RECOVERY_07` | A non-`401` refresh failure clears the access token and transitions to `authentication-error`. |
+| `AU_BROWSER_RECOVERY_08` | A failed protected-request refresh is not automatically retried. |
+| `AU_BROWSER_RECOVERY_09` | The frontend must not loop indefinitely between protected-request `401`, refresh, and retry. |
 
 ### Logout
 
-Logout:
-
-1. sends `POST /auth/logout` with browser credentials;
-2. relies on the server-side refresh cookie to identify the authentication session;
-3. revokes the server-side authentication session;
-4. expires the refresh cookie;
-5. clears the in-memory access token;
-6. navigates the frontend to `/login`.
-
-A logout network failure must not be treated as successful logout. The client must retain its current authenticated state and permit a retry until the server-side logout has succeeded.
-
-### Cross-Origin Browser Requests
-
-When the frontend and API are on different origins:
-
-* frontend requests to `/auth/login`, `/auth/refresh`, and `/auth/logout` must use `credentials: "include"`;
-* protected API requests using bearer access tokens do not rely on the refresh cookie;
-* the API must return an explicit `Access-Control-Allow-Origin` matching the configured frontend origin;
-* the API must return `Access-Control-Allow-Credentials: true`;
-* wildcard `Access-Control-Allow-Origin: *` is forbidden for credentialed requests;
-* the server must validate the `Origin` header against its explicit frontend-origin allowlist.
+| ID | Requirement |
+| --- | --- |
+| `AU_BROWSER_LOGOUT_01` | `POST /auth/logout` uses the browser-managed refresh credential. |
+| `AU_BROWSER_LOGOUT_02` | Successful logout revokes the authentication session. |
+| `AU_BROWSER_LOGOUT_03` | Successful logout expires `__Host-refresh_token`. |
+| `AU_BROWSER_LOGOUT_04` | Successful logout clears the in-memory access token. |
+| `AU_BROWSER_LOGOUT_05` | Successful logout transitions frontend state to `unauthenticated`. |
+| `AU_BROWSER_LOGOUT_06` | A logout network failure is not treated as successful logout; the client retains its current authentication state and permits retry. |
 
 ## 7.5 Request Pipeline
 
