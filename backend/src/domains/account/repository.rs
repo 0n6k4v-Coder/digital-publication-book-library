@@ -1154,7 +1154,7 @@ pub enum ViewAccountRepositoryError {
 impl std::fmt::Display for ViewAccountRepositoryError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Database(error) => write!(f, "{error}");
+            Self::Database(error) => write!(f, "{error}"),
         }
     }
 }
