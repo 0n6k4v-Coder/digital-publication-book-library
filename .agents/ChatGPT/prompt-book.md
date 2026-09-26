@@ -244,39 +244,6 @@ Task 9. Generate the necessary test command(s).
 ---
 
 ```text
-### Debugging Workflow
-
-**Task 1: Analyze the Problem**
-
-* Read the given context, error, logs, and relevant repository state.
-* Identify the exact problem, root cause, and affected files.
-
-**Task 2: Research**
-
-* Research the latest official documentation for the relevant tech stack.
-* Verify relevant current industry standards and recommended practices.
-* Use authoritative sources and apply only findings relevant to the problem.
-
-**Task 3: Generate the Fix**
-
-* Apply the research findings to generate the required code or configuration changes.
-* Keep changes limited to the problem being fixed.
-
-**Task 4: Review and Validate**
-
-* Review the generated fix for correctness, security, design compliance, and consistency with the repository.
-* Verify paths, dependencies, configuration, runtime behavior, and tests.
-* Fix any findings and repeat the relevant checks.
-
-**Task 5: Final Output**
-
-* Provide the exact file path for every changed file.
-* Provide the complete final code block for every changed file.
-* Do not provide partial code, diffs, or unnecessary changes.
-* Do not commit or push unless explicitly requested.
-```
-
-```text
 Are they correct or not?
 
 Keep your answer short, honest, and direct. Is this correct?
