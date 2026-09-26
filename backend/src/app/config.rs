@@ -128,7 +128,7 @@ fn parse_allowed_origins(value: &str) -> Result<Vec<HeaderValue>, ConfigError> {
                 return Err(ConfigError::Invalid("CORS_ALLOWED_ORIGINS"));
             }
 
-            if uri.path_and_query().is_some() {
+            if uri.path() != "/" || uri.query().is_some() {
                 return Err(ConfigError::Invalid("CORS_ALLOWED_ORIGINS"));
             }
 
