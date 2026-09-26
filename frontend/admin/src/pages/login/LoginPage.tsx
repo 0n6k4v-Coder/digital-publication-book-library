@@ -5,6 +5,8 @@ import type { LoginCredentials } from "../../types/auth";
 
 interface LoginPageProps {
   onLogin: (credentials: LoginCredentials) => Promise<void>;
+  bootstrapError?: boolean;
+  onRetryBootstrap?: () => Promise<void>;
 }
 
 interface LoginFieldErrors {
@@ -66,10 +68,15 @@ function joinDescribedBy(
   return value.length > 0 ? value : undefined;
 }
 
-export function LoginPage({ onLogin }: LoginPageProps) {
+export function LoginPage({
+  onLogin,
+  bootstrapError = false,
+  onRetryBootstrap,
+}: LoginPageProps) {
   const emailId = useId();
   const passwordId = useId();
   const formErrorId = useId();
+  const bootstrapErrorId = useId();
 
   const emailInputRef = useRef<HTMLInputElement>(null);
   const passwordInputRef = useRef<HTMLInputElement>(null);
@@ -80,6 +87,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   const [fieldErrors, setFieldErrors] = useState<LoginFieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRetryingBootstrap, setIsRetryingBootstrap] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
@@ -121,6 +129,20 @@ export function LoginPage({ onLogin }: LoginPageProps) {
       setFormError(getAuthenticationErrorMessage(error));
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  async function handleRetryBootstrap(): Promise<void> {
+    if (onRetryBootstrap === undefined || isRetryingBootstrap) {
+      return;
+    }
+
+    setIsRetryingBootstrap(true);
+
+    try {
+      await onRetryBootstrap();
+    } finally {
+      setIsRetryingBootstrap(false);
     }
   }
 
@@ -174,10 +196,43 @@ export function LoginPage({ onLogin }: LoginPageProps) {
           <p>Use your administrator credentials to continue.</p>
         </div>
 
+        {bootstrapError ? (
+          <div
+            className="form-alert"
+            id={bootstrapErrorId}
+            role="alert"
+            aria-live="assertive"
+          >
+            <span className="form-alert__icon" aria-hidden="true">
+              !
+            </span>
+            <div>
+              <p className="form-alert__title">Authentication unavailable</p>
+              <p className="form-alert__message">
+                We could not verify your existing authentication session. Please
+                try again.
+              </p>
+              {onRetryBootstrap !== undefined ? (
+                <button
+                  className="primary-button"
+                  type="button"
+                  disabled={isRetryingBootstrap}
+                  onClick={() => void handleRetryBootstrap()}
+                >
+                  {isRetryingBootstrap
+                    ? "Retrying authentication…"
+                    : "Retry authentication"}
+                </button>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+
         <form
           className="login-form"
           noValidate
           aria-busy={isSubmitting}
+          aria-describedby={bootstrapError ? bootstrapErrorId : undefined}
           onSubmit={handleSubmit}
         >
           {formError !== null ? (
