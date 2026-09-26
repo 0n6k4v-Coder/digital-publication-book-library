@@ -1,15 +1,16 @@
-import { AuthenticationError, authService } from "./auth";
-import {
-  DEFAULT_ACCOUNT_LIST_QUERY,
-  type AccountListQuery,
+import { authService } from "./auth";
+import type {
+  AccountListQuery,
+  AccountStatusFilter,
 } from "../types/account-query";
+import { DEFAULT_ACCOUNT_LIST_QUERY } from "../types/account-query";
 import type {
   AccountListResponse,
   AccountStatus,
   AdministratorAccount,
 } from "../types/account";
 
-export interface ListAccountsOptions {
+interface AccountRequestOptions {
   signal?: AbortSignal;
 }
 
@@ -18,14 +19,22 @@ export type AccountMutation = "deactivate" | "activate" | "restore";
 type AccountsErrorCode =
   | "UNAUTHORIZED"
   | "FORBIDDEN"
-  | "INVALID_RESPONSE"
-  | "NETWORK"
-  | "SERVER"
-  | "UNSUPPORTED_MEDIA_TYPE"
-  | "VALIDATION"
   | "NOT_FOUND"
   | "CONFLICT"
+  | "VALIDATION"
+  | "UNSUPPORTED_MEDIA_TYPE"
+  | "SERVER"
+  | "NETWORK"
+  | "INVALID_RESPONSE"
   | "UNKNOWN";
+
+interface ProblemDetails {
+  code: string | null;
+}
+
+interface AccountUpdatePatch {
+  display_name: string | null;
+}
 
 const apiOrigin = (import.meta.env.VITE_API_ORIGIN ?? "")
   .trim()
@@ -88,72 +97,8 @@ function isAccountStatus(value: unknown): value is AccountStatus {
   return value === "active" || value === "inactive";
 }
 
-function isSafeInteger(value: unknown): value is number {
-  return typeof value === "number" && Number.isSafeInteger(value);
-}
-
-async function readProblemCode(response: Response): Promise<string | null> {
-  const contentType = response.headers.get("content-type") ?? "";
-
-  if (!contentType.toLowerCase().includes("application/problem+json")) {
-    return null;
-  }
-
-  try {
-    const body: unknown = await response.json();
-
-    if (isRecord(body) && isString(body.code)) {
-      return body.code;
-    }
-  } catch {
-    return null;
-  }
-
-  return null;
-}
-
-function mapResponseError(
-  status: number,
-  problemCode: string | null,
-): AccountsError {
-  switch (status) {
-    case 400:
-      return new AccountsError("VALIDATION", status, problemCode);
-    case 401:
-      return new AccountsError("UNAUTHORIZED", status, problemCode);
-    case 403:
-      return new AccountsError("FORBIDDEN", status, problemCode);
-    case 404:
-      return new AccountsError("NOT_FOUND", status, problemCode);
-    case 409:
-      return new AccountsError("CONFLICT", status, problemCode);
-    case 415:
-      return new AccountsError("UNSUPPORTED_MEDIA_TYPE", status, problemCode);
-    case 422:
-      return new AccountsError("VALIDATION", status, problemCode);
-    default:
-      if (status >= 500 && status <= 599) {
-        return new AccountsError("SERVER", status, problemCode);
-      }
-
-      return new AccountsError("UNKNOWN", status, problemCode);
-  }
-}
-
-function mapAuthenticationError(error: AuthenticationError): AccountsError {
-  if (error.status === 401 || error.code === "UNAUTHORIZED") {
-    return new AccountsError("UNAUTHORIZED", 401, "UNAUTHORIZED");
-  }
-
-  if (error.status === 0) {
-    return new AccountsError("NETWORK", 0, null);
-  }
-
-  if (error.status >= 500 && error.status <= 599) {
-    return new AccountsError("SERVER", error.status, null);
-  }
-
-  return new AccountsError("UNKNOWN", error.status, null);
+function isAccountStatusFilter(value: unknown): value is AccountStatusFilter {
+  return value === "active" || value === "inactive";
 }
 
 function parseAccount(value: unknown): AdministratorAccount | null {
@@ -184,16 +129,53 @@ function parseAccount(value: unknown): AdministratorAccount | null {
   };
 }
 
+function parseAccountResponse(value: unknown): AdministratorAccount {
+  const account = parseAccount(value);
+
+  if (account === null) {
+    throw new AccountsError("INVALID_RESPONSE", 200);
+  }
+
+  return account;
+}
+
+async function parseAccountResponseBody(
+  response: Response,
+): Promise<AdministratorAccount> {
+  let body: unknown;
+
+  try {
+    body = await response.json();
+  } catch {
+    throw new AccountsError("INVALID_RESPONSE", response.status);
+  }
+
+  return parseAccountResponse(body);
+}
+
+async function parseOptionalAccountResponse(
+  response: Response,
+): Promise<AdministratorAccount | null> {
+  if (response.status === 204) {
+    return null;
+  }
+
+  return parseAccountResponseBody(response);
+}
+
 function parseAccountListResponse(value: unknown): AccountListResponse {
   if (
     !isRecord(value) ||
     !Array.isArray(value.items) ||
-    !isSafeInteger(value.page) ||
+    typeof value.page !== "number" ||
+    !Number.isInteger(value.page) ||
+    typeof value.page_size !== "number" ||
+    !Number.isInteger(value.page_size) ||
+    typeof value.total !== "number" ||
+    !Number.isInteger(value.total) ||
     value.page < 1 ||
-    !isSafeInteger(value.page_size) ||
     value.page_size < 1 ||
     value.page_size > 100 ||
-    !isSafeInteger(value.total) ||
     value.total < 0
   ) {
     throw new AccountsError("INVALID_RESPONSE", 200);
@@ -213,13 +195,12 @@ function parseAccountListResponse(value: unknown): AccountListResponse {
   };
 }
 
-function buildListUrl(query: AccountListQuery): string {
+function buildListSearch(query: AccountListQuery): string {
   const params = new URLSearchParams();
+  params.set("page", String(Math.max(1, query.page)));
+  params.set("page_size", String(Math.min(100, Math.max(1, query.pageSize))));
 
-  params.set("page", String(query.page));
-  params.set("page_size", String(query.pageSize));
-
-  if (query.status !== null) {
+  if (query.status !== null && isAccountStatusFilter(query.status)) {
     params.set("status", query.status);
   }
 
@@ -227,123 +208,167 @@ function buildListUrl(query: AccountListQuery): string {
     params.set("include_deleted", "true");
   }
 
-  return `/admin/accounts?${params.toString()}`;
+  return params.toString();
 }
 
-async function fetchProtected(
-  input: RequestInfo | URL,
-  init: RequestInit,
-): Promise<Response> {
-  try {
-    return await authService.fetchWithAuthentication(input, init);
-  } catch (error) {
-    if (error instanceof AuthenticationError) {
-      throw mapAuthenticationError(error);
-    }
+async function readProblemDetails(response: Response): Promise<ProblemDetails> {
+  const contentType = response.headers.get("content-type") ?? "";
 
-    throw error;
+  if (!contentType.toLowerCase().includes("application/problem+json")) {
+    return { code: null };
   }
+
+  try {
+    const body: unknown = await response.json();
+
+    if (
+      isRecord(body) &&
+      typeof body.code === "string" &&
+      body.code.length > 0
+    ) {
+      return { code: body.code };
+    }
+  } catch {
+    return { code: null };
+  }
+
+  return { code: null };
 }
 
-async function listAccounts(
-  query: AccountListQuery,
-  options: ListAccountsOptions = {},
-): Promise<AccountListResponse> {
+async function toAccountsError(response: Response): Promise<AccountsError> {
+  const { code: problemCode } = await readProblemDetails(response);
+
+  if (response.status === 401) {
+    authService.clearClientState();
+    return new AccountsError("UNAUTHORIZED", 401, problemCode);
+  }
+
+  if (response.status === 403) {
+    return new AccountsError("FORBIDDEN", 403, problemCode);
+  }
+
+  if (response.status === 404) {
+    return new AccountsError("NOT_FOUND", 404, problemCode);
+  }
+
+  if (response.status === 409) {
+    return new AccountsError("CONFLICT", 409, problemCode);
+  }
+
+  if (response.status === 415) {
+    return new AccountsError("UNSUPPORTED_MEDIA_TYPE", 415, problemCode);
+  }
+
+  if (response.status === 400 || response.status === 422) {
+    return new AccountsError("VALIDATION", response.status, problemCode);
+  }
+
+  if (response.status >= 500) {
+    return new AccountsError("SERVER", response.status, problemCode);
+  }
+
+  return new AccountsError("UNKNOWN", response.status, problemCode);
+}
+
+async function request(
+  pathname: string,
+  init: RequestInit = {},
+): Promise<Response> {
+  const authorization = authService.getAuthorizationHeader();
+
+  if (authorization === null) {
+    throw new AccountsError("UNAUTHORIZED", 401);
+  }
+
+  const headers = new Headers(init.headers);
+  headers.set("Accept", "application/json, application/problem+json");
+  headers.set("Authorization", authorization);
+
   let response: Response;
 
   try {
-    response = await fetchProtected(buildApiUrl(buildListUrl(query)), {
-      method: "GET",
-      headers: {
-        Accept: "application/json",
-      },
+    response = await fetch(buildApiUrl(pathname), {
+      ...init,
+      headers,
       cache: "no-store",
-      signal: options.signal,
     });
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {
       throw error;
     }
 
-    if (error instanceof AccountsError) {
-      throw error;
-    }
-
     throw new AccountsError("NETWORK", 0);
   }
 
-  if (response.status === 401) {
-    const problemCode = await readProblemCode(response);
-    authService.clearClientState();
-    throw mapResponseError(401, problemCode);
-  }
-
   if (!response.ok) {
-    throw mapResponseError(response.status, await readProblemCode(response));
+    throw await toAccountsError(response);
   }
 
-  const contentType = response.headers.get("content-type")?.toLowerCase() ?? "";
-
-  if (!contentType.includes("application/json")) {
-    throw new AccountsError("INVALID_RESPONSE", response.status);
-  }
-
-  let body: unknown;
-
-  try {
-    body = await response.json();
-  } catch {
-    throw new AccountsError("INVALID_RESPONSE", response.status);
-  }
-
-  return parseAccountListResponse(body);
-}
-
-async function mutateAccount(
-  action: AccountMutation,
-  accountId: string,
-): Promise<void> {
-  let response: Response;
-
-  try {
-    response = await fetchProtected(
-      buildApiUrl(`/admin/accounts/${encodeURIComponent(accountId)}/${action}`),
-      {
-        method: "POST",
-        headers: {
-          Accept: "application/json",
-        },
-        cache: "no-store",
-      },
-    );
-  } catch (error) {
-    if (error instanceof AccountsError) {
-      throw error;
-    }
-
-    throw new AccountsError("NETWORK", 0);
-  }
-
-  if (response.status === 401) {
-    const problemCode = await readProblemCode(response);
-    authService.clearClientState();
-    throw mapResponseError(401, problemCode);
-  }
-
-  if (!response.ok) {
-    throw mapResponseError(response.status, await readProblemCode(response));
-  }
+  return response;
 }
 
 export const accountsService = {
   async list(
     query: AccountListQuery = DEFAULT_ACCOUNT_LIST_QUERY,
-    options: ListAccountsOptions = {},
+    options: AccountRequestOptions = {},
   ): Promise<AccountListResponse> {
-    return listAccounts(query, options);
+    const search = buildListSearch(query);
+    const response = await request(`/admin/accounts?${search}`, {
+      method: "GET",
+      signal: options.signal,
+    });
+
+    return parseAccountListResponse(await response.json());
   },
 
-  async mutate(action: AccountMutation, accountId: string): Promise<void> {
-    return mutateAccount(action, accountId);
+  async get(
+    accountId: string,
+    options: AccountRequestOptions = {},
+  ): Promise<AdministratorAccount> {
+    const response = await request(
+      `/admin/accounts/${encodeURIComponent(accountId)}`,
+      {
+        method: "GET",
+        signal: options.signal,
+      },
+    );
+
+    return parseAccountResponseBody(response);
+  },
+
+  async update(
+    accountId: string,
+    patch: AccountUpdatePatch,
+  ): Promise<AdministratorAccount | null> {
+    const headers = new Headers();
+    headers.set("Content-Type", "application/merge-patch+json");
+
+    const response = await request(
+      `/admin/accounts/${encodeURIComponent(accountId)}`,
+      {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify(patch),
+      },
+    );
+
+    return parseOptionalAccountResponse(response);
+  },
+
+  async mutate(
+    action: AccountMutation,
+    accountId: string,
+  ): Promise<AdministratorAccount | null> {
+    const endpoints: Record<AccountMutation, string> = {
+      deactivate: `/admin/accounts/${encodeURIComponent(accountId)}/deactivate`,
+      activate: `/admin/accounts/${encodeURIComponent(accountId)}/activate`,
+      restore: `/admin/accounts/${encodeURIComponent(accountId)}/restore`,
+    };
+
+    const response = await request(endpoints[action], {
+      method: "POST",
+    });
+
+    return parseOptionalAccountResponse(response);
   },
 };

@@ -1,5 +1,6 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { AdminShell } from "./layouts/AdminShell";
+import { AccountDetailPage } from "./pages/accounts/AccountDetailPage";
 import { AccountRoutePlaceholderPage } from "./pages/accounts/AccountRoutePlaceholderPage";
 import { AccountsPage } from "./pages/accounts/AccountsPage";
 import { LoginPage } from "./pages/login/LoginPage";
@@ -10,35 +11,6 @@ function RouteTransition() {
   return (
     <main className="route-transition" aria-live="polite">
       Redirecting…
-    </main>
-  );
-}
-
-function AuthenticationPending() {
-  return (
-    <main className="route-transition" role="status" aria-live="polite">
-      Checking authentication…
-    </main>
-  );
-}
-
-function AuthenticationErrorView() {
-  return (
-    <main className="route-transition" aria-live="polite">
-      <section aria-labelledby="authentication-error-title">
-        <h1 id="authentication-error-title">Authentication unavailable</h1>
-        <p>
-          We could not verify your existing authentication session. Please try
-          again.
-        </p>
-        <button
-          className="primary-button"
-          type="button"
-          onClick={() => void authService.retryBootstrap()}
-        >
-          Retry authentication
-        </button>
-      </section>
     </main>
   );
 }
@@ -58,29 +30,22 @@ function isAdminRoute(pathname: string): boolean {
 
 export default function App() {
   const pathname = usePathname();
-  const authenticationSnapshot = useSyncExternalStore(
+
+  const isAuthenticated = useSyncExternalStore(
     authService.subscribe,
     authService.getSnapshot,
   );
 
-  useEffect(() => {
-    void authService.bootstrap();
-  }, []);
-
-  const authStatus = authenticationSnapshot.authStatus;
-
   const redirectTarget =
-    authStatus === "unknown" || authStatus === "authentication-error"
-      ? null
-      : pathname === "/login" && authStatus === "authenticated"
-        ? "/admin"
-        : isAdminRoute(pathname) && authStatus === "unauthenticated"
-          ? "/login"
-          : pathname !== "/login" && !isAdminRoute(pathname)
-            ? authStatus === "authenticated"
-              ? "/admin"
-              : "/login"
-            : null;
+    pathname === "/login" && isAuthenticated
+      ? "/admin"
+      : isAdminRoute(pathname) && !isAuthenticated
+        ? "/login"
+        : pathname !== "/login" && !isAdminRoute(pathname)
+          ? isAuthenticated
+            ? "/admin"
+            : "/login"
+          : null;
 
   useEffect(() => {
     if (redirectTarget !== null) {
@@ -112,24 +77,6 @@ export default function App() {
     document.title = "Sign in | Admin Application";
   }, [pathname]);
 
-  if (authStatus === "unknown") {
-    return <AuthenticationPending />;
-  }
-
-  if (authStatus === "authentication-error") {
-    if (pathname === "/login") {
-      return (
-        <LoginPage
-          onLogin={authService.login}
-          bootstrapError
-          onRetryBootstrap={authService.retryBootstrap}
-        />
-      );
-    }
-
-    return <AuthenticationErrorView />;
-  }
-
   if (redirectTarget !== null) {
     return <RouteTransition />;
   }
@@ -157,7 +104,7 @@ export default function App() {
   if (isAccountEditRoute(pathname)) {
     return (
       <AdminShell onLogout={authService.logout}>
-        <AccountRoutePlaceholderPage mode="edit" />
+        <AccountDetailPage />
       </AdminShell>
     );
   }
