@@ -62,27 +62,39 @@
 
 ## 1.3 Integration
 
-| ID             | Requirement                                                                              |
-| -------------- | ---------------------------------------------------------------------------------------- |
-| `AU_REQ_FC_19` | Authentication must obtain authentication-relevant account data from the Account domain. |
-| `AU_REQ_FC_20` | Authentication must not own canonical account profile data.                              |
-| `AU_REQ_FC_21` | Authentication must not own the Account password hash.                                   |
-| `AU_REQ_FC_22` | Authentication must provide the authenticated account ID to downstream consumers.        |
-| `AU_REQ_FC_23` | Authentication must provide an `AuthenticatedPrincipal`.                                 |
-| `AU_REQ_FC_24` | Authentication must not decide roles or permissions.                                     |
-| `AU_REQ_FC_25` | Authorization must consume the authenticated principal for access decisions.             |
+| ID             | Requirement                                                                                         |
+| -------------- | --------------------------------------------------------------------------------------------------- |
+| `AU_REQ_FC_19` | Authentication must obtain authentication-relevant account data from the Account domain.            |
+| `AU_REQ_FC_20` | Authentication must not own canonical account profile data.                                         |
+| `AU_REQ_FC_21` | Authentication must not own the Account password hash.                                              |
+| `AU_REQ_FC_22` | Authentication must provide the authenticated account ID to downstream consumers.                   |
+| `AU_REQ_FC_23` | Authentication must provide an `AuthenticatedPrincipal` for protected bearer-authenticated requests.|
+| `AU_REQ_FC_24` | Authentication must not decide roles or permissions.                                                |
+| `AU_REQ_FC_25` | Authorization must consume the authenticated principal for access decisions.                        |
+| `AU_REQ_FC_26` | Browser clients must keep access tokens in memory only.                                             |
+| `AU_REQ_FC_27` | Browser clients must receive the refresh credential through an `HttpOnly` secure cookie.            |
+| `AU_REQ_FC_28` | Browser clients must restore authenticated state after document reload through `POST /auth/refresh`.|
+| `AU_REQ_FC_29` | Refresh credentials must be rotated after every successful refresh.                                 |
+| `AU_REQ_FC_30` | Browser authentication must not expose the refresh credential to JavaScript application code.       |
+| `AU_REQ_FC_31` | Browser-authenticated state-changing authentication endpoints must enforce origin/CSRF protections. |
+| `AU_REQ_FC_32` | Logout must revoke the authentication session and expire the browser refresh cookie.                |
 
 ## 1.4 Non-Functional Requirements
 
-| ID                 | Requirement                                                                                             |
-| ------------------ | -------------------------------------------------------------------------------------------------------- |
-| `AU_REQ_NON_FC_01` | Passwords, raw access tokens, raw refresh tokens, and `Authorization` header values must not be logged. |
-| `AU_REQ_NON_FC_02` | Raw access tokens must not be persisted.                                                                |
-| `AU_REQ_NON_FC_03` | Raw refresh tokens must not be persisted.                                                               |
-| `AU_REQ_NON_FC_04` | Authentication endpoints must use HTTPS/TLS. TLS terminates at the backend application through Rustls. TLS 1.3 must be preferred; TLS 1.2 may be supported for compatibility; TLS 1.0 and TLS 1.1 must not be negotiated. The backend must not expose Authentication endpoints through plaintext HTTP. If a reverse proxy or load balancer is used, its connection to the backend must also be TLS-protected. The application must not trust forwarded scheme headers as proof of HTTPS. Certificate and private-key provisioning is deployment-managed and private-key material must never be logged, returned, or committed to source control. |
-| `AU_REQ_NON_FC_05` | Failed password authentication attempts must be rate-limited.                                           |
-| `AU_REQ_NON_FC_06` | Authentication failures must not reveal unnecessary account-existence information.                      |
-| `AU_REQ_NON_FC_07` | Authentication responses must use `Cache-Control: no-store`.                                             |
+| ID                 | Requirement                                                                                                                                                                                                                           |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AU_REQ_NON_FC_01` | Passwords, raw access tokens, raw refresh tokens, and `Authorization` header values must not be logged.                                                                                                                               |
+| `AU_REQ_NON_FC_02` | Raw access tokens must not be persisted by the application server and must remain in browser memory only.                                                                                                                            |
+| `AU_REQ_NON_FC_03` | Raw refresh tokens must not be persisted by the application server in databases, files, caches, or logs. The browser may retain the opaque refresh credential only in the designated `HttpOnly; Secure` authentication cookie. |
+| `AU_REQ_NON_FC_04` | Authentication endpoints must use HTTPS/TLS. TLS 1.3 must be preferred; TLS 1.2 may be supported for compatibility; TLS 1.0 and TLS 1.1 must not be negotiated. The browser-facing application must also use HTTPS in environments where secure authentication cookies are used. |
+| `AU_REQ_NON_FC_05` | Failed password authentication attempts must be rate-limited.                                                                                                                                                                        |
+| `AU_REQ_NON_FC_06` | Authentication failures must not reveal unnecessary account-existence information.                                                                                                                                                    |
+| `AU_REQ_NON_FC_07` | Authentication responses must use `Cache-Control: no-store`.                                                                                                                                                                         |
+| `AU_REQ_NON_FC_08` | Browser refresh credentials must use `HttpOnly`, `Secure`, `Path=/`, no `Domain`, and the `__Host-` cookie prefix.                                                                                                                   |
+| `AU_REQ_NON_FC_09` | Browser refresh credentials must use `SameSite=Strict` by default. `SameSite=None; Secure` is permitted only for explicitly configured cross-site frontend/API deployments and requires the CSRF/origin protections defined by this contract. |
+| `AU_REQ_NON_FC_10` | Browser-authenticated state-changing requests must validate an explicitly configured frontend `Origin` allowlist.                                                                                                                    |
+| `AU_REQ_NON_FC_11` | When present, `Sec-Fetch-Site` must not indicate `cross-site` by default. `cross-site` may be accepted only for an explicitly configured cross-site frontend/API deployment using `SameSite=None; Secure`, and only when the request `Origin` matches the configured frontend-origin allowlist. |
+| `AU_REQ_NON_FC_12` | Cross-origin browser requests using authentication cookies must use credentialed CORS with an explicit origin allowlist and must never use `Access-Control-Allow-Origin: *`.                                                        |
 
 ---
 
@@ -100,7 +112,7 @@
 | `AU_SEC_REQ_06` | Missing authentication must return `WWW-Authenticate: Bearer realm="admin-api"`.                               |
 | `AU_SEC_REQ_07` | Invalid bearer authentication must return `WWW-Authenticate: Bearer realm="admin-api", error="invalid_token"`. |
 | `AU_SEC_REQ_08` | Authentication errors must use `application/problem+json`.                                                     |
-| `AU_SEC_REQ_09` | Authentication must not expose passwords, password hashes, tokens, or token verifier material.                 |
+| `AU_SEC_REQ_09` | Authentication must not expose passwords, password hashes, raw refresh credentials outside the designated `HttpOnly; Secure` cookie, or token verifier material. Access tokens may be returned only in the successful token responses defined by this API contract. |
 
 ## 2.2 Security Decisions
 
@@ -152,16 +164,36 @@ The database stores only the verifier.
 
 ### 2.2.3 Refresh Tokens
 
-| ID                      | Decision        | Definition                                                                           |
-| ----------------------- | --------------- | ------------------------------------------------------------------------------------ |
-| `AU_SEC_DEC_REFRESH_01` | Purpose         | Obtain new access credentials for an existing authentication session.                |
-| `AU_SEC_DEC_REFRESH_02` | Type            | Opaque token.                                                                        |
-| `AU_SEC_DEC_REFRESH_03` | Storage         | Persist only a SHA-256 verifier of the exact refresh-token string.                   |
-| `AU_SEC_DEC_REFRESH_04` | Rotation        | Successful refresh invalidates the presented refresh token and issues a replacement. |
-| `AU_SEC_DEC_REFRESH_05` | Replay          | A previously used refresh token must be rejected.                                    |
-| `AU_SEC_DEC_REFRESH_06` | Session Binding | Each refresh token belongs to exactly one authentication session.                    |
-| `AU_SEC_DEC_REFRESH_07` | Revocation      | Session revocation invalidates its refresh tokens.                                   |
-| `AU_SEC_DEC_REFRESH_08` | Expiration      | Every refresh token expires 2592000 seconds after issuance.                          |
+| ID                      | Decision        | Definition                                                                                                              |
+| ----------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `AU_SEC_DEC_REFRESH_01` | Purpose         | Obtain new access credentials for an existing authentication session.                                                   |
+| `AU_SEC_DEC_REFRESH_02` | Type            | Opaque token.                                                                                                           |
+| `AU_SEC_DEC_REFRESH_03` | Storage         | Persist only a SHA-256 verifier of the exact refresh-token string on the server.                                        |
+| `AU_SEC_DEC_REFRESH_04` | Rotation        | Successful refresh invalidates the presented refresh token and issues a replacement.                                    |
+| `AU_SEC_DEC_REFRESH_05` | Replay          | A previously used refresh token must be rejected.                                                                       |
+| `AU_SEC_DEC_REFRESH_06` | Session Binding | Each refresh token belongs to exactly one authentication session.                                                       |
+| `AU_SEC_DEC_REFRESH_07` | Revocation      | Session revocation invalidates its refresh tokens immediately.                                                          |
+| `AU_SEC_DEC_REFRESH_08` | Expiration      | The refresh token must not outlive its bound authentication session.                                                    |
+| `AU_SEC_DEC_REFRESH_09` | Lifetime        | For `AU_UC_01`, the initial refresh token expires no later than `authentication_session.expires_at`.                    |
+| `AU_SEC_DEC_REFRESH_10` | Rotation Lifetime | A replacement refresh token must not receive an expiration later than the original refresh-token expiration or the bound session expiration. |
+| `AU_SEC_DEC_REFRESH_11` | Browser Storage | Browser clients receive the raw refresh credential only through the designated `HttpOnly; Secure` cookie.               |
+| `AU_SEC_DEC_REFRESH_12` | JavaScript Access | Browser JavaScript must never read, copy, render, or otherwise access the raw refresh credential.                     |
+
+For browser authentication sessions:
+
+```text
+authentication_session.expires_at
+        ↓
+refresh token expiration boundary
+        ↓
+browser refresh-cookie Max-Age boundary
+```
+
+Refresh does not extend the authentication session.
+
+A successful refresh must therefore never create a new 24-hour session window.
+
+The refresh token remains opaque to the frontend application.
 
 ### 2.2.4 Authentication Failures
 
@@ -232,7 +264,11 @@ Authentication may read Account-owned authentication data required for credentia
 ## 3.2 Authentication Flow
 
 ```text
-Login
+Login request
+  ↓
+Normalize and validate email
+  ↓
+Apply authentication rate limits
   ↓
 Find account by email
   ↓
@@ -250,6 +286,8 @@ Issue refresh token
   ↓
 Return authentication response
 ```
+
+Authentication rate limiting occurs before account lookup and password verification, as defined by `AU_SEC_DEC_CREDENTIAL_06`.
 
 ## 3.3 Protected Request Flow
 
@@ -405,7 +443,9 @@ Rules:
 * A refresh token is invalid when `used_at IS NOT NULL`.
 * A refresh token is invalid when `revoked_at IS NOT NULL`.
 * A refresh token is invalid when its authentication session is revoked or expired.
-* Each newly issued refresh token expires 2592000 seconds after issuance.
+* The initial refresh token expires at `authentication_session.expires_at`.
+* A replacement refresh token expires no later than both the presented refresh token's `expires_at` and `authentication_session.expires_at`.
+* Refresh-token expiration must never extend the authentication-session lifetime.
 * Deleting an authentication session deletes its refresh-token records through `ON DELETE CASCADE`.
 
 ## 4.3 `authentication_access_token`
@@ -467,73 +507,87 @@ Client-provided identity or authorization data must never replace or bypass serv
 ### Rules
 
 1. Process email using Account email rules.
-2. Retrieve account authentication data.
-3. Verify the password.
-4. Require `status = active`.
-5. Require `deleted_at IS NULL`.
-6. Apply the authentication rate-limiting policy defined by `AU_SEC_DEC_CREDENTIAL_06`. If either the normalized-email or source-IP limit is exceeded, reject the request with `429 AUTHENTICATION_RATE_LIMITED` and do not continue authentication processing.
+2. Apply the authentication rate-limiting policy defined by `AU_SEC_DEC_CREDENTIAL_06`. If either the normalized-email or source-IP limit is exceeded, reject the request with `429 AUTHENTICATION_RATE_LIMITED` and stop processing before account lookup or password verification.
+3. Retrieve account authentication data.
+4. Verify the password.
+5. Require `status = active`.
+6. Require `deleted_at IS NULL`.
 7. Create an authentication session.
 8. Set `expires_at = session_creation_time + 24 hours`.
 9. Set `last_authenticated_at = current_time`.
 10. Issue an access token with a 3600-second lifetime.
-11. Issue a refresh token with a 2592000-second lifetime.
+11. Issue an initial refresh token with `expires_at = authentication_session.expires_at`.
 12. Return the authentication response.
 
 ## 5.2 Refresh Authentication
 
 **ID:** `AU_UC_02`
 
-| Item   | Definition                           |
-| ------ | ------------------------------------ |
-| Actor  | Client with Refresh Token            |
-| Input  | Refresh Token                        |
-| Result | New Access Token + new Refresh Token |
+| Item   | Definition                                      |
+| ------ | ----------------------------------------------- |
+| Actor  | Browser Client with Refresh Cookie              |
+| Input  | `__Host-refresh_token` cookie                   |
+| Result | New Access Token + rotated browser refresh cookie |
 
 ### Rules
 
-1. Compute the SHA-256 verifier of the supplied refresh token.
-2. Look up the refresh-token record by `token_hash`.
-3. Require the refresh-token record to exist.
-4. Require `expires_at > current_time`.
-5. Require `used_at IS NULL`.
-6. Require `revoked_at IS NULL`.
-7. Load the bound authentication session.
-8. Require the session to exist.
-9. Require `session.revoked_at IS NULL`.
-10. Require `session.expires_at > current_time`.
-11. Load Account authentication state.
-12. Require `account.status = active`.
-13. Require `account.deleted_at IS NULL`.
-14. Mark the presented refresh token as used.
-15. Issue a replacement refresh token with a 2592000-second lifetime.
-16. Issue a new access token with a 3600-second lifetime.
-17. Commit all state changes atomically.
-18. Return the authentication response.
+1. Read the refresh credential from the `__Host-refresh_token` cookie.
+2. Do not accept a refresh token from a query parameter or request body.
+3. Compute the SHA-256 verifier of the supplied refresh token.
+4. Look up the refresh-token record by `token_hash`.
+5. Require the refresh-token record to exist.
+6. Require `expires_at > current_time`.
+7. Require `used_at IS NULL`.
+8. Require `revoked_at IS NULL`.
+9. Load the bound authentication session.
+10. Require the session to exist.
+11. Require `session.revoked_at IS NULL`.
+12. Require `session.expires_at > current_time`.
+13. Load Account authentication state.
+14. Require `account.status = active`.
+15. Require `account.deleted_at IS NULL`.
+16. Mark the presented refresh token as used.
+17. Issue a replacement refresh token.
+18. Set the replacement refresh token expiration no later than both the original refresh-token expiration and `authentication_session.expires_at`.
+19. Issue a new access token with a 3600-second lifetime.
+20. Set the replacement `__Host-refresh_token` cookie with the same security attributes defined by the Browser Credential Contract.
+21. Commit the refresh-token rotation and access-token issuance atomically.
+22. Return the new access token.
+23. Never return the refresh token in the JSON response.
 
 A replayed refresh token must not issue new credentials.
 
-A successful refresh must not modify `authentication_session.expires_at` or `authentication_session.last_authenticated_at`. Refresh is not reauthentication and does not establish a new authentication session or reset the session's 24-hour absolute lifetime.
+A successful refresh must not modify:
+
+```text
+authentication_session.expires_at
+authentication_session.last_authenticated_at
+```
+
+Refresh is not reauthentication and does not establish a new authentication session.
 
 ## 5.3 Revoke Authentication
 
 **ID:** `AU_UC_03`
 
-| Item   | Definition                     |
-| ------ | ------------------------------ |
-| Actor  | Authenticated Principal        |
-| Input  | Current Authentication Session |
-| Result | Session revoked                |
+| Item   | Definition                                      |
+| ------ | ----------------------------------------------- |
+| Actor  | Authenticated Browser Client                    |
+| Input  | Current `__Host-refresh_token` cookie           |
+| Result | Authentication session revoked + cookie cleared |
 
 ### Rules
 
-1. Obtain `session_id` from the authenticated principal.
-2. Load the authentication session.
-3. Require the session to belong to the principal's `account_id`.
-4. Mark the session revoked.
-5. Set `revocation_reason` when available.
-6. Commit the session revocation atomically.
-7. All access tokens bound to the session become invalid.
-8. All refresh tokens bound to the session become invalid.
+1. Read the current refresh credential from the `__Host-refresh_token` cookie.
+2. Compute the SHA-256 verifier of the supplied refresh token.
+3. Resolve the refresh-token record to its authentication session.
+4. If the refresh token and session are valid, revoke the bound authentication session.
+5. All access tokens bound to the session become invalid.
+6. All refresh tokens bound to the session become invalid.
+7. Expire the `__Host-refresh_token` cookie.
+8. Commit session revocation atomically.
+9. The endpoint is idempotent: a missing, expired, already-used, or already-revoked refresh credential does not reveal authentication state and still returns successful logout semantics.
+10. Logout must not require an unexpired access token.
 
 ## 5.4 Validate Bearer Authentication
 
@@ -575,17 +629,24 @@ Authentication must not accept or trust client-supplied `account_id`, `session_i
 
 ## 6.1 API Rules
 
-| Rule                  | Definition                      |
-| --------------------- | ------------------------------- |
-| Base Path             | `/auth`                         |
-| Success Content-Type  | `application/json`              |
-| Error Content-Type    | `application/problem+json`      |
-| Authentication        | `Authorization: Bearer <token>` |
-| Token Query Parameter | Not accepted                    |
-| Token Body Parameter  | Not accepted                    |
-| Caching               | `Cache-Control: no-store`       |
-| TLS                   | Required                        |
-| Authorization         | Handled by Authorization domain |
+| Rule                          | Definition                                                                                                                                                                      |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Base Path                     | `/auth`                                                                                                                                                                         |
+| Success Content-Type          | `application/json` for token responses; empty body for logout                                                                                                                   |
+| Error Content-Type            | `application/problem+json`                                                                                                                                                      |
+| Protected API Authentication  | `Authorization: Bearer <access-token>`                                                                                                                                          |
+| Browser Session Credential    | `__Host-refresh_token` HTTP cookie                                                                                                                                              |
+| Access Token Query Parameter  | Not accepted                                                                                                                                                                    |
+| Refresh Token Query Parameter | Not accepted                                                                                                                                                                    |
+| Refresh Token Body Parameter  | Not accepted                                                                                                                                                                    |
+| Caching                       | `Cache-Control: no-store`                                                                                                                                                       |
+| TLS                           | Required                                                                                                                                                                        |
+| Browser Cookie                | `HttpOnly; Secure; Path=/; no Domain; SameSite=Strict` by default                                                                                                               |
+| Cross-Site Cookie             | `SameSite=None; Secure` only when explicitly configured for a cross-site frontend/API deployment                                                                                |
+| CORS                          | Explicit allowed origins + `Access-Control-Allow-Credentials: true`; wildcard origins forbidden                                                                                 |
+| CSRF                          | Exact `Origin` allowlist required for browser-authenticated state-changing requests                                                                                             |
+| Fetch Metadata                | `Sec-Fetch-Site: cross-site` rejected by default; accepted only for an explicitly configured cross-site frontend/API deployment whose `Origin` matches the configured allowlist |
+| Authorization                 | Protected feature permissions remain handled by Authorization domain                                                                                                            |
 
 ## 6.2 Authentication Endpoints
 
@@ -595,20 +656,11 @@ Authentication must not accept or trust client-supplied `account_id`, `session_i
 | `AU_API_02` | `POST` | `/auth/refresh` | `AU_UC_02` |
 | `AU_API_03` | `POST` | `/auth/logout`  | `AU_UC_03` |
 
-Bearer validation is middleware, not a public endpoint.
+Bearer validation remains part of the Authentication request boundary for protected Admin API requests. In the current implementation, protected handlers obtain `AuthenticatedPrincipal` through the Authentication request extractor.
 
-## 6.3 Authenticate Account
+All three browser authentication endpoints are state-changing and must enforce the Browser Credential and CSRF Contract.
 
-### Request
-
-`POST /auth/login`
-
-```json
-{
-  "email": "admin@example.com",
-  "password": "example-secure-password"
-}
-```
+### 6.3 Authenticate Account
 
 ### Success
 
@@ -618,9 +670,7 @@ Bearer validation is middleware, not a public endpoint.
 {
   "access_token": "opaque-access-token",
   "token_type": "Bearer",
-  "expires_in": 3600,
-  "refresh_token": "opaque-refresh-token",
-  "refresh_expires_in": 2592000
+  "expires_in": 3600
 }
 ```
 
@@ -629,27 +679,24 @@ Headers:
 ```text
 Content-Type: application/json
 Cache-Control: no-store
+Set-Cookie: __Host-refresh_token=<opaque-refresh-token>; Max-Age=<remaining-session-seconds>; Path=/; Secure; HttpOnly; SameSite=<configured-value>
 ```
 
-### Errors
+The refresh credential is intentionally absent from the JSON response.
 
-| Status | Code                          |
-| ------ | ----------------------------- |
-| `400`  | `INVALID_REQUEST`             |
-| `401`  | `INVALID_CREDENTIALS`         |
-| `429`  | `AUTHENTICATION_RATE_LIMITED` |
+The default configured cookie value is:
 
-## 6.4 Refresh Authentication
-
-### Request
-
-`POST /auth/refresh`
-
-```json
-{
-  "refresh_token": "opaque-refresh-token"
-}
+```text
+SameSite=Strict
 ```
+
+For an explicitly configured cross-site frontend/API deployment:
+
+```text
+SameSite=None; Secure
+```
+
+### 6.4 Refresh Authentication
 
 ### Success
 
@@ -659,9 +706,7 @@ Cache-Control: no-store
 {
   "access_token": "new-opaque-access-token",
   "token_type": "Bearer",
-  "expires_in": 3600,
-  "refresh_token": "new-opaque-refresh-token",
-  "refresh_expires_in": 2592000
+  "expires_in": 3600
 }
 ```
 
@@ -670,22 +715,12 @@ Headers:
 ```text
 Content-Type: application/json
 Cache-Control: no-store
+Set-Cookie: __Host-refresh_token=<replacement-refresh-token>; Max-Age=<remaining-session-seconds>; Path=/; Secure; HttpOnly; SameSite=<configured-value>
 ```
 
-### Errors
+The `SameSite` value must use the same configured browser-cookie policy as the login response.
 
-| Status | Code                    |
-| ------ | ----------------------- |
-| `400`  | `INVALID_REQUEST`       |
-| `401`  | `INVALID_REFRESH_TOKEN` |
-
-## 6.5 Revoke Authentication
-
-### Request
-
-`POST /auth/logout`
-
-The session identified by the authenticated principal is revoked.
+### 6.5 Revoke Authentication
 
 ### Success
 
@@ -695,13 +730,14 @@ Headers:
 
 ```text
 Cache-Control: no-store
+Set-Cookie: __Host-refresh_token=; Max-Age=0; Path=/; Secure; HttpOnly; SameSite=<configured-value>
 ```
 
-### Errors
+The cookie expiration response must use the same configured cookie policy as the issued refresh cookie.
 
-| Status | Code           |
-| ------ | -------------- |
-| `401`  | `UNAUTHORIZED` |
+Logout is idempotent.
+
+The browser cookie must be expired even when the server-side refresh credential is already invalid.
 
 ## 6.6 Protected Request Authentication
 
@@ -871,42 +907,87 @@ Therefore no Authentication credential belonging to the deleted Account remains 
 
 A transaction failure must not produce partial Authentication cleanup. SQLx transactions roll back when they are not successfully committed. ([Docs.rs][2])
 
-## 7.4 Token Lifecycle
+## 7.4 Browser Client Authentication Persistence Contract
 
-### Login
-
-```text
-Authenticate Account
-    → create authentication session
-    → establish session expiration
-    → generate access token
-    → persist access-token verifier
-    → generate refresh token
-    → persist refresh-token verifier
-    → return raw tokens
-```
-
-### Protected Request
+The browser Admin application uses a split credential model:
 
 ```text
-Bearer token
-    → validate access token
-    → validate session
-    → validate account state
-    → create principal
+Access Token
+    ↓
+JavaScript memory only
+
+Refresh Credential
+    ↓
+__Host-refresh_token cookie
+    ↓
+HttpOnly + Secure + Path=/ + no Domain
 ```
 
-### Refresh
+### Browser Bootstrap
 
-```text
-Refresh token
-    → validate refresh token
-    → validate session
-    → validate account state
-    → mark presented refresh token used
-    → issue replacement refresh token
-    → issue new access token
-```
+On every application startup or full document reload:
+
+1. Authentication state begins as `unknown`.
+2. The frontend must not redirect `/admin` to `/login` while authentication state is `unknown`.
+3. The frontend sends `POST /auth/refresh` with browser credentials enabled.
+4. If refresh succeeds, the returned access token is stored in memory and authentication state becomes `authenticated`.
+5. If refresh fails with `401`, the access-token memory state is empty and authentication state becomes `unauthenticated`.
+6. The frontend then applies the route rules for the resulting authenticated state.
+
+### Access Token Lifetime
+
+The access token:
+
+* is stored only in JavaScript memory;
+* is never stored in `localStorage`;
+* is never stored in `sessionStorage`;
+* is never written to cookies;
+* is never written to URLs;
+* is never logged.
+
+### Refresh Rotation
+
+Every successful `POST /auth/refresh`:
+
+* invalidates the presented refresh token;
+* issues a replacement refresh token;
+* updates the `__Host-refresh_token` cookie;
+* returns only a new access token in the JSON response;
+* never changes the authentication session expiration.
+
+### Protected API Recovery
+
+When a protected Admin API request receives `401 Unauthorized` because the access token is invalid or expired:
+
+1. The frontend may perform one serialized `POST /auth/refresh`.
+2. On successful refresh, the frontend replaces the in-memory access token.
+3. The original protected request may be retried once.
+4. If refresh fails, the frontend clears client authentication state and treats the user as unauthenticated.
+5. The frontend must not loop indefinitely between refresh and protected-request retry.
+
+### Logout
+
+Logout:
+
+1. sends `POST /auth/logout` with browser credentials;
+2. relies on the server-side refresh cookie to identify the authentication session;
+3. revokes the server-side authentication session;
+4. expires the refresh cookie;
+5. clears the in-memory access token;
+6. navigates the frontend to `/login`.
+
+A logout network failure must not be treated as successful logout. The client must retain its current authenticated state and permit a retry until the server-side logout has succeeded.
+
+### Cross-Origin Browser Requests
+
+When the frontend and API are on different origins:
+
+* frontend requests to `/auth/login`, `/auth/refresh`, and `/auth/logout` must use `credentials: "include"`;
+* protected API requests using bearer access tokens do not rely on the refresh cookie;
+* the API must return an explicit `Access-Control-Allow-Origin` matching the configured frontend origin;
+* the API must return `Access-Control-Allow-Credentials: true`;
+* wildcard `Access-Control-Allow-Origin: *` is forbidden for credentialed requests;
+* the server must validate the `Origin` header against its explicit frontend-origin allowlist.
 
 ## 7.5 Request Pipeline
 
@@ -951,128 +1032,242 @@ Authentication remains responsible for establishing the authenticated principal.
 
 ## 8.1 Requirements
 
-| ID                 | Status         | Reason |
-| ------------------ | -------------- | ------ |
-| `AU_REQ_FC_01`     | 🟢 Implemented |        |
-| `AU_REQ_FC_02`     | 🟢 Implemented |        |
-| `AU_REQ_FC_03`     | 🟢 Implemented |        |
-| `AU_REQ_FC_04`     | 🟢 Implemented |        |
-| `AU_REQ_FC_05`     | 🟢 Implemented |        |
-| `AU_REQ_FC_06`     | 🟢 Implemented |        |
-| `AU_REQ_FC_07`     | 🟢 Implemented |        |
-| `AU_REQ_FC_08`     | 🟢 Implemented |        |
-| `AU_REQ_FC_09`     | 🟢 Implemented |        |
-| `AU_REQ_FC_10`     | 🟢 Implemented |        |
-| `AU_REQ_FC_11`     | 🟢 Implemented |        |
-| `AU_REQ_FC_12`     | 🟢 Implemented |        |
-| `AU_REQ_FC_13`     | 🟢 Implemented |        |
-| `AU_REQ_FC_14`     | 🟢 Implemented |        |
-| `AU_REQ_FC_15`     | 🟢 Implemented |        |
-| `AU_REQ_FC_16`     | 🟢 Implemented |        |
-| `AU_REQ_FC_17`     | 🟢 Implemented |        |
-| `AU_REQ_FC_18`     | 🟢 Implemented |        |
-| `AU_REQ_FC_19`     | 🟢 Implemented |        |
-| `AU_REQ_FC_20`     | 🟢 Implemented |        |
-| `AU_REQ_FC_21`     | 🟢 Implemented |        |
-| `AU_REQ_FC_22`     | 🟢 Implemented |        |
-| `AU_REQ_FC_23`     | 🟢 Implemented |        |
-| `AU_REQ_FC_24`     | 🟢 Implemented |        |
-| `AU_REQ_FC_25`     | 🟢 Implemented |        |
-| `AU_REQ_NON_FC_01` | 🟢 Implemented |        |
-| `AU_REQ_NON_FC_02` | 🟢 Implemented |        |
-| `AU_REQ_NON_FC_03` | 🟢 Implemented |        |
-| `AU_REQ_NON_FC_04` | 🟢 Implemented |        |
-| `AU_REQ_NON_FC_05` | 🟢 Implemented |        |
-| `AU_REQ_NON_FC_06` | 🟢 Implemented |        |
-| `AU_REQ_NON_FC_07` | 🟢 Implemented |        |
+| ID                 | Status         | Reason                                                                                                                                            |
+| ------------------ | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AU_REQ_FC_01`     | 🟢 Implemented |                                                                                                                                                   |
+| `AU_REQ_FC_02`     | 🟢 Implemented |                                                                                                                                                   |
+| `AU_REQ_FC_03`     | 🟢 Implemented |                                                                                                                                                   |
+| `AU_REQ_FC_04`     | 🟢 Implemented |                                                                                                                                                   |
+| `AU_REQ_FC_05`     | 🟢 Implemented |                                                                                                                                                   |
+| `AU_REQ_FC_06`     | 🟢 Implemented |                                                                                                                                                   |
+| `AU_REQ_FC_07`     | 🟢 Implemented |                                                                                                                                                   |
+| `AU_REQ_FC_08`     | 🟢 Implemented |                                                                                                                                                   |
+| `AU_REQ_FC_09`     | 🟢 Implemented |                                                                                                                                                   |
+| `AU_REQ_FC_10`     | 🟢 Implemented |                                                                                                                                                   |
+| `AU_REQ_FC_11`     | 🟢 Implemented |                                                                                                                                                   |
+| `AU_REQ_FC_12`     | 🟢 Implemented |                                                                                                                                                   |
+| `AU_REQ_FC_13`     | 🟢 Implemented | Refresh-token generation, persistence, and refresh endpoint logic exist.                                                                          |
+| `AU_REQ_FC_14`     | 🟢 Implemented | Successful refresh invalidates the presented refresh token and creates a replacement.                                                             |
+| `AU_REQ_FC_15`     | 🟢 Implemented |                                                                                                                                                   |
+| `AU_REQ_FC_16`     | 🟢 Implemented | Refresh validation rejects expired refresh tokens.                                                                                                |
+| `AU_REQ_FC_17`     | 🟢 Implemented |                                                                                                                                                   |
+| `AU_REQ_FC_18`     | 🟢 Implemented | Refresh validation rejects previously used refresh tokens.                                                                                        |
+| `AU_REQ_FC_19`     | 🟢 Implemented |                                                                                                                                                   |
+| `AU_REQ_FC_20`     | 🟢 Implemented |                                                                                                                                                   |
+| `AU_REQ_FC_21`     | 🟢 Implemented |                                                                                                                                                   |
+| `AU_REQ_FC_22`     | 🟢 Implemented |                                                                                                                                                   |
+| `AU_REQ_FC_23`     | 🟢 Implemented |                                                                                                                                                   |
+| `AU_REQ_FC_24`     | 🟢 Implemented |                                                                                                                                                   |
+| `AU_REQ_FC_25`     | 🟢 Implemented |                                                                                                                                                   |
+| `AU_REQ_FC_26`     | 🟢 Implemented | Browser access token is held only in frontend application memory.                                                                                 |
+| `AU_REQ_FC_27`     | 🟡 In Progress | Server-managed `HttpOnly; Secure` refresh cookie is not implemented yet.                                                                          |
+| `AU_REQ_FC_28`     | 🟡 In Progress | Browser reload bootstrap through `POST /auth/refresh` is not implemented yet.                                                                     |
+| `AU_REQ_FC_29`     | 🟢 Implemented | Server-side refresh-token rotation is implemented. Browser-cookie transport remains incomplete.                                                   |
+| `AU_REQ_FC_30`     | 🟡 In Progress | Current login response still exposes `refresh_token` to frontend JavaScript.                                                                      |
+| `AU_REQ_FC_31`     | 🟡 In Progress | Origin/CSRF protections for cookie-authenticated state-changing authentication requests are not implemented yet.                                  |
+| `AU_REQ_FC_32`     | 🟡 In Progress | Session revocation exists, but logout does not yet revoke through the browser refresh credential or expire the browser cookie.                    |
+| `AU_REQ_NON_FC_01` | 🟢 Implemented | Request logging excludes Authorization headers, cookies, request bodies, and response bodies.                                                     |
+| `AU_REQ_NON_FC_02` | 🟢 Implemented | Server stores only access-token verifiers; browser access token remains in memory.                                                                |
+| `AU_REQ_NON_FC_03` | 🟡 In Progress | Server stores only refresh-token verifiers, but the raw refresh token is currently returned to browser JavaScript.                                |
+| `AU_REQ_NON_FC_04` | 🟡 In Progress | Backend TLS is configured, but the current development browser application is served over HTTP.                                                   |
+| `AU_REQ_NON_FC_05` | 🟡 In Progress | Authentication rate limiting is implemented, but the current counters include reserved in-flight login attempts rather than failed attempts only. |
+| `AU_REQ_NON_FC_06` | 🟢 Implemented | Authentication failure responses are generic.                                                                                                     |
+| `AU_REQ_NON_FC_07` | 🟢 Implemented | Authentication responses use `Cache-Control: no-store`.                                                                                           |
+| `AU_REQ_NON_FC_08` | 🟡 In Progress | `__Host-refresh_token` cookie attributes are not implemented yet.                                                                                 |
+| `AU_REQ_NON_FC_09` | 🟡 In Progress | `SameSite=Strict` browser refresh-cookie policy is not implemented yet.                                                                           |
+| `AU_REQ_NON_FC_10` | 🟡 In Progress | Explicit frontend-origin validation is not implemented yet.                                                                                       |
+| `AU_REQ_NON_FC_11` | 🟡 In Progress | `Sec-Fetch-Site` validation is not implemented yet.                                                                                               |
+| `AU_REQ_NON_FC_12` | 🟡 In Progress | Credentialed cross-origin CORS configuration is not implemented yet.                                                                              |
 
-## 8.2 Security Decisions
+## 8.2 Security Requirements
 
-| Decision ID                | Status         | Reason |
-| -------------------------- | -------------- | ------ |
-| `AU_SEC_DEC_CREDENTIAL_01` | 🟢 Implemented |        |
-| `AU_SEC_DEC_CREDENTIAL_02` | 🟢 Implemented |        |
-| `AU_SEC_DEC_CREDENTIAL_03` | 🟢 Implemented |        |
-| `AU_SEC_DEC_CREDENTIAL_04` | 🟢 Implemented |        |
-| `AU_SEC_DEC_CREDENTIAL_05` | 🟢 Implemented |        |
-| `AU_SEC_DEC_CREDENTIAL_06` | 🟢 Implemented |        |
-| `AU_SEC_DEC_ACCESS_01`     | 🟢 Implemented |        |
-| `AU_SEC_DEC_ACCESS_02`     | 🟢 Implemented |        |
-| `AU_SEC_DEC_ACCESS_03`     | 🟢 Implemented |        |
-| `AU_SEC_DEC_ACCESS_04`     | 🟢 Implemented |        |
-| `AU_SEC_DEC_ACCESS_05`     | 🟢 Implemented |        |
-| `AU_SEC_DEC_ACCESS_06`     | 🟢 Implemented |        |
-| `AU_SEC_DEC_ACCESS_07`     | 🟢 Implemented |        |
-| `AU_SEC_DEC_ACCESS_08`     | 🟢 Implemented |        |
-| `AU_SEC_DEC_ACCESS_09`     | 🟢 Implemented |        |
-| `AU_SEC_DEC_ACCESS_10`     | 🟢 Implemented |        |
-| `AU_SEC_DEC_ACCESS_11`     | 🟢 Implemented |        |
-| `AU_SEC_DEC_ACCESS_12`     | 🟢 Implemented |        |
-| `AU_SEC_DEC_ACCESS_13`     | 🟢 Implemented |        |
-| `AU_SEC_DEC_ACCESS_14`     | 🟢 Implemented |        |
-| `AU_SEC_DEC_ACCESS_15`     | 🟢 Implemented |        |
-| `AU_SEC_DEC_ACCESS_16`     | 🟢 Implemented |        |
-| `AU_SEC_DEC_REFRESH_01`    | 🟢 Implemented |        |
-| `AU_SEC_DEC_REFRESH_02`    | 🟢 Implemented |        |
-| `AU_SEC_DEC_REFRESH_03`    | 🟢 Implemented |        |
-| `AU_SEC_DEC_REFRESH_04`    | 🟢 Implemented |        |
-| `AU_SEC_DEC_REFRESH_05`    | 🟢 Implemented |        |
-| `AU_SEC_DEC_REFRESH_06`    | 🟢 Implemented |        |
-| `AU_SEC_DEC_REFRESH_07`    | 🟢 Implemented |        |
-| `AU_SEC_DEC_REFRESH_08`    | 🟢 Implemented |        |
-| `AU_SEC_DEC_FAILURE_01`    | 🟢 Implemented |        |
-| `AU_SEC_DEC_FAILURE_02`    | 🟢 Implemented |        |
-| `AU_SEC_DEC_FAILURE_03`    | 🟢 Implemented |        |
-| `AU_SEC_DEC_FAILURE_04`    | 🟢 Implemented |        |
-| `AU_SEC_DEC_FAILURE_05`    | 🟢 Implemented |        |
-| `AU_SEC_DEC_FAILURE_06`    | 🟢 Implemented |        |
-| `AU_SEC_DEC_FAILURE_07`    | 🟢 Implemented |        |
-| `AU_SEC_DEC_PRINCIPAL_01`  | 🟢 Implemented |        |
-| `AU_SEC_DEC_PRINCIPAL_02`  | 🟢 Implemented |        |
-| `AU_SEC_DEC_PRINCIPAL_03`  | 🟢 Implemented |        |
-| `AU_SEC_DEC_PRINCIPAL_04`  | 🟢 Implemented |        |
-| `AU_SEC_DEC_PRINCIPAL_05`  | 🟢 Implemented |        |
-| `AU_SEC_DEC_SESSION_01`    | 🟢 Implemented |        |
-| `AU_SEC_DEC_SESSION_02`    | 🟢 Implemented |        |
-| `AU_SEC_DEC_SESSION_03`    | 🟢 Implemented |        |
-| `AU_SEC_DEC_SESSION_04`    | 🟢 Implemented |        |
-| `AU_SEC_DEC_SESSION_05`    | 🟢 Implemented |        |
-| `AU_SEC_DEC_SESSION_06`    | 🟢 Implemented |        |
+| ID              | Status         | Reason                                                                                                                           |
+| --------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `AU_SEC_REQ_01` | 🟢 Implemented | Protected Admin API requests use HTTP Bearer authentication.                                                                     |
+| `AU_SEC_REQ_02` | 🟢 Implemented | Bearer credentials are accepted through the `Authorization` header.                                                              |
+| `AU_SEC_REQ_03` | 🟢 Implemented | Bearer credentials are not accepted through query parameters or request bodies.                                                  |
+| `AU_SEC_REQ_04` | 🟢 Implemented | Missing authentication returns `401 Unauthorized`.                                                                               |
+| `AU_SEC_REQ_05` | 🟢 Implemented | Invalid, expired, or revoked bearer authentication returns `401 Unauthorized`.                                                   |
+| `AU_SEC_REQ_06` | 🟢 Implemented | Missing bearer authentication returns the required Bearer challenge.                                                             |
+| `AU_SEC_REQ_07` | 🟢 Implemented | Invalid bearer authentication returns the required `invalid_token` challenge.                                                    |
+| `AU_SEC_REQ_08` | 🟢 Implemented | Authentication errors use `application/problem+json`.                                                                            |
+| `AU_SEC_REQ_09` | 🟡 In Progress | The implementation still returns the raw refresh credential in the login response instead of only through the designated cookie. |
 
-## 8.3 Design Decisions
+## 8.3 Security Decisions
 
-| ID                              | Status         | Reason |
-| ------------------------------- | -------------- | ------ |
-| Authentication responsibilities | 🟢 Implemented |        |
-| Authentication flow             | 🟢 Implemented |        |
-| Protected request flow          | 🟢 Implemented |        |
-| Refresh flow                    | 🟢 Implemented |        |
+### Credential Verification
 
-## 8.4 Data Model
+| Decision ID                | Status         | Reason                                                                                                                                     |
+| -------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `AU_SEC_DEC_CREDENTIAL_01` | 🟢 Implemented |                                                                                                                                            |
+| `AU_SEC_DEC_CREDENTIAL_02` | 🟢 Implemented |                                                                                                                                            |
+| `AU_SEC_DEC_CREDENTIAL_03` | 🟢 Implemented |                                                                                                                                            |
+| `AU_SEC_DEC_CREDENTIAL_04` | 🟢 Implemented |                                                                                                                                            |
+| `AU_SEC_DEC_CREDENTIAL_05` | 🟢 Implemented |                                                                                                                                            |
+| `AU_SEC_DEC_CREDENTIAL_06` | 🟡 In Progress | Sliding-window rate limiting exists, but reserved in-flight attempts are currently counted instead of only failed authentication attempts. |
 
-| ID         | Data Model                     | Status         | Reason |
-| ---------- | ------------------------------ | -------------- | ------ |
-| `AU_DM_01` | `authentication_session`       | 🟢 Implemented |        |
-| `AU_DM_02` | `authentication_refresh_token` | 🟢 Implemented |        |
-| `AU_DM_03` | `authentication_access_token`  | 🟢 Implemented |        |
+### Access Tokens
 
-## 8.5 Use Cases
+| Decision ID            | Status         | Reason |
+| ---------------------- | -------------- | ------ |
+| `AU_SEC_DEC_ACCESS_01` | 🟢 Implemented |        |
+| `AU_SEC_DEC_ACCESS_02` | 🟢 Implemented |        |
+| `AU_SEC_DEC_ACCESS_03` | 🟢 Implemented |        |
+| `AU_SEC_DEC_ACCESS_04` | 🟢 Implemented |        |
+| `AU_SEC_DEC_ACCESS_05` | 🟢 Implemented |        |
+| `AU_SEC_DEC_ACCESS_06` | 🟢 Implemented |        |
+| `AU_SEC_DEC_ACCESS_07` | 🟢 Implemented |        |
+| `AU_SEC_DEC_ACCESS_08` | 🟢 Implemented |        |
+| `AU_SEC_DEC_ACCESS_09` | 🟢 Implemented |        |
+| `AU_SEC_DEC_ACCESS_10` | 🟢 Implemented |        |
+| `AU_SEC_DEC_ACCESS_11` | 🟢 Implemented |        |
+| `AU_SEC_DEC_ACCESS_12` | 🟢 Implemented |        |
+| `AU_SEC_DEC_ACCESS_13` | 🟢 Implemented |        |
+| `AU_SEC_DEC_ACCESS_14` | 🟢 Implemented |        |
+| `AU_SEC_DEC_ACCESS_15` | 🟢 Implemented |        |
+| `AU_SEC_DEC_ACCESS_16` | 🟢 Implemented |        |
 
-| ID         | Description                    | Status         | Reason |
-| ---------- | ------------------------------ | -------------- | ------ |
-| `AU_UC_01` | Authenticate Account           | 🟢 Implemented |        |
-| `AU_UC_02` | Refresh Authentication         | 🟢 Implemented |        |
-| `AU_UC_03` | Revoke Authentication          | 🟢 Implemented |        |
-| `AU_UC_04` | Validate Bearer Authentication | 🟢 Implemented |        |
+### Refresh Tokens
 
-## 8.6 API Contract
+| Decision ID             | Status         | Reason                                                                                                                 |
+| ----------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `AU_SEC_DEC_REFRESH_01` | 🟢 Implemented | Refresh-token issuance and refresh flow exist.                                                                         |
+| `AU_SEC_DEC_REFRESH_02` | 🟢 Implemented | Refresh tokens are opaque values.                                                                                      |
+| `AU_SEC_DEC_REFRESH_03` | 🟢 Implemented | SHA-256 refresh-token verifiers are persisted.                                                                         |
+| `AU_SEC_DEC_REFRESH_04` | 🟢 Implemented | Successful refresh rotates the presented refresh token.                                                                |
+| `AU_SEC_DEC_REFRESH_05` | 🟢 Implemented | Previously used refresh tokens are rejected.                                                                           |
+| `AU_SEC_DEC_REFRESH_06` | 🟢 Implemented | Refresh tokens are bound to authentication sessions.                                                                   |
+| `AU_SEC_DEC_REFRESH_07` | 🟢 Implemented | Refresh validation rejects revoked sessions.                                                                           |
+| `AU_SEC_DEC_REFRESH_08` | 🟡 In Progress | Current implementation uses a 30-day refresh-token lifetime instead of the session-bounded lifetime.                   |
+| `AU_SEC_DEC_REFRESH_09` | 🟡 In Progress | Initial refresh-token expiration is not yet bounded by `authentication_session.expires_at`.                            |
+| `AU_SEC_DEC_REFRESH_10` | 🟡 In Progress | Replacement refresh-token expiration is not yet bounded by both the presented token expiration and session expiration. |
+| `AU_SEC_DEC_REFRESH_11` | 🟡 In Progress | Browser refresh credential is not yet delivered exclusively through the designated `HttpOnly; Secure` cookie.          |
+| `AU_SEC_DEC_REFRESH_12` | 🟡 In Progress | Current login response exposes the refresh credential to frontend JavaScript.                                          |
 
-| ID               | Description              | Status         | Reason |
-| ---------------- | ------------------------ | -------------- | ------ |
-| `AU_API_01`      | `POST /auth/login`       | 🟢 Implemented |        |
-| `AU_API_02`      | `POST /auth/refresh`     | 🟢 Implemented |        |
-| `AU_API_03`      | `POST /auth/logout`      | 🟢 Implemented |        |
-| `AU_CONTRACT_01` | `AuthenticatedPrincipal` | 🟢 Implemented |        |
+### Authentication Failures
+
+| Decision ID             | Status         | Reason |
+| ----------------------- | -------------- | ------ |
+| `AU_SEC_DEC_FAILURE_01` | 🟢 Implemented |        |
+| `AU_SEC_DEC_FAILURE_02` | 🟢 Implemented |        |
+| `AU_SEC_DEC_FAILURE_03` | 🟢 Implemented |        |
+| `AU_SEC_DEC_FAILURE_04` | 🟢 Implemented |        |
+| `AU_SEC_DEC_FAILURE_05` | 🟢 Implemented |        |
+| `AU_SEC_DEC_FAILURE_06` | 🟢 Implemented |        |
+| `AU_SEC_DEC_FAILURE_07` | 🟢 Implemented |        |
+
+### Principal
+
+| Decision ID               | Status         | Reason |
+| ------------------------- | -------------- | ------ |
+| `AU_SEC_DEC_PRINCIPAL_01` | 🟢 Implemented |        |
+| `AU_SEC_DEC_PRINCIPAL_02` | 🟢 Implemented |        |
+| `AU_SEC_DEC_PRINCIPAL_03` | 🟢 Implemented |        |
+| `AU_SEC_DEC_PRINCIPAL_04` | 🟢 Implemented |        |
+| `AU_SEC_DEC_PRINCIPAL_05` | 🟢 Implemented |        |
+
+### Authentication Sessions
+
+| Decision ID             | Status         | Reason                                                                  |
+| ----------------------- | -------------- | ----------------------------------------------------------------------- |
+| `AU_SEC_DEC_SESSION_01` | 🟢 Implemented |                                                                         |
+| `AU_SEC_DEC_SESSION_02` | 🟢 Implemented |                                                                         |
+| `AU_SEC_DEC_SESSION_03` | 🟢 Implemented |                                                                         |
+| `AU_SEC_DEC_SESSION_04` | 🟢 Implemented |                                                                         |
+| `AU_SEC_DEC_SESSION_05` | 🟢 Implemented | Access and refresh-token validation both require a valid bound session. |
+| `AU_SEC_DEC_SESSION_06` | 🟢 Implemented |                                                                         |
+
+### Browser Credential and CSRF Decisions
+
+| Decision ID             | Status         | Reason                                                                                                      |
+| ----------------------- | -------------- | ----------------------------------------------------------------------------------------------------------- |
+| `AU_SEC_DEC_BROWSER_01` | 🟡 In Progress | Access tokens are memory-only, but refresh-cookie integration is not implemented.                           |
+| `AU_SEC_DEC_BROWSER_02` | 🟡 In Progress | `__Host-refresh_token` has not yet been implemented.                                                        |
+| `AU_SEC_DEC_BROWSER_03` | 🟡 In Progress | `SameSite=Strict` is defined by contract but not implemented.                                               |
+| `AU_SEC_DEC_BROWSER_04` | 🟡 In Progress | Cross-site cookie configuration is not yet implemented as an explicit deployment option.                    |
+| `AU_SEC_DEC_BROWSER_05` | 🟡 In Progress | Frontend `Origin` allowlist validation is not implemented.                                                  |
+| `AU_SEC_DEC_BROWSER_06` | 🟡 In Progress | `Sec-Fetch-Site` validation is not implemented.                                                             |
+| `AU_SEC_DEC_BROWSER_07` | 🟡 In Progress | Credentialed CORS with explicit origins is not implemented.                                                 |
+| `AU_SEC_DEC_BROWSER_08` | 🟡 In Progress | Authentication bootstrap through `POST /auth/refresh` is not implemented in the Admin frontend.             |
+| `AU_SEC_DEC_BROWSER_09` | 🟡 In Progress | Logout still authenticates through the access-token bearer path rather than the browser refresh credential. |
+
+## 8.4 Design Decisions
+
+| ID                              | Status         | Reason                                                                                                              |
+| ------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Authentication responsibilities | 🟢 Implemented |                                                                                                                     |
+| Authentication flow             | 🟡 In Progress | The flow exists, but login rate limiting still counts reserved in-flight attempts rather than failed attempts only. |
+| Protected request flow          | 🟢 Implemented |                                                                                                                     |
+| Refresh flow                    | 🟡 In Progress | Rotation and replay protection exist, but session-bounded lifetime and browser-cookie integration are incomplete.   |
+| Browser authentication flow     | 🟡 In Progress | Browser bootstrap, cookie persistence, access-token recovery, and logout-cookie handling are not implemented.       |
+| Browser CSRF/CORS flow          | 🟡 In Progress | Origin validation, Fetch Metadata validation, and credentialed cross-origin CORS are not implemented.               |
+
+## 8.5 Data Model
+
+| ID         | Data Model                     | Status         | Reason                                                                                                                                                  |
+| ---------- | ------------------------------ | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AU_DM_01` | `authentication_session`       | 🟢 Implemented |                                                                                                                                                         |
+| `AU_DM_02` | `authentication_refresh_token` | 🟡 In Progress | The table and session binding exist, but the implemented refresh-token expiration still uses a 30-day lifetime instead of the session-bounded lifetime. |
+| `AU_DM_03` | `authentication_access_token`  | 🟢 Implemented |                                                                                                                                                         |
+
+## 8.6 Use Cases
+
+| ID         | Description                    | Status         | Reason                                                                                                                                             |
+| ---------- | ------------------------------ | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AU_UC_01` | Authenticate Account           | 🟡 In Progress | Email/password authentication works, but the browser response contract must move the refresh credential from JSON to an `HttpOnly; Secure` cookie. |
+| `AU_UC_02` | Refresh Authentication         | 🟡 In Progress | Server-side refresh works, but the request must consume the browser cookie and replacement lifetime must be session-bounded.                       |
+| `AU_UC_03` | Revoke Authentication          | 🟡 In Progress | Session revocation exists, but logout must use the browser refresh credential and expire the cookie.                                               |
+| `AU_UC_04` | Validate Bearer Authentication | 🟢 Implemented |                                                                                                                                                    |
+
+## 8.7 API Contract
+
+| ID               | Description              | Status         | Reason                                                                                                                              |
+| ---------------- | ------------------------ | -------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `AU_API_01`      | `POST /auth/login`       | 🟡 In Progress | Endpoint exists, but response must establish the browser refresh cookie and stop returning the raw refresh token in JSON.           |
+| `AU_API_02`      | `POST /auth/refresh`     | 🟡 In Progress | Endpoint exists, but it must consume the refresh cookie, return only the access token, and use session-bounded refresh expiration.  |
+| `AU_API_03`      | `POST /auth/logout`      | 🟡 In Progress | Endpoint exists, but it must revoke by refresh-cookie session and expire the cookie without requiring bearer access authentication. |
+| `AU_CONTRACT_01` | `AuthenticatedPrincipal` | 🟢 Implemented |                                                                                                                                     |
+
+## 8.8 Browser Integration Contract
+
+| ID              | Description                                                   | Status         | Reason                                                                             |
+| --------------- | ------------------------------------------------------------- | -------------- | ---------------------------------------------------------------------------------- |
+| `AU_BROWSER_01` | Access token stored in frontend memory only                   | 🟢 Implemented | Frontend authentication state currently uses module memory.                        |
+| `AU_BROWSER_02` | Refresh credential stored in `__Host-refresh_token` cookie    | 🟡 In Progress | Backend cookie issuance is not implemented.                                        |
+| `AU_BROWSER_03` | Refresh credential inaccessible to JavaScript                 | 🟡 In Progress | Current login response still exposes `refresh_token` to JavaScript.                |
+| `AU_BROWSER_04` | Authentication bootstrap after document reload                | 🟡 In Progress | Frontend does not currently call `/auth/refresh` during application bootstrap.     |
+| `AU_BROWSER_05` | `unknown` authentication state during bootstrap               | 🟡 In Progress | Current route guard treats missing in-memory state as unauthenticated immediately. |
+| `AU_BROWSER_06` | Serialized access-token refresh after protected-request `401` | 🟡 In Progress | No browser refresh/retry coordinator is currently implemented.                     |
+| `AU_BROWSER_07` | Logout through browser refresh credential                     | 🟡 In Progress | Current logout depends on bearer access authentication.                            |
+| `AU_BROWSER_08` | Refresh cookie expired after logout                           | 🟡 In Progress | Cookie expiration is not implemented.                                              |
+| `AU_BROWSER_09` | No refresh-token persistence in Web Storage or IndexedDB      | 🟢 Implemented | No refresh-token persistence mechanism currently exists in browser storage.        |
+| `AU_BROWSER_10` | Credentialed browser authentication requests                  | 🟡 In Progress | `credentials: "include"` is not currently defined for the authentication flow.     |
+
+## 8.9 Verification Status
+
+The following criteria are not yet verified in the browser/backend integration:
+
+| ID             | Verification Criteria                                                                 | Status         |
+| -------------- | ------------------------------------------------------------------------------------- | -------------- |
+| `AU_VERIFY_01` | Login establishes an authenticated session and browser refresh cookie                 | 🟡 In Progress |
+| `AU_VERIFY_02` | Reloading `/admin` restores authentication without showing `/login`                   | 🟡 In Progress |
+| `AU_VERIFY_03` | Refresh rotates the browser refresh credential                                        | 🟡 In Progress |
+| `AU_VERIFY_04` | Expired access token can be refreshed once and protected request retried once         | 🟡 In Progress |
+| `AU_VERIFY_05` | Refresh-token replay is rejected                                                      | 🟡 In Progress |
+| `AU_VERIFY_06` | Logout revokes the session and expires the browser refresh cookie                     | 🟡 In Progress |
+| `AU_VERIFY_07` | Logout does not require an unexpired access token                                     | 🟡 In Progress |
+| `AU_VERIFY_08` | Cookie is `HttpOnly; Secure; Path=/; SameSite=Strict` in default same-site deployment | 🟡 In Progress |
+| `AU_VERIFY_09` | Cross-origin credentialed authentication uses explicit origins and CORS credentials   | 🟡 In Progress |
+| `AU_VERIFY_10` | Browser authentication endpoints reject disallowed cross-site state-changing requests | 🟡 In Progress |
+
+## 8.10 Implementation Status Legend
+
+| Status         | Meaning                                                                                   |
+| -------------- | ----------------------------------------------------------------------------------------- |
+| ⚪ Not Started  | Criteria has not been implemented.                                                       |
+| 🟡 In Progress | Implementation is partial, or contract completion remains incomplete.                     |
+| 🟢 Implemented | Implementation is complete. Verification is tracked separately in Section 8.9.            |
+| 🔴 Blocked     | Implementation cannot proceed because a required design or dependency remains unresolved. |
 
 ---
 
