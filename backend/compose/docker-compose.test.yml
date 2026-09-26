@@ -53,7 +53,9 @@ services:
         "cargo",
         "test",
         "--tests",
-        "--no-fail-fast"
+        "--no-fail-fast",
+        "--",
+        "--include-ignored"
       ]
 
 volumes:

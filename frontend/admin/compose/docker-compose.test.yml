@@ -14,6 +14,8 @@ services:
       CI: "true"
       PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
       VITE_API_ORIGIN: ""
+      DEV_ADMIN_EMAIL: ${DEV_ADMIN_EMAIL:-}
+      DEV_ADMIN_PASSWORD: ${DEV_ADMIN_PASSWORD:-}
 
     volumes:
       - type: bind

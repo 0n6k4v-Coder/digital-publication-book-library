@@ -137,10 +137,15 @@ fn authentication_response(tokens: AuthenticationTokens) -> Response {
 #[cfg(test)]
 mod tests {
     use axum::http::{header, HeaderMap, HeaderValue};
-    use secrecy::ExposeSecret;
+    use secrecy::{ExposeSecret, SecretString};
     use time::{Duration, OffsetDateTime};
 
-    use super::{extract_refresh_token, refresh_cookie_max_age_seconds, REFRESH_COOKIE_CLEAR};
+    use crate::domains::authentication::model::AuthenticationTokens;
+
+    use super::{
+        authentication_response, extract_refresh_token, refresh_cookie_max_age_seconds,
+        REFRESH_COOKIE_CLEAR,
+    };
 
     #[test]
     fn extract_refresh_token_reads_the_browser_cookie() {
@@ -180,6 +185,38 @@ mod tests {
         let expires_at = OffsetDateTime::now_utc() - Duration::seconds(1);
 
         assert_eq!(refresh_cookie_max_age_seconds(expires_at), 0);
+    }
+
+    #[test]
+    fn authentication_response_sets_the_secure_host_cookie_contract() {
+        let response = authentication_response(AuthenticationTokens {
+            access_token: SecretString::from("access-token"),
+            refresh_token: SecretString::from("refresh-token"),
+            refresh_expires_at: OffsetDateTime::now_utc() + Duration::seconds(120),
+        });
+
+        let cookie = response
+            .headers()
+            .get(header::SET_COOKIE)
+            .expect("authentication response must set the refresh cookie")
+            .to_str()
+            .expect("refresh cookie must be valid ASCII");
+
+        assert!(cookie.starts_with("__Host-refresh_token=refresh-token;"));
+        assert!(cookie.contains("Max-Age="));
+        assert!(cookie.contains("Path=/"));
+        assert!(cookie.contains("Secure"));
+        assert!(cookie.contains("HttpOnly"));
+        assert!(cookie.contains("SameSite=Strict"));
+        assert!(!cookie.contains("Domain="));
+
+        assert_eq!(
+            response
+                .headers()
+                .get(header::CACHE_CONTROL)
+                .and_then(|value| value.to_str().ok()),
+            Some("no-store")
+        );
     }
 
     #[test]
