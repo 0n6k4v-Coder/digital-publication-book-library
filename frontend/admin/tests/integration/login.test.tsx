@@ -5,7 +5,6 @@ import App from "../../src/App";
 import { authService } from "../../src/services/auth";
 
 const accessToken = "opaque-access-token";
-const refreshToken = "opaque-refresh-token";
 
 function problemResponse(status: number, code: string): Response {
   return new Response(
@@ -26,14 +25,16 @@ function problemResponse(status: number, code: string): Response {
   );
 }
 
+function unauthorizedResponse(): Response {
+  return problemResponse(401, "UNAUTHORIZED");
+}
+
 function loginResponse(): Response {
   return new Response(
     JSON.stringify({
       access_token: accessToken,
       token_type: "Bearer",
       expires_in: 3600,
-      refresh_token: refreshToken,
-      refresh_expires_in: 2592000,
     }),
     {
       status: 200,
@@ -45,10 +46,21 @@ function loginResponse(): Response {
   );
 }
 
-beforeEach(() => {
+function logoutResponse(): Response {
+  return new Response(null, {
+    status: 204,
+    headers: {
+      "Cache-Control": "no-store",
+    },
+  });
+}
+
+beforeEach(async () => {
   window.history.replaceState({}, "", "/login");
   authService.clearClientState();
   vi.stubGlobal("fetch", vi.fn());
+  vi.mocked(fetch).mockResolvedValueOnce(unauthorizedResponse());
+  await authService.retryBootstrap();
 });
 
 afterEach(() => {
@@ -77,12 +89,14 @@ describe("login integration", () => {
       ).toBeInTheDocument(),
     );
 
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    const [url, init] = fetchMock.mock.calls[0];
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const [url, init] = fetchMock.mock.calls[1];
+
     expect(url).toBe("/auth/login");
     expect(init).toMatchObject({
       method: "POST",
       cache: "no-store",
+      credentials: "include",
     });
     expect(new Headers(init?.headers).get("content-type")).toBe(
       "application/json",
@@ -94,7 +108,6 @@ describe("login integration", () => {
       }),
     );
     expect(document.body).not.toHaveTextContent(accessToken);
-    expect(document.body).not.toHaveTextContent(refreshToken);
   });
 
   it.each([
@@ -154,7 +167,7 @@ describe("login integration", () => {
     await user.click(screen.getByRole("button", { name: "Sign In" }));
     await user.click(screen.getByRole("button", { name: "Signing in…" }));
 
-    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(2);
 
     resolveLogin(loginResponse());
     await waitFor(() =>
@@ -179,6 +192,7 @@ describe("login integration", () => {
 
   it("redirects authenticated access to /login to /admin", async () => {
     vi.mocked(fetch).mockResolvedValueOnce(loginResponse());
+
     await authService.login({
       email: "admin@example.com",
       password: "example-secure-password",
@@ -195,7 +209,7 @@ describe("login integration", () => {
     expect(window.location.pathname).toBe("/admin");
   });
 
-  it("logs out through the authenticated endpoint, including bearer authorization", async () => {
+  it("logs out through the browser-managed authentication credential", async () => {
     const user = userEvent.setup();
     vi.mocked(fetch).mockResolvedValueOnce(loginResponse());
 
@@ -211,14 +225,7 @@ describe("login integration", () => {
       ).toBeInTheDocument(),
     );
 
-    vi.mocked(fetch).mockResolvedValueOnce(
-      new Response(null, {
-        status: 204,
-        headers: {
-          "Cache-Control": "no-store",
-        },
-      }),
-    );
+    vi.mocked(fetch).mockResolvedValueOnce(logoutResponse());
 
     await user.click(screen.getByRole("button", { name: "Logout" }));
 
@@ -228,14 +235,15 @@ describe("login integration", () => {
       ).toBeInTheDocument(),
     );
     expect(window.location.pathname).toBe("/login");
+    expect(authService.getSnapshot().authStatus).toBe("unauthenticated");
 
-    const [, logoutInit] = vi.mocked(fetch).mock.calls[1];
+    const [, logoutInit] = vi.mocked(fetch).mock.calls[2];
+
     expect(logoutInit?.method).toBe("POST");
-    expect(logoutInit?.headers).toEqual(
-      expect.objectContaining({ Authorization: `Bearer ${accessToken}` }),
-    );
+    expect(logoutInit?.credentials).toBe("include");
+    expect(new Headers(logoutInit?.headers).get("authorization")).toBeNull();
+    expect(logoutInit?.body).toBeUndefined();
     expect(document.body).not.toHaveTextContent(accessToken);
-    expect(document.body).not.toHaveTextContent(refreshToken);
   });
 
   it("clears client authentication and returns to login when logout receives 401", async () => {
@@ -264,6 +272,7 @@ describe("login integration", () => {
       ).toBeInTheDocument(),
     );
     expect(window.location.pathname).toBe("/login");
+    expect(authService.getSnapshot().authStatus).toBe("unauthenticated");
   });
 
   it("keeps the authenticated shell available after a non-401 logout failure", async () => {
@@ -288,6 +297,7 @@ describe("login integration", () => {
       "We could not sign you out. Please try again.",
     );
     expect(window.location.pathname).toBe("/admin");
+    expect(authService.getSnapshot().authStatus).toBe("authenticated");
     expect(screen.getByRole("button", { name: "Logout" })).toBeEnabled();
   });
 });

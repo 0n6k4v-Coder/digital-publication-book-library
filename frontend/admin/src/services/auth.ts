@@ -1,18 +1,33 @@
-import type {
-  AuthenticationErrorCode,
-  LoginCredentials,
-  LoginTokenResponse,
-} from "../types/auth";
+import type { AuthenticationErrorCode, LoginCredentials } from "../types/auth";
 
 interface AuthenticationSession {
   accessToken: string;
   tokenType: string;
   accessTokenExpiresAt: number;
-  refreshToken: string;
-  refreshTokenExpiresAt: number;
 }
 
 type AuthenticationListener = () => void;
+
+export type AuthStatus =
+  "unknown" | "authenticated" | "unauthenticated" | "authentication-error";
+
+export type AuthOperation =
+  | "bootstrapIdle"
+  | "bootstrapPending"
+  | "bootstrapRetryPending"
+  | "refreshIdle"
+  | "refreshing";
+
+export interface AuthenticationSnapshot {
+  authStatus: AuthStatus;
+  operation: AuthOperation;
+}
+
+interface AccessTokenResponse {
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+}
 
 const listeners = new Set<AuthenticationListener>();
 const apiOrigin = (import.meta.env.VITE_API_ORIGIN ?? "")
@@ -20,8 +35,15 @@ const apiOrigin = (import.meta.env.VITE_API_ORIGIN ?? "")
   .replace(/\/$/, "");
 
 let authenticationSession: AuthenticationSession | null = null;
+let authenticationSnapshot: AuthenticationSnapshot = {
+  authStatus: "unknown",
+  operation: "bootstrapIdle",
+};
 let loginRequest: Promise<void> | null = null;
 let logoutRequest: Promise<void> | null = null;
+let bootstrapRequest: Promise<void> | null = null;
+let protectedRefreshRequest: Promise<void> | null = null;
+let bootstrapStarted = false;
 
 export class AuthenticationError extends Error {
   readonly code: AuthenticationErrorCode;
@@ -39,6 +61,25 @@ function notifyListeners(): void {
   listeners.forEach((listener) => listener());
 }
 
+function setAuthenticationSnapshot(
+  authStatus: AuthStatus,
+  operation: AuthOperation,
+): void {
+  if (
+    authenticationSnapshot.authStatus === authStatus &&
+    authenticationSnapshot.operation === operation
+  ) {
+    return;
+  }
+
+  authenticationSnapshot = { authStatus, operation };
+  notifyListeners();
+}
+
+function clearAuthenticationSession(): void {
+  authenticationSession = null;
+}
+
 function buildApiUrl(pathname: string): string {
   if (import.meta.env.PROD && window.location.protocol !== "https:") {
     throw new AuthenticationError("UNKNOWN", 0);
@@ -48,7 +89,13 @@ function buildApiUrl(pathname: string): string {
     return pathname;
   }
 
-  const origin = new URL(apiOrigin);
+  let origin: URL;
+
+  try {
+    origin = new URL(apiOrigin);
+  } catch {
+    throw new AuthenticationError("UNKNOWN", 0);
+  }
 
   if (import.meta.env.PROD && origin.protocol !== "https:") {
     throw new AuthenticationError("UNKNOWN", 0);
@@ -60,6 +107,24 @@ function buildApiUrl(pathname: string): string {
   ).toString();
 }
 
+function isRefreshEndpoint(input: RequestInfo | URL): boolean {
+  try {
+    if (input instanceof Request) {
+      return (
+        new URL(input.url, window.location.origin).pathname === "/auth/refresh"
+      );
+    }
+
+    if (input instanceof URL) {
+      return input.pathname === "/auth/refresh";
+    }
+
+    return new URL(input, window.location.origin).pathname === "/auth/refresh";
+  } catch {
+    return false;
+  }
+}
+
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.length > 0;
 }
@@ -68,20 +133,18 @@ function isFiniteNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
 
-function parseLoginTokenResponse(value: unknown): LoginTokenResponse {
+function parseAccessTokenResponse(value: unknown): AccessTokenResponse {
   if (
     typeof value !== "object" ||
     value === null ||
     !isNonEmptyString((value as Record<string, unknown>).access_token) ||
     !isNonEmptyString((value as Record<string, unknown>).token_type) ||
-    !isFiniteNumber((value as Record<string, unknown>).expires_in) ||
-    !isNonEmptyString((value as Record<string, unknown>).refresh_token) ||
-    !isFiniteNumber((value as Record<string, unknown>).refresh_expires_in)
+    !isFiniteNumber((value as Record<string, unknown>).expires_in)
   ) {
     throw new AuthenticationError("INVALID_RESPONSE", 200);
   }
 
-  return value as LoginTokenResponse;
+  return value as AccessTokenResponse;
 }
 
 async function readProblemCode(
@@ -138,6 +201,23 @@ function createLoginError(
   return new AuthenticationError("UNKNOWN", status);
 }
 
+function buildAuthenticatedRequestInit(
+  init: RequestInit | undefined,
+  authorization: string,
+): RequestInit {
+  const headers = new Headers(init?.headers);
+  headers.set("Authorization", authorization);
+
+  return {
+    ...init,
+    headers,
+  };
+}
+
+function createAbortError(): DOMException {
+  return new DOMException("The protected request was aborted.", "AbortError");
+}
+
 async function loginInternal(credentials: LoginCredentials): Promise<void> {
   const response = await fetch(buildApiUrl("/auth/login"), {
     method: "POST",
@@ -147,55 +227,236 @@ async function loginInternal(credentials: LoginCredentials): Promise<void> {
     },
     body: JSON.stringify(credentials),
     cache: "no-store",
+    credentials: "include",
   });
 
   if (!response.ok) {
     throw createLoginError(response.status, await readProblemCode(response));
   }
 
-  const tokenResponse = parseLoginTokenResponse(await response.json());
+  const tokenResponse = parseAccessTokenResponse(await response.json());
   const issuedAt = Date.now();
 
   authenticationSession = {
     accessToken: tokenResponse.access_token,
     tokenType: tokenResponse.token_type,
     accessTokenExpiresAt: issuedAt + tokenResponse.expires_in * 1000,
-    refreshToken: tokenResponse.refresh_token,
-    refreshTokenExpiresAt: issuedAt + tokenResponse.refresh_expires_in * 1000,
   };
 
-  notifyListeners();
+  setAuthenticationSnapshot("authenticated", "refreshIdle");
+}
+
+async function bootstrapInternal(): Promise<void> {
+  setAuthenticationSnapshot("unknown", "bootstrapPending");
+
+  try {
+    const response = await fetch(buildApiUrl("/auth/refresh"), {
+      method: "POST",
+      credentials: "include",
+      cache: "no-store",
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    if (response.status === 401) {
+      clearAuthenticationSession();
+      setAuthenticationSnapshot("unauthenticated", "bootstrapIdle");
+      return;
+    }
+
+    if (!response.ok) {
+      throw new AuthenticationError("UNKNOWN", response.status);
+    }
+
+    const tokenResponse = parseAccessTokenResponse(await response.json());
+    const issuedAt = Date.now();
+
+    authenticationSession = {
+      accessToken: tokenResponse.access_token,
+      tokenType: tokenResponse.token_type,
+      accessTokenExpiresAt: issuedAt + tokenResponse.expires_in * 1000,
+    };
+
+    setAuthenticationSnapshot("authenticated", "refreshIdle");
+  } catch {
+    clearAuthenticationSession();
+    setAuthenticationSnapshot("authentication-error", "bootstrapIdle");
+  }
+}
+
+async function performProtectedRefresh(): Promise<void> {
+  setAuthenticationSnapshot(
+    authenticationSession === null ? "unknown" : "authenticated",
+    "refreshing",
+  );
+
+  try {
+    const response = await fetch(buildApiUrl("/auth/refresh"), {
+      method: "POST",
+      credentials: "include",
+      cache: "no-store",
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    if (response.status === 401) {
+      clearAuthenticationSession();
+      setAuthenticationSnapshot("unauthenticated", "refreshIdle");
+      return;
+    }
+
+    if (!response.ok) {
+      throw new AuthenticationError("UNKNOWN", response.status);
+    }
+
+    const tokenResponse = parseAccessTokenResponse(await response.json());
+    const issuedAt = Date.now();
+
+    authenticationSession = {
+      accessToken: tokenResponse.access_token,
+      tokenType: tokenResponse.token_type,
+      accessTokenExpiresAt: issuedAt + tokenResponse.expires_in * 1000,
+    };
+
+    setAuthenticationSnapshot("authenticated", "refreshIdle");
+  } catch (error) {
+    clearAuthenticationSession();
+    setAuthenticationSnapshot("authentication-error", "refreshIdle");
+
+    if (error instanceof AuthenticationError) {
+      throw error;
+    }
+
+    throw new AuthenticationError("UNKNOWN", 0);
+  }
+}
+
+async function refreshForProtectedRequest(): Promise<void> {
+  if (protectedRefreshRequest !== null) {
+    return protectedRefreshRequest;
+  }
+
+  protectedRefreshRequest = performProtectedRefresh().finally(() => {
+    protectedRefreshRequest = null;
+  });
+
+  return protectedRefreshRequest;
+}
+
+async function fetchWithAuthentication(
+  input: RequestInfo | URL,
+  init: RequestInit = {},
+): Promise<Response> {
+  const authorizationBeforeRequest = getAuthorizationHeader();
+
+  if (authorizationBeforeRequest === null) {
+    throw new AuthenticationError("UNAUTHORIZED", 401);
+  }
+
+  if (init.signal?.aborted) {
+    throw createAbortError();
+  }
+
+  const response = await fetch(
+    input,
+    buildAuthenticatedRequestInit(init, authorizationBeforeRequest),
+  );
+
+  if (response.status !== 401) {
+    return response;
+  }
+
+  if (isRefreshEndpoint(input)) {
+    return response;
+  }
+
+  await response.body?.cancel();
+
+  if (init.signal?.aborted) {
+    throw createAbortError();
+  }
+
+  const authorizationAfterResponse = getAuthorizationHeader();
+
+  if (
+    authorizationAfterResponse === null ||
+    authorizationAfterResponse === authorizationBeforeRequest
+  ) {
+    await refreshForProtectedRequest();
+  }
+
+  if (init.signal?.aborted) {
+    throw createAbortError();
+  }
+
+  const refreshedAuthorization = getAuthorizationHeader();
+
+  if (refreshedAuthorization === null) {
+    throw new AuthenticationError("UNAUTHORIZED", 401);
+  }
+
+  return fetch(
+    input,
+    buildAuthenticatedRequestInit(init, refreshedAuthorization),
+  );
 }
 
 async function logoutInternal(): Promise<void> {
-  if (authenticationSession === null) {
-    return;
-  }
-
-  const sessionAtRequestStart = authenticationSession;
-
   const response = await fetch(buildApiUrl("/auth/logout"), {
     method: "POST",
     headers: {
       Accept: "application/json",
-      Authorization: `${sessionAtRequestStart.tokenType} ${sessionAtRequestStart.accessToken}`,
     },
     cache: "no-store",
+    credentials: "include",
   });
 
   if (response.status === 204) {
-    authenticationSession = null;
-    notifyListeners();
+    clearAuthenticationSession();
+    setAuthenticationSnapshot("unauthenticated", "refreshIdle");
     return;
   }
 
   if (response.status === 401) {
-    authenticationSession = null;
-    notifyListeners();
+    clearAuthenticationSession();
+    setAuthenticationSnapshot("unauthenticated", "refreshIdle");
     return;
   }
 
   throw new AuthenticationError("UNKNOWN", response.status);
+}
+
+async function bootstrap(): Promise<void> {
+  if (bootstrapStarted) {
+    return bootstrapRequest ?? Promise.resolve();
+  }
+
+  bootstrapStarted = true;
+  bootstrapRequest = bootstrapInternal().finally(() => {
+    bootstrapRequest = null;
+  });
+
+  return bootstrapRequest;
+}
+
+async function retryBootstrap(): Promise<void> {
+  if (bootstrapRequest !== null) {
+    return bootstrapRequest;
+  }
+
+  bootstrapStarted = false;
+  setAuthenticationSnapshot("unknown", "bootstrapRetryPending");
+  return bootstrap();
+}
+
+function getAuthorizationHeader(): string | null {
+  if (authenticationSession === null) {
+    return null;
+  }
+
+  return `${authenticationSession.tokenType} ${authenticationSession.accessToken}`;
 }
 
 export const authService = {
@@ -204,17 +465,17 @@ export const authService = {
     return () => listeners.delete(listener);
   },
 
-  getSnapshot(): boolean {
-    return authenticationSession !== null;
+  getSnapshot(): AuthenticationSnapshot {
+    return authenticationSnapshot;
   },
 
-  getAuthorizationHeader(): string | null {
-    if (authenticationSession === null) {
-      return null;
-    }
+  getAuthorizationHeader,
 
-    return `${authenticationSession.tokenType} ${authenticationSession.accessToken}`;
-  },
+  fetchWithAuthentication,
+
+  bootstrap,
+
+  retryBootstrap,
 
   async login(credentials: LoginCredentials): Promise<void> {
     if (authenticationSession !== null) {
@@ -233,10 +494,6 @@ export const authService = {
   },
 
   async logout(): Promise<void> {
-    if (authenticationSession === null) {
-      return;
-    }
-
     if (logoutRequest !== null) {
       return logoutRequest;
     }
@@ -253,7 +510,7 @@ export const authService = {
       return;
     }
 
-    authenticationSession = null;
-    notifyListeners();
+    clearAuthenticationSession();
+    setAuthenticationSnapshot("unauthenticated", "refreshIdle");
   },
 };

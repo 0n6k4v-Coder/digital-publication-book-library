@@ -1,3 +1,5 @@
+name: digital-publication-book-library-admin-test
+
 services:
   test:
     build:
@@ -8,10 +10,14 @@ services:
 
     init: true
 
+    network_mode: host
+
     environment:
       CI: "true"
       PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
       VITE_API_ORIGIN: ""
+      DEV_ADMIN_EMAIL: ${DEV_ADMIN_EMAIL:-}
+      DEV_ADMIN_PASSWORD: ${DEV_ADMIN_PASSWORD:-}
 
     volumes:
       - type: bind

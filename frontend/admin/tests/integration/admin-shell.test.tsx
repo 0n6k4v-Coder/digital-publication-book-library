@@ -5,26 +5,6 @@ import App from "../../src/App";
 import { authService } from "../../src/services/auth";
 
 const accessToken = "opaque-access-token";
-const refreshToken = "opaque-refresh-token";
-
-function loginResponse(): Response {
-  return new Response(
-    JSON.stringify({
-      access_token: accessToken,
-      token_type: "Bearer",
-      expires_in: 3600,
-      refresh_token: refreshToken,
-      refresh_expires_in: 2592000,
-    }),
-    {
-      status: 200,
-      headers: {
-        "Cache-Control": "no-store",
-        "Content-Type": "application/json",
-      },
-    },
-  );
-}
 
 function problemResponse(status: number, code: string): Response {
   return new Response(
@@ -45,6 +25,23 @@ function problemResponse(status: number, code: string): Response {
   );
 }
 
+function loginResponse(): Response {
+  return new Response(
+    JSON.stringify({
+      access_token: accessToken,
+      token_type: "Bearer",
+      expires_in: 3600,
+    }),
+    {
+      status: 200,
+      headers: {
+        "Cache-Control": "no-store",
+        "Content-Type": "application/json",
+      },
+    },
+  );
+}
+
 function logoutResponse(): Response {
   return new Response(null, {
     status: 204,
@@ -54,10 +51,12 @@ function logoutResponse(): Response {
   });
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   window.history.replaceState({}, "", "/login");
   authService.clearClientState();
   vi.stubGlobal("fetch", vi.fn());
+  vi.mocked(fetch).mockResolvedValueOnce(problemResponse(401, "UNAUTHORIZED"));
+  await authService.retryBootstrap();
 });
 
 afterEach(() => {
@@ -132,7 +131,7 @@ describe("Admin Shell integration", () => {
     expect(window.location.pathname).toBe("/admin");
   });
 
-  it("sends POST /auth/logout with the bearer credential and redirects after 204", async () => {
+  it("sends POST /auth/logout with the browser-managed authentication credential and redirects after 204", async () => {
     const user = userEvent.setup();
     vi.mocked(fetch).mockResolvedValueOnce(loginResponse());
 
@@ -157,19 +156,17 @@ describe("Admin Shell integration", () => {
     );
 
     expect(window.location.pathname).toBe("/login");
-    expect(authService.getSnapshot()).toBe(false);
+    expect(authService.getSnapshot().authStatus).toBe("unauthenticated");
 
-    const [url, init] = vi.mocked(fetch).mock.calls[1];
+    const [url, init] = vi.mocked(fetch).mock.calls[2];
 
     expect(url).toBe("/auth/logout");
     expect(init?.method).toBe("POST");
-    expect(new Headers(init?.headers).get("authorization")).toBe(
-      `Bearer ${accessToken}`,
-    );
+    expect(init?.credentials).toBe("include");
+    expect(new Headers(init?.headers).get("authorization")).toBeNull();
     expect(init?.body).toBeUndefined();
     expect(url).not.toContain(accessToken);
     expect(document.body).not.toHaveTextContent(accessToken);
-    expect(document.body).not.toHaveTextContent(refreshToken);
   });
 
   it("clears authentication state and redirects after logout 401", async () => {
@@ -198,7 +195,7 @@ describe("Admin Shell integration", () => {
       ).toBeInTheDocument(),
     );
 
-    expect(authService.getSnapshot()).toBe(false);
+    expect(authService.getSnapshot().authStatus).toBe("unauthenticated");
     expect(window.location.pathname).toBe("/login");
   });
 
@@ -224,7 +221,7 @@ describe("Admin Shell integration", () => {
       "We could not sign you out. Please try again.",
     );
     expect(window.location.pathname).toBe("/admin");
-    expect(authService.getSnapshot()).toBe(true);
+    expect(authService.getSnapshot().authStatus).toBe("authenticated");
     expect(screen.getByRole("button", { name: "Logout" })).toBeEnabled();
   });
 
@@ -257,7 +254,7 @@ describe("Admin Shell integration", () => {
 
     const secondLogout = authService.logout();
 
-    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(3);
 
     resolveLogout(logoutResponse());
     await secondLogout;
@@ -268,6 +265,6 @@ describe("Admin Shell integration", () => {
       ).toBeInTheDocument(),
     );
 
-    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(3);
   });
 });

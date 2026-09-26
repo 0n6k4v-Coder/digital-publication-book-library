@@ -4,16 +4,37 @@ import App from "../../src/App";
 import { authService } from "../../src/services/auth";
 
 const accessToken = "opaque-access-token";
-const refreshToken = "opaque-refresh-token";
+const refreshedAccessToken = "refreshed-access-token";
 
-function loginResponse(): Response {
+function problemResponse(status: number, code: string): Response {
   return new Response(
     JSON.stringify({
-      access_token: accessToken,
+      type: "https://example.invalid/problems/authentication",
+      title: "Authentication error",
+      status,
+      detail: "server detail must not reach the UI",
+      code,
+    }),
+    {
+      status,
+      headers: {
+        "Cache-Control": "no-store",
+        "Content-Type": "application/problem+json",
+      },
+    },
+  );
+}
+
+function unauthorizedResponse(): Response {
+  return problemResponse(401, "UNAUTHORIZED");
+}
+
+function loginResponse(token: string = accessToken): Response {
+  return new Response(
+    JSON.stringify({
+      access_token: token,
       token_type: "Bearer",
       expires_in: 3600,
-      refresh_token: refreshToken,
-      refresh_expires_in: 2592000,
     }),
     {
       status: 200,
@@ -53,29 +74,12 @@ function accountsResponse(): Response {
   );
 }
 
-function unauthorizedResponse(): Response {
-  return new Response(
-    JSON.stringify({
-      type: "https://example.invalid/problems/unauthorized",
-      title: "Unauthorized",
-      status: 401,
-      detail: "authentication is no longer valid",
-      code: "UNAUTHORIZED",
-    }),
-    {
-      status: 401,
-      headers: {
-        "Cache-Control": "no-store",
-        "Content-Type": "application/problem+json",
-      },
-    },
-  );
-}
-
-beforeEach(() => {
+beforeEach(async () => {
   window.history.replaceState({}, "", "/login");
   authService.clearClientState();
   vi.stubGlobal("fetch", vi.fn());
+  vi.mocked(fetch).mockResolvedValueOnce(unauthorizedResponse());
+  await authService.retryBootstrap();
 });
 
 afterEach(() => {
@@ -124,7 +128,7 @@ describe("Admin Accounts integration", () => {
 
     expect(window.location.pathname).toBe("/admin/accounts");
 
-    const accountCall = vi.mocked(fetch).mock.calls[1];
+    const accountCall = vi.mocked(fetch).mock.calls[2];
 
     expect(accountCall[0]).toBe("/admin/accounts?page=1&page_size=20");
     expect(accountCall[1]?.method).toBe("GET");
@@ -134,7 +138,6 @@ describe("Admin Accounts integration", () => {
 
     expect(String(accountCall[0])).not.toContain(accessToken);
     expect(document.body).not.toHaveTextContent(accessToken);
-    expect(document.body).not.toHaveTextContent(refreshToken);
   });
 
   it("redirects unauthenticated access to /admin/accounts to /login", async () => {
@@ -152,14 +155,74 @@ describe("Admin Accounts integration", () => {
       }),
     ).toBeInTheDocument();
 
-    expect(vi.mocked(fetch)).not.toHaveBeenCalled();
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1);
   });
 
-  it("clears client authentication after an Accounts API 401", async () => {
+  it("refreshes the access token once after an Accounts API 401 and retries the request", async () => {
     window.history.replaceState({}, "", "/admin/accounts");
 
     vi.mocked(fetch)
       .mockResolvedValueOnce(loginResponse())
+      .mockResolvedValueOnce(unauthorizedResponse())
+      .mockResolvedValueOnce(loginResponse(refreshedAccessToken))
+      .mockResolvedValueOnce(accountsResponse());
+
+    await authService.login({
+      email: "admin@example.com",
+      password: "example-secure-password",
+    });
+
+    render(<App />);
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Administrator Accounts",
+      }),
+    ).toBeInTheDocument();
+
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(5);
+
+    const initialRequest = vi.mocked(fetch).mock.calls[2];
+    const refreshRequest = vi.mocked(fetch).mock.calls[3];
+    const retryRequest = vi.mocked(fetch).mock.calls[4];
+
+    expect(initialRequest[0]).toBe("/admin/accounts?page=1&page_size=20");
+    expect(initialRequest[1]?.method).toBe("GET");
+    expect(new Headers(initialRequest[1]?.headers).get("authorization")).toBe(
+      `Bearer ${accessToken}`,
+    );
+
+    expect(refreshRequest[0]).toBe("/auth/refresh");
+    expect(refreshRequest[1]?.method).toBe("POST");
+    expect(refreshRequest[1]?.credentials).toBe("include");
+    expect(refreshRequest[1]?.body).toBeUndefined();
+    expect(
+      new Headers(refreshRequest[1]?.headers).get("authorization"),
+    ).toBeNull();
+
+    expect(retryRequest[0]).toBe("/admin/accounts?page=1&page_size=20");
+    expect(retryRequest[1]?.method).toBe("GET");
+    expect(new Headers(retryRequest[1]?.headers).get("authorization")).toBe(
+      `Bearer ${refreshedAccessToken}`,
+    );
+
+    const recoveryRefreshCalls = vi
+      .mocked(fetch)
+      .mock.calls.slice(2)
+      .filter(([url]) => url === "/auth/refresh");
+
+    expect(recoveryRefreshCalls).toHaveLength(1);
+    expect(authService.getAuthorizationHeader()).toBe(
+      `Bearer ${refreshedAccessToken}`,
+    );
+  });
+
+  it("clears client authentication when the shared refresh returns 401", async () => {
+    window.history.replaceState({}, "", "/admin/accounts");
+
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(loginResponse())
+      .mockResolvedValueOnce(unauthorizedResponse())
       .mockResolvedValueOnce(unauthorizedResponse());
 
     await authService.login({
@@ -173,13 +236,15 @@ describe("Admin Accounts integration", () => {
       expect(window.location.pathname).toBe("/login");
     });
 
-    expect(authService.getSnapshot()).toBe(false);
+    expect(authService.getSnapshot().authStatus).toBe("unauthenticated");
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(4);
 
-    expect(
-      screen.getByRole("heading", {
-        name: "Sign in",
-      }),
-    ).toBeInTheDocument();
+    const recoveryRefreshCalls = vi
+      .mocked(fetch)
+      .mock.calls.slice(2)
+      .filter(([url]) => url === "/auth/refresh");
+
+    expect(recoveryRefreshCalls).toHaveLength(1);
   });
 
   it("keeps the shell mounted while navigating from /admin to /admin/accounts", async () => {
@@ -222,7 +287,12 @@ describe("Admin Accounts integration", () => {
       }),
     ).toBeInTheDocument();
 
-    expect(screen.getByRole("button", { name: "Logout" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", {
+        name: "Logout",
+      }),
+    ).toBeInTheDocument();
+
     expect(
       screen.getByRole("heading", {
         name: "Administrator Accounts",
