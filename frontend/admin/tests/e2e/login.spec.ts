@@ -1,11 +1,12 @@
 import { expect, test } from "@playwright/test";
 
+const accessToken = "opaque-access-token";
+const refreshToken = "opaque-refresh-token";
+
 const loginResponse = {
-  access_token: "opaque-access-token",
+  access_token: accessToken,
   token_type: "Bearer",
   expires_in: 3600,
-  refresh_token: "opaque-refresh-token",
-  refresh_expires_in: 2592000,
 };
 
 const bootstrapResponse = {
@@ -21,6 +22,7 @@ test.describe("admin login", () => {
     await page.route("**/auth/refresh", async (route) => {
       expect(route.request().method()).toBe("POST");
       expect(route.request().postData()).toBeNull();
+
       await route.fulfill({
         status: 401,
         headers: {
@@ -83,19 +85,14 @@ test.describe("admin login", () => {
       page.getByText("Digital Publication & Book Library"),
     ).toBeVisible();
     await expect(page.getByRole("button", { name: "Logout" })).toBeVisible();
-    await expect(page.locator("body")).not.toContainText(
-      loginResponse.access_token,
-    );
-    await expect(page.locator("body")).not.toContainText(
-      loginResponse.refresh_token,
-    );
+    await expect(page.locator("body")).not.toContainText(accessToken);
+    await expect(page.locator("body")).not.toContainText(refreshToken);
 
     await page.route("**/auth/logout", async (route) => {
       expect(route.request().method()).toBe("POST");
-      expect(route.request().headers().authorization).toBe(
-        `Bearer ${loginResponse.access_token}`,
-      );
-      expect(route.request().url()).not.toContain(loginResponse.access_token);
+      expect(route.request().headers().authorization).toBeUndefined();
+      expect(route.request().url()).not.toContain(accessToken);
+
       await route.fulfill({
         status: 204,
         headers: { "Cache-Control": "no-store" },
@@ -193,9 +190,10 @@ test.describe("admin login", () => {
 
     await page.goto("/login");
 
-    await expect(
-      page.getByRole("heading", { name: "Authentication unavailable" }),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
+    await expect(page.getByRole("alert")).toContainText(
+      "Authentication unavailable",
+    );
     await expect(
       page.getByRole("button", { name: "Retry authentication" }),
     ).toBeVisible();

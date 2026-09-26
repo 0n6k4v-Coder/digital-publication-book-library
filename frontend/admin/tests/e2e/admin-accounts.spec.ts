@@ -1,11 +1,12 @@
 import { expect, test, type Page } from "@playwright/test";
 
+const accessToken = "opaque-access-token";
+const refreshToken = "opaque-refresh-token";
+
 const loginResponse = {
-  access_token: "opaque-access-token",
+  access_token: accessToken,
   token_type: "Bearer",
   expires_in: 3600,
-  refresh_token: "opaque-refresh-token",
-  refresh_expires_in: 2592000,
 };
 
 const accountsResponse = {
@@ -53,6 +54,23 @@ test.describe("admin accounts", () => {
   test("redirects unauthenticated access to /admin/accounts", async ({
     page,
   }) => {
+    await page.route("**/auth/refresh", async (route) => {
+      expect(route.request().method()).toBe("POST");
+      expect(route.request().postData()).toBeNull();
+
+      await route.fulfill({
+        status: 401,
+        headers: {
+          "Cache-Control": "no-store",
+          "Content-Type": "application/problem+json",
+        },
+        body: JSON.stringify({
+          status: 401,
+          code: "INVALID_REFRESH_TOKEN",
+        }),
+      });
+    });
+
     await page.goto("/admin/accounts");
 
     await expect(page).toHaveURL(/\/login$/);
@@ -119,9 +137,7 @@ test.describe("admin accounts", () => {
     await expect(page.locator("body")).not.toContainText(
       loginResponse.access_token,
     );
-    await expect(page.locator("body")).not.toContainText(
-      loginResponse.refresh_token,
-    );
+    await expect(page.locator("body")).not.toContainText(refreshToken);
 
     await page.goBack();
 
