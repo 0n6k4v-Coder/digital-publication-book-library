@@ -180,30 +180,41 @@ describe("Admin Accounts integration", () => {
       }),
     ).toBeInTheDocument();
 
-    expect(authService.getAuthorizationHeader()).toBe(
-      `Bearer ${refreshedAccessToken}`,
-    );
-
-    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(4);
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(5);
 
     const initialRequest = vi.mocked(fetch).mock.calls[2];
     const refreshRequest = vi.mocked(fetch).mock.calls[3];
+    const retryRequest = vi.mocked(fetch).mock.calls[4];
 
     expect(initialRequest[0]).toBe("/admin/accounts?page=1&page_size=20");
+    expect(initialRequest[1]?.method).toBe("GET");
     expect(new Headers(initialRequest[1]?.headers).get("authorization")).toBe(
       `Bearer ${accessToken}`,
     );
 
-    expect(refreshRequest[0]).toBe("/admin/accounts?page=1&page_size=20");
-    expect(new Headers(refreshRequest[1]?.headers).get("authorization")).toBe(
+    expect(refreshRequest[0]).toBe("/auth/refresh");
+    expect(refreshRequest[1]?.method).toBe("POST");
+    expect(refreshRequest[1]?.credentials).toBe("include");
+    expect(refreshRequest[1]?.body).toBeUndefined();
+    expect(
+      new Headers(refreshRequest[1]?.headers).get("authorization"),
+    ).toBeNull();
+
+    expect(retryRequest[0]).toBe("/admin/accounts?page=1&page_size=20");
+    expect(retryRequest[1]?.method).toBe("GET");
+    expect(new Headers(retryRequest[1]?.headers).get("authorization")).toBe(
       `Bearer ${refreshedAccessToken}`,
     );
 
-    const refreshCalls = vi
+    const recoveryRefreshCalls = vi
       .mocked(fetch)
-      .mock.calls.filter(([url]) => url === "/auth/refresh");
+      .mock.calls.slice(2)
+      .filter(([url]) => url === "/auth/refresh");
 
-    expect(refreshCalls).toHaveLength(1);
+    expect(recoveryRefreshCalls).toHaveLength(1);
+    expect(authService.getAuthorizationHeader()).toBe(
+      `Bearer ${refreshedAccessToken}`,
+    );
   });
 
   it("clears client authentication when the shared refresh returns 401", async () => {
@@ -226,7 +237,14 @@ describe("Admin Accounts integration", () => {
     });
 
     expect(authService.getSnapshot().authStatus).toBe("unauthenticated");
-    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(3);
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(4);
+
+    const recoveryRefreshCalls = vi
+      .mocked(fetch)
+      .mock.calls.slice(2)
+      .filter(([url]) => url === "/auth/refresh");
+
+    expect(recoveryRefreshCalls).toHaveLength(1);
   });
 
   it("keeps the shell mounted while navigating from /admin to /admin/accounts", async () => {

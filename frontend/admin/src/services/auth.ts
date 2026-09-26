@@ -107,6 +107,24 @@ function buildApiUrl(pathname: string): string {
   ).toString();
 }
 
+function isRefreshEndpoint(input: RequestInfo | URL): boolean {
+  try {
+    if (input instanceof Request) {
+      return (
+        new URL(input.url, window.location.origin).pathname === "/auth/refresh"
+      );
+    }
+
+    if (input instanceof URL) {
+      return input.pathname === "/auth/refresh";
+    }
+
+    return new URL(input, window.location.origin).pathname === "/auth/refresh";
+  } catch {
+    return false;
+  }
+}
+
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.length > 0;
 }
@@ -254,7 +272,6 @@ async function bootstrapInternal(): Promise<void> {
     const tokenResponse = parseAccessTokenResponse(await response.json());
     const issuedAt = Date.now();
 
-    clearAuthenticationSession();
     authenticationSession = {
       accessToken: tokenResponse.access_token,
       tokenType: tokenResponse.token_type,
@@ -348,6 +365,10 @@ async function fetchWithAuthentication(
   );
 
   if (response.status !== 401) {
+    return response;
+  }
+
+  if (isRefreshEndpoint(input)) {
     return response;
   }
 

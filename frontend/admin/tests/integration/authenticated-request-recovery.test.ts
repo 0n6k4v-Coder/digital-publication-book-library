@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { accountsService, AccountsError } from "../../src/services/accounts";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { accountsService } from "../../src/services/accounts";
 import { authService } from "../../src/services/auth";
 
 const initialAccessToken = "opaque-access-token";
@@ -33,6 +33,17 @@ function unauthorizedResponse(): Response {
       code: "UNAUTHORIZED",
     },
     401,
+    "application/problem+json",
+  );
+}
+
+function serverErrorResponse(): Response {
+  return response(
+    {
+      status: 500,
+      code: "UNKNOWN",
+    },
+    500,
     "application/problem+json",
   );
 }
@@ -73,13 +84,18 @@ async function authenticate(): Promise<void> {
 
 beforeEach(async () => {
   authService.clearClientState();
+
   vi.stubGlobal("fetch", vi.fn());
+
   vi.mocked(fetch).mockResolvedValueOnce(unauthorizedResponse());
+
   await authService.retryBootstrap();
 
   vi.mocked(fetch).mockResolvedValueOnce(loginResponse(initialAccessToken));
 
   await authenticate();
+
+  vi.mocked(fetch).mockClear();
 });
 
 afterEach(() => {
@@ -90,49 +106,60 @@ afterEach(() => {
 describe("protected-request authentication recovery", () => {
   it("shares one refresh operation across concurrent 401 responses", async () => {
     let accountRequestCount = 0;
+    let resolveRefresh!: (response: Response) => void;
 
-    vi.mocked(fetch).mockImplementation(async (input, init) => {
-      const url = String(input);
+    const refreshStarted = new Promise<void>((resolve) => {
+      vi.mocked(fetch).mockImplementation(async (input, init) => {
+        const url = String(input);
 
-      if (url === "/admin/accounts?page=1&page_size=20") {
-        accountRequestCount += 1;
+        if (url === "/admin/accounts?page=1&page_size=20") {
+          accountRequestCount += 1;
 
-        if (accountRequestCount <= 2) {
-          return unauthorizedResponse();
+          if (accountRequestCount <= 2) {
+            return unauthorizedResponse();
+          }
+
+          expect(new Headers(init?.headers).get("authorization")).toBe(
+            `Bearer ${refreshedAccessToken}`,
+          );
+
+          return accountsResponse();
         }
 
-        expect(new Headers(init?.headers).get("authorization")).toBe(
-          `Bearer ${refreshedAccessToken}`,
-        );
+        if (url === "/auth/refresh") {
+          expect(init?.method).toBe("POST");
+          expect(init?.credentials).toBe("include");
+          expect(init?.body).toBeUndefined();
+          expect(new Headers(init?.headers).get("authorization")).toBeNull();
 
-        return accountsResponse();
-      }
+          resolve();
 
-      if (url === "/auth/refresh") {
-        expect(init?.method).toBe("POST");
-        expect(init?.credentials).toBe("include");
-        expect(init?.body).toBeUndefined();
-        expect(new Headers(init?.headers).get("authorization")).toBeNull();
+          return new Promise<Response>((refreshResolve) => {
+            resolveRefresh = refreshResolve;
+          });
+        }
 
-        return loginResponse(refreshedAccessToken);
-      }
-
-      throw new Error(`Unexpected fetch URL: ${url}`);
+        throw new Error(`Unexpected fetch URL: ${url}`);
+      });
     });
 
-    const [first, second] = await Promise.all([
-      accountsService.list(),
-      accountsService.list(),
-    ]);
+    const first = accountsService.list();
+    const second = accountsService.list();
 
-    expect(first.total).toBe(1);
-    expect(second.total).toBe(1);
+    await refreshStarted;
 
-    const refreshCalls = vi
+    const recoveryRefreshCalls = vi
       .mocked(fetch)
       .mock.calls.filter(([url]) => url === "/auth/refresh");
 
-    expect(refreshCalls).toHaveLength(1);
+    expect(recoveryRefreshCalls).toHaveLength(1);
+
+    resolveRefresh(loginResponse(refreshedAccessToken));
+
+    const [firstResult, secondResult] = await Promise.all([first, second]);
+
+    expect(firstResult.total).toBe(1);
+    expect(secondResult.total).toBe(1);
     expect(accountRequestCount).toBe(4);
     expect(authService.getAuthorizationHeader()).toBe(
       `Bearer ${refreshedAccessToken}`,
@@ -140,54 +167,63 @@ describe("protected-request authentication recovery", () => {
     expect(authService.getSnapshot().authStatus).toBe("authenticated");
   });
 
-  it("uses an access token already refreshed by another request instead of refreshing again", async () => {
+  it("reuses an access token refreshed by another concurrent request instead of refreshing again", async () => {
     let accountRequestCount = 0;
-    let refreshCompleted = false;
+    let resolveSecondInitialRequest!: (response: Response) => void;
 
-    vi.mocked(fetch).mockImplementation(async (input, init) => {
-      const url = String(input);
+    const refreshStarted = new Promise<void>((resolve) => {
+      vi.mocked(fetch).mockImplementation(async (input, init) => {
+        const url = String(input);
 
-      if (url === "/admin/accounts?page=1&page_size=20") {
-        accountRequestCount += 1;
+        if (url === "/admin/accounts?page=1&page_size=20") {
+          accountRequestCount += 1;
 
-        if (accountRequestCount === 1) {
-          return unauthorizedResponse();
+          if (accountRequestCount === 1) {
+            return unauthorizedResponse();
+          }
+
+          if (accountRequestCount === 2) {
+            return new Promise<Response>((requestResolve) => {
+              resolveSecondInitialRequest = requestResolve;
+            });
+          }
+
+          expect(new Headers(init?.headers).get("authorization")).toBe(
+            `Bearer ${refreshedAccessToken}`,
+          );
+
+          return accountsResponse();
         }
 
-        if (accountRequestCount === 2 && !refreshCompleted) {
-          await Promise.resolve();
-          return unauthorizedResponse();
+        if (url === "/auth/refresh") {
+          resolve();
+          return loginResponse(refreshedAccessToken);
         }
 
-        expect(new Headers(init?.headers).get("authorization")).toBe(
-          `Bearer ${refreshedAccessToken}`,
-        );
-
-        return accountsResponse();
-      }
-
-      if (url === "/auth/refresh") {
-        refreshCompleted = true;
-
-        return loginResponse(refreshedAccessToken);
-      }
-
-      throw new Error(`Unexpected fetch URL: ${url}`);
+        throw new Error(`Unexpected fetch URL: ${url}`);
+      });
     });
 
     const first = accountsService.list();
     const second = accountsService.list();
 
+    await refreshStarted;
+
+    const refreshCallsBeforeSecond401 = vi
+      .mocked(fetch)
+      .mock.calls.filter(([url]) => url === "/auth/refresh");
+
+    expect(refreshCallsBeforeSecond401).toHaveLength(1);
+
+    resolveSecondInitialRequest(unauthorizedResponse());
+
     const [firstResult, secondResult] = await Promise.all([first, second]);
 
     expect(firstResult.total).toBe(1);
     expect(secondResult.total).toBe(1);
-
-    const refreshCalls = vi
-      .mocked(fetch)
-      .mock.calls.filter(([url]) => url === "/auth/refresh");
-
-    expect(refreshCalls).toHaveLength(1);
+    expect(
+      vi.mocked(fetch).mock.calls.filter(([url]) => url === "/auth/refresh"),
+    ).toHaveLength(1);
     expect(authService.getAuthorizationHeader()).toBe(
       `Bearer ${refreshedAccessToken}`,
     );
@@ -215,16 +251,7 @@ describe("protected-request authentication recovery", () => {
   it("does not retry a failed refresh with a second refresh attempt", async () => {
     vi.mocked(fetch)
       .mockResolvedValueOnce(unauthorizedResponse())
-      .mockResolvedValueOnce(
-        response(
-          {
-            status: 500,
-            code: "UNKNOWN",
-          },
-          500,
-          "application/problem+json",
-        ),
-      );
+      .mockResolvedValueOnce(serverErrorResponse());
 
     await expect(accountsService.list()).rejects.toMatchObject({
       code: "SERVER",
@@ -261,16 +288,16 @@ describe("protected-request authentication recovery", () => {
     expect(authService.getSnapshot().authStatus).toBe("unauthenticated");
   });
 
-  it("never recursively refreshes the refresh endpoint", async () => {
+  it("does not recursively refresh /auth/refresh", async () => {
     vi.mocked(fetch).mockResolvedValueOnce(unauthorizedResponse());
 
-    await expect(
-      authService.fetchWithAuthentication("/auth/refresh", {
-        method: "POST",
-        credentials: "include",
-      }),
-    ).rejects.toBeInstanceOf(AccountsError);
+    const result = await authService.fetchWithAuthentication("/auth/refresh", {
+      method: "POST",
+      credentials: "include",
+    });
 
+    expect(result.status).toBe(401);
     expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(fetch).mock.calls[0][0]).toBe("/auth/refresh");
   });
 });
