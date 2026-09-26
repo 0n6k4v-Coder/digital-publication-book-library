@@ -1,8 +1,8 @@
 # Admin Account Detail Page — Implementation Criteria
 
-This document tracks every item from **Section 15 — Implementation Criteria** of `admin_account_detail_page.md`.
+This document is the implementation-review checklist for **Section 15 — Implementation Criteria** of `admin_account_detail_page.md`.
 
-Each subsection is represented by a separate table. `Status` and `Reason` are intentionally left blank for implementation review.
+**Every item in every Section 15 subsection is represented in its own table.** `Status` and `Reason` are intentionally blank.
 
 ## 15.1 Route
 
