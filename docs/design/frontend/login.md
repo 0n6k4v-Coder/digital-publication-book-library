@@ -633,51 +633,51 @@ interface AuthenticationSnapshot {
 
 | Status         | Meaning                                                          |
 | -------------- | ---------------------------------------------------------------- |
-| ⚪ Not Started  | Not implemented or not verified                                  |
+| ⚪ Not Started  | Not implemented or not verified                                 |
 | 🟡 In Progress | Partially implemented or verification incomplete                 |
 | 🟢 Implemented | Implemented and verified                                         |
 | 🔴 Blocked     | Cannot proceed because a required dependency/contract is missing |
 
 ## 10.1 Routes
 
-| ID                       | Criteria                                                             | Status         | Current Reason                                       |
-| ------------------------ | -------------------------------------------------------------------- | -------------- | ---------------------------------------------------- |
-| `FE_LOGIN_IMPL_ROUTE_01` | Bootstrap `unknown` state exists                                     | 🔴 Blocked     | Not implemented in `App.tsx`                         |
-| `FE_LOGIN_IMPL_ROUTE_02` | `/login` waits for bootstrap                                         | 🔴 Blocked     | Current guard treats missing auth as unauthenticated |
-| `FE_LOGIN_IMPL_ROUTE_03` | `/login` redirects authenticated users to `/admin`                   | 🟡 In Progress | Existing volatile-memory guard                       |
-| `FE_LOGIN_IMPL_ROUTE_04` | `/admin` waits for bootstrap                                         | 🔴 Blocked     | Current guard redirects before bootstrap             |
-| `FE_LOGIN_IMPL_ROUTE_05` | `/admin` redirects unauthenticated users to `/login` after bootstrap | 🟡 In Progress | Existing protection requires bootstrap integration   |
-| `FE_LOGIN_IMPL_ROUTE_06` | `/admin` renders Admin Shell when authenticated                      | 🟢 Implemented | Existing route/layout                                |
+| ID                       | Criteria                                                             | Status         | Current Reason |
+| ------------------------ | -------------------------------------------------------------------- | -------------- | -------------- |
+| `FE_LOGIN_IMPL_ROUTE_01` | Bootstrap `unknown` state exists                                     | 🟢 Implemented |                |
+| `FE_LOGIN_IMPL_ROUTE_02` | `/login` waits for bootstrap                                         | 🟢 Implemented |                |
+| `FE_LOGIN_IMPL_ROUTE_03` | `/login` redirects authenticated users to `/admin`                   | 🟢 Implemented |                |
+| `FE_LOGIN_IMPL_ROUTE_04` | `/admin` waits for bootstrap                                         | 🟢 Implemented |                |
+| `FE_LOGIN_IMPL_ROUTE_05` | `/admin` redirects unauthenticated users to `/login` after bootstrap | 🟢 Implemented |                |
+| `FE_LOGIN_IMPL_ROUTE_06` | `/admin` renders Admin Shell when authenticated                      | 🟢 Implemented |                |
 
 ## 10.2 Authentication Service
 
-| ID                      | Criteria                                                      | Status         | Current Reason                                                |
-| ----------------------- | ------------------------------------------------------------- | -------------- | ------------------------------------------------------------- |
-| `FE_LOGIN_IMPL_AUTH_01` | Access token is memory-only                                   | 🟢 Implemented | Current auth service uses module memory                       |
-| `FE_LOGIN_IMPL_AUTH_02` | Refresh token is removed from frontend state                  | 🔴 Blocked     | Current `AuthenticationSession` still contains `refreshToken` |
-| `FE_LOGIN_IMPL_AUTH_03` | Login uses browser credentials                                | 🔴 Blocked     | `credentials: "include"` not implemented                      |
-| `FE_LOGIN_IMPL_AUTH_04` | Bootstrap calls `/auth/refresh`                               | 🔴 Blocked     | Not implemented                                               |
-| `FE_LOGIN_IMPL_AUTH_05` | Refresh rotates browser credential                            | 🔴 Blocked     | Cookie refresh not implemented                                |
-| `FE_LOGIN_IMPL_AUTH_06` | Refresh `401` becomes unauthenticated                         | 🔴 Blocked     | Refresh flow not implemented                                  |
-| `FE_LOGIN_IMPL_AUTH_07` | Non-`401` refresh failures become authentication-error        | 🔴 Blocked     | Error state not implemented                                   |
-| `FE_LOGIN_IMPL_AUTH_08` | Protected `401` refresh is serialized                         | 🔴 Blocked     | Refresh coordinator not implemented                           |
-| `FE_LOGIN_IMPL_AUTH_09` | Protected request retries at most once                        | 🔴 Blocked     | Retry mechanism not implemented                               |
-| `FE_LOGIN_IMPL_AUTH_10` | Refresh request is excluded from recursive refresh handling   | 🔴 Blocked     | Refresh interceptor not implemented                           |
-| `FE_LOGIN_IMPL_AUTH_11` | Bootstrap does not automatically retry after failure          | 🔴 Blocked     | Retry policy not implemented                                  |
-| `FE_LOGIN_IMPL_AUTH_12` | Failed protected-request refresh is not automatically retried | 🔴 Blocked     | Bounded refresh policy not implemented                        |
-| `FE_LOGIN_IMPL_AUTH_13` | Refresh credentials are never logged or exposed                | 🔴 Blocked     | Current login response exposes `refresh_token` to frontend JavaScript and stores it in frontend state |
-| `FE_LOGIN_IMPL_AUTH_14` | Logout uses browser-managed refresh credential                | 🔴 Blocked     | Current logout uses bearer access token                       |
+| ID                      | Criteria                                                      | Status         | Current Reason |
+| ----------------------- | ------------------------------------------------------------- | -------------- | -------------- |
+| `FE_LOGIN_IMPL_AUTH_01` | Access token is memory-only                                   | 🟢 Implemented |                |
+| `FE_LOGIN_IMPL_AUTH_02` | Refresh token is removed from frontend state                  | 🟢 Implemented |                |
+| `FE_LOGIN_IMPL_AUTH_03` | Login uses browser credentials                                | 🟢 Implemented |                |
+| `FE_LOGIN_IMPL_AUTH_04` | Bootstrap calls `/auth/refresh`                               | 🟢 Implemented |                |
+| `FE_LOGIN_IMPL_AUTH_05` | Refresh rotates browser credential                            | 🔴 Blocked     | The current backend still expects `refresh_token` in the request body and returns refresh-token data in the JSON response instead of using a server-managed browser cookie. |
+| `FE_LOGIN_IMPL_AUTH_06` | Refresh `401` becomes unauthenticated                         | 🟢 Implemented |                |
+| `FE_LOGIN_IMPL_AUTH_07` | Non-`401` refresh failures become authentication-error        | 🟢 Implemented |                |
+| `FE_LOGIN_IMPL_AUTH_08` | Protected `401` refresh is serialized                         | 🟢 Implemented |                |
+| `FE_LOGIN_IMPL_AUTH_09` | Protected request retries at most once                        | 🟢 Implemented |                |
+| `FE_LOGIN_IMPL_AUTH_10` | Refresh request is excluded from recursive refresh handling   | 🟢 Implemented |                |
+| `FE_LOGIN_IMPL_AUTH_11` | Bootstrap does not automatically retry after failure          | 🟢 Implemented |                |
+| `FE_LOGIN_IMPL_AUTH_12` | Failed protected-request refresh is not automatically retried | 🟢 Implemented |                |
+| `FE_LOGIN_IMPL_AUTH_13` | Refresh credentials are never logged or exposed                | 🟢 Implemented |                |
+| `FE_LOGIN_IMPL_AUTH_14` | Logout uses browser-managed refresh credential                | 🟡 In Progress | The frontend now sends logout with browser credentials and without bearer authentication, but the current backend logout endpoint still requires authenticated bearer access. |
 
 ## 10.3 Backend Contract Dependencies
 
-| ID                         | Criteria                                                                                         | Status     | Current Reason                                                                                         |
-| -------------------------- | ------------------------------------------------------------------------------------------------ | ---------- | ------------------------------------------------------------------------------------------------------ |
-| `FE_LOGIN_IMPL_BACKEND_01` | Login sets the server-managed refresh cookie with deployment-appropriate attributes              | 🔴 Blocked | Backend cookie contract not implemented                                                                |
-| `FE_LOGIN_IMPL_BACKEND_02` | Refresh accepts the browser-managed refresh cookie and returns access-token data only            | 🔴 Blocked | Current refresh contract uses a request-body refresh token                                              |
-| `FE_LOGIN_IMPL_BACKEND_03` | Logout accepts browser-managed refresh authentication and does not require bearer access-token authentication | 🔴 Blocked | Current logout requires bearer access-token authentication |
-| `FE_LOGIN_IMPL_BACKEND_04` | Refresh expiry cannot exceed session expiry                                                     | 🔴 Blocked | Backend currently issues refresh credentials for 30 days against a 24-hour authentication session      |
-| `FE_LOGIN_IMPL_BACKEND_05` | Origin/CSRF policy is implemented                                                              | 🔴 Blocked | Backend policy requires update                                                                       |
-| `FE_LOGIN_IMPL_BACKEND_06` | Concurrent use of the same refresh credential follows one-time rotation/replay semantics        | 🔴 Blocked | Browser-cookie integration is not implemented; backend one-time rotation exists but browser behavior is not yet wired |
+| ID                         | Criteria                                                                                         | Status     | Current Reason |
+| -------------------------- | ------------------------------------------------------------------------------------------------ | ---------- | -------------- |
+| `FE_LOGIN_IMPL_BACKEND_01` | Login sets the server-managed refresh cookie with deployment-appropriate attributes              | 🔴 Blocked | The current backend login response does not set the required server-managed refresh cookie. |
+| `FE_LOGIN_IMPL_BACKEND_02` | Refresh accepts the browser-managed refresh cookie and returns access-token data only            | 🔴 Blocked | The current backend refresh endpoint still requires `refresh_token` in the JSON request and returns refresh-token data. |
+| `FE_LOGIN_IMPL_BACKEND_03` | Logout accepts browser-managed refresh authentication and does not require bearer access-token authentication | 🔴 Blocked | The current backend logout handler requires `AuthenticatedPrincipal` bearer authentication. |
+| `FE_LOGIN_IMPL_BACKEND_04` | Refresh expiry cannot exceed session expiry                                                     | 🔴 Blocked | The current backend authentication implementation still follows the legacy refresh/session contract rather than the browser-cookie contract. |
+| `FE_LOGIN_IMPL_BACKEND_05` | Origin/CSRF policy is implemented                                                              | 🔴 Blocked | The browser-cookie authentication contract and its required Origin/CSRF protections are not implemented in the current backend branch. |
+| `FE_LOGIN_IMPL_BACKEND_06` | Concurrent use of the same refresh credential follows one-time rotation/replay semantics        | 🔴 Blocked | Backend refresh-token rotation exists, but the browser-cookie integration required by the frontend contract is not implemented. |
 
 ## 10.4 Testing
 
@@ -700,18 +700,18 @@ interface AuthenticationSnapshot {
 | `FE_LOGIN_TEST_15` | `unauthenticated` on `/admin` redirects to `/login`.                                         |
 | `FE_LOGIN_TEST_16` | `authentication-error` does not automatically redirect.                                      |
 | `FE_LOGIN_TEST_17` | Bootstrap failure does not automatically retry.                                              |
-| `FE_LOGIN_TEST_18` | Explicit retry starts a new bootstrap attempt.                                                |
+| `FE_LOGIN_TEST_18` | Explicit retry starts a new bootstrap attempt.                                               |
 | `FE_LOGIN_TEST_19` | Concurrent bootstrap callers share one in-flight operation.                                  |
 | `FE_LOGIN_TEST_20` | React development Strict Mode does not produce duplicate concurrent bootstrap requests.      |
 | `FE_LOGIN_TEST_21` | Component unmount/remount does not invalidate bootstrap.                                     |
 | `FE_LOGIN_TEST_22` | Full document reload restores an active authenticated session through `/auth/refresh`.       |
-| `FE_LOGIN_TEST_23` | Full document reload reaches `/login` when `/auth/refresh` returns `401`.                     |
+| `FE_LOGIN_TEST_23` | Full document reload reaches `/login` when `/auth/refresh` returns `401`.                    |
 | `FE_LOGIN_TEST_24` | Refresh credentials never appear in frontend state, rendered UI, logs, or application APIs.  |
 | `FE_LOGIN_TEST_25` | Access token exists only in frontend runtime memory.                                         |
 | `FE_LOGIN_TEST_26` | Route components use the shared authentication store.                                        |
 | `FE_LOGIN_TEST_27` | A protected-request `401` triggers one shared refresh operation.                             |
 | `FE_LOGIN_TEST_28` | Concurrent protected-request `401`s share the same refresh operation.                        |
-| `FE_LOGIN_TEST_29` | Each original protected request retries at most once.                                         |
+| `FE_LOGIN_TEST_29` | Each original protected request retries at most once.                                        |
 | `FE_LOGIN_TEST_30` | Failed protected-request refresh is not automatically retried.                               |
 | `FE_LOGIN_TEST_31` | The refresh endpoint cannot recursively trigger another refresh operation.                   |
 | `FE_LOGIN_TEST_32` | Successful logout clears server-side authentication and in-memory access state.              |
@@ -740,10 +740,10 @@ interface AuthenticationSnapshot {
 | Login form UI                   | 🟢 Implemented |
 | Basic validation                | 🟢 Implemented |
 | In-memory access token          | 🟢 Implemented |
-| Reload-safe authentication      | 🔴 Blocked     |
+| Reload-safe authentication      | 🟡 In Progress |
 | HttpOnly refresh cookie         | 🔴 Blocked     |
-| Bootstrap refresh               | 🔴 Blocked     |
-| Protected-request refresh/retry | 🔴 Blocked     |
-| Cookie-based logout             | 🔴 Blocked     |
+| Bootstrap refresh               | 🟡 In Progress |
+| Protected-request refresh/retry | 🟡 In Progress |
+| Cookie-based logout             | 🟡 In Progress |
 | Origin/CSRF/CORS policy         | 🔴 Blocked     |
 | Cross-context refresh policy    | 🔴 Blocked     |
