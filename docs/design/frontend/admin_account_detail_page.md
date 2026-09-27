@@ -7,8 +7,8 @@
 3. [Requirements](#3-requirements)
 4. [Page Structure](#4-page-structure)
 5. [Account Data Contract](#5-account-data-contract)
-6. [Account Editing](#6-account-editing)
-7. [Account Lifecycle Actions](#7-account-lifecycle-actions)
+6. [Edit Navigation](#6-edit-navigation)
+7. [Account Detail Action Boundary](#7-account-detail-action-boundary)
 8. [API Contract](#8-api-contract)
 9. [UI States](#9-ui-states)
 10. [Responsive Layout](#10-responsive-layout)
@@ -23,19 +23,35 @@
 
 # 1. Scope
 
-This document defines the protected **Administrator Account Detail / Edit** frontend page.
+This document defines the protected **Administrator Account Detail** frontend page.
 
-The page is the detail/edit destination from the Administrator Account Management page.
+The page displays the authoritative details of one administrator account.
 
 The canonical route is:
 
 ```text
-/admin/accounts/:id/edit
+/admin/accounts/:id
 ```
 
 The page is rendered inside the existing [Admin Shell](./admin_shell.md).
 
-The page must use the existing Account domain, Authentication domain, and Authorization domain contracts. It must not introduce a separate client-side account model, authorization model, or lifecycle implementation.
+The page is read-only.
+
+It does not provide:
+
+* Account field editing.
+* Save or update controls.
+* Deactivate controls.
+* Activate controls.
+* Restore controls.
+* Soft Delete controls.
+* Hard Delete controls.
+
+The page provides an **Edit** navigation action that leads to:
+
+```text
+/admin/accounts/:id/edit
+```
 
 ## Responsibilities
 
@@ -43,13 +59,12 @@ The page must use the existing Account domain, Authentication domain, and Author
 |---|---|
 | `FE-ACCOUNT-DETAIL-SCOPE-001` | Load one administrator account by ID. |
 | `FE-ACCOUNT-DETAIL-SCOPE-002` | Display authoritative administrator account information. |
-| `FE-ACCOUNT-DETAIL-SCOPE-003` | Allow the supported Account field to be edited. |
-| `FE-ACCOUNT-DETAIL-SCOPE-004` | Display account lifecycle state. |
-| `FE-ACCOUNT-DETAIL-SCOPE-005` | Support applicable administrator lifecycle actions. |
-| `FE-ACCOUNT-DETAIL-SCOPE-006` | Refresh authoritative Account data after successful mutations. |
-| `FE-ACCOUNT-DETAIL-SCOPE-007` | Preserve Admin Shell navigation and authentication behavior. |
-| `FE-ACCOUNT-DETAIL-SCOPE-008` | Handle authentication, authorization, validation, not-found, conflict, server, and network errors. |
-| `FE-ACCOUNT-DETAIL-SCOPE-009` | Provide keyboard-accessible and responsive interaction. |
+| `FE-ACCOUNT-DETAIL-SCOPE-003` | Display the account lifecycle state. |
+| `FE-ACCOUNT-DETAIL-SCOPE-004` | Provide navigation back to Account Management. |
+| `FE-ACCOUNT-DETAIL-SCOPE-005` | Provide an Edit action that navigates to the Account Edit page. |
+| `FE-ACCOUNT-DETAIL-SCOPE-006` | Handle authentication, authorization, not-found, server, and network errors. |
+| `FE-ACCOUNT-DETAIL-SCOPE-007` | Provide keyboard-accessible and responsive interaction. |
+| `FE-ACCOUNT-DETAIL-SCOPE-008` | Preserve Admin Shell navigation and authentication behavior. |
 
 ## Out of Scope
 
@@ -61,11 +76,11 @@ The page must use the existing Account domain, Authentication domain, and Author
 | `FE-ACCOUNT-DETAIL-OOS-004` | Password hashing or password validation implementation. |
 | `FE-ACCOUNT-DETAIL-OOS-005` | Database persistence or transaction management. |
 | `FE-ACCOUNT-DETAIL-OOS-006` | Client-side authorization enforcement. |
-| `FE-ACCOUNT-DETAIL-OOS-007` | Hard-delete UI. |
-| `FE-ACCOUNT-DETAIL-OOS-008` | Search or unsupported Account filtering. |
-| `FE-ACCOUNT-DETAIL-OOS-009` | Client-side Account data persistence. |
-
-Email and password credentials have dedicated backend operations. They are not part of the primary Account field edit operation defined by `AC_UC_04`.
+| `FE-ACCOUNT-DETAIL-OOS-007` | Account field editing. |
+| `FE-ACCOUNT-DETAIL-OOS-008` | Account lifecycle mutations. |
+| `FE-ACCOUNT-DETAIL-OOS-009` | Hard-delete UI. |
+| `FE-ACCOUNT-DETAIL-OOS-010` | Search or unsupported Account filtering. |
+| `FE-ACCOUNT-DETAIL-OOS-011` | Client-side Account data persistence. |
 
 ---
 
@@ -73,24 +88,30 @@ Email and password credentials have dedicated backend operations. They are not p
 
 | ID | Route | Access | Behavior | References |
 |---|---|---|---|---|
-| `FE-ACCOUNT-DETAIL-ROUTE-001` | `/admin/accounts/:id/edit` | Authenticated | Render Account Detail / Edit page. | `PAGE-ADM-010`, `ADM-AUTH-005` |
-| `FE-ACCOUNT-DETAIL-ROUTE-002` | `/admin/accounts/:id/edit` | Bootstrap | Keep route pending until authentication resolves. | Authentication domain |
-| `FE-ACCOUNT-DETAIL-ROUTE-003` | `/admin/accounts/:id/edit` | Unauthenticated | Redirect to `/login`. | Admin Shell |
-| `FE-ACCOUNT-DETAIL-ROUTE-004` | `/admin/accounts/:id/edit` | Authenticated + unauthorized | Render authorization error while preserving authentication state. | Authorization domain |
-| `FE-ACCOUNT-DETAIL-ROUTE-005` | `/admin/accounts/:id/edit` | Invalid or unavailable Account | Render Account Not Found state. | `AC_API_03` |
+| `FE-ACCOUNT-DETAIL-ROUTE-001` | `/admin/accounts/:id` | Authenticated | Render read-only Account Detail page. | `PAGE-ADM-010`, `ADM-AUTH-004` |
+| `FE-ACCOUNT-DETAIL-ROUTE-002` | `/admin/accounts/:id` | Bootstrap | Keep route pending until authentication resolves. | Authentication domain |
+| `FE-ACCOUNT-DETAIL-ROUTE-003` | `/admin/accounts/:id` | Unauthenticated | Redirect to `/login`. | Admin Shell |
+| `FE-ACCOUNT-DETAIL-ROUTE-004` | `/admin/accounts/:id` | Authenticated + unauthorized | Render authorization error while preserving authentication state. | Authorization domain |
+| `FE-ACCOUNT-DETAIL-ROUTE-005` | `/admin/accounts/:id` | Invalid or unavailable Account | Render Account Not Found state. | `AC_API_03` |
 
 The page must render inside the Admin Shell:
 
 ```text
-/admin/accounts/:id/edit
+/admin/accounts/:id
     └── Admin Shell
         ├── Sidebar
         │   └── Accounts = active
         └── Main Content
-            └── Administrator Account Detail / Edit
+            └── Administrator Account Detail
 ```
 
 The `id` route parameter is the Account UUID.
+
+The page provides an Edit action targeting:
+
+```text
+/admin/accounts/:id/edit
+```
 
 Authentication tokens, refresh credentials, or other secrets must never appear in the route.
 
@@ -100,26 +121,22 @@ Authentication tokens, refresh credentials, or other secrets must never appear i
 
 | ID | Requirement | Repository Reference |
 |---|---|---|
-| `FE-ACCOUNT-DETAIL-REQ-001` | Provide a protected Account detail/edit route. | `ADM-AUTH-001`, `ADM-AUTH-005`, `PAGE-ADM-010` |
+| `FE-ACCOUNT-DETAIL-REQ-001` | Provide a protected Account Detail route. | `ADM-AUTH-001`, `ADM-AUTH-004`, `PAGE-ADM-010` |
 | `FE-ACCOUNT-DETAIL-REQ-002` | Load the Account using the Account API. | `AC_UC_03`, `AC_API_03` |
 | `FE-ACCOUNT-DETAIL-REQ-003` | Display the authoritative Account representation. | Account API |
-| `FE-ACCOUNT-DETAIL-REQ-004` | Allow `display_name` to be edited. | `AC_UC_04`, `AC_API_04` |
-| `FE-ACCOUNT-DETAIL-REQ-005` | Reject unsupported client-side Account fields. | `AC_UC_04` |
-| `FE-ACCOUNT-DETAIL-REQ-006` | Preserve the backend as the authority for validation. | Authorization and Account domains |
-| `FE-ACCOUNT-DETAIL-REQ-007` | Display `active` and `inactive` lifecycle states. | `AC_REQ_FC_05` |
-| `FE-ACCOUNT-DETAIL-REQ-008` | Display soft-deleted state when returned by an applicable response. | Account domain |
-| `FE-ACCOUNT-DETAIL-REQ-009` | Support deactivation when applicable. | `AC_UC_05`, `AC_API_05`, `ADM-AUTH-006` |
-| `FE-ACCOUNT-DETAIL-REQ-010` | Support activation when applicable. | `AC_UC_06`, `AC_API_06` |
-| `FE-ACCOUNT-DETAIL-REQ-011` | Support restoration when applicable. | `AC_UC_08`, `AC_API_08` |
-| `FE-ACCOUNT-DETAIL-REQ-012` | Do not expose hard delete as a routine page action. | `FE-ACCOUNT-DETAIL-OOS-007` |
-| `FE-ACCOUNT-DETAIL-REQ-013` | Treat `401 Unauthorized` as an authentication failure. | Authentication domain |
-| `FE-ACCOUNT-DETAIL-REQ-014` | Treat `403 Forbidden` as an authorization failure. | Authorization domain |
-| `FE-ACCOUNT-DETAIL-REQ-015` | Handle Account mutation conflicts and refresh authoritative state. | `LAST_ACTIVE_ADMINISTRATOR` and Account API |
-| `FE-ACCOUNT-DETAIL-REQ-016` | Prevent duplicate mutation submissions. | Frontend behavior |
-| `FE-ACCOUNT-DETAIL-REQ-017` | Do not persist Account data in browser storage. | Account API `no-store` contract |
-| `FE-ACCOUNT-DETAIL-REQ-018` | Do not expose password or password hash data. | Account Security |
-| `FE-ACCOUNT-DETAIL-REQ-019` | Provide visible focus states and keyboard interaction. | Admin Shell accessibility |
-| `FE-ACCOUNT-DETAIL-REQ-020` | Preserve the Admin Shell across viewport sizes. | Admin Shell responsive requirements |
+| `FE-ACCOUNT-DETAIL-REQ-004` | Render Account fields as read-only values. | Account domain |
+| `FE-ACCOUNT-DETAIL-REQ-005` | Display active, inactive, and deleted lifecycle state when represented by the authoritative response. | Account domain |
+| `FE-ACCOUNT-DETAIL-REQ-006` | Provide navigation back to `/admin/accounts`. | Frontend navigation |
+| `FE-ACCOUNT-DETAIL-REQ-007` | Provide an Edit action that navigates to `/admin/accounts/:id/edit`. | `ADM-AUTH-005`, `AC_UC_04` |
+| `FE-ACCOUNT-DETAIL-REQ-008` | Do not provide editable fields on the Detail page. | Page boundary |
+| `FE-ACCOUNT-DETAIL-REQ-009` | Do not provide Save or update controls on the Detail page. | Page boundary |
+| `FE-ACCOUNT-DETAIL-REQ-010` | Do not provide Deactivate, Activate, or Restore controls on the Detail page. | Page boundary |
+| `FE-ACCOUNT-DETAIL-REQ-011` | Treat `401 Unauthorized` as an authentication failure. | Authentication domain |
+| `FE-ACCOUNT-DETAIL-REQ-012` | Treat `403 Forbidden` as an authorization failure. | Authorization domain |
+| `FE-ACCOUNT-DETAIL-REQ-013` | Do not persist Account data in browser storage. | Account API `no-store` contract |
+| `FE-ACCOUNT-DETAIL-REQ-014` | Do not expose password or password hash data. | Account Security |
+| `FE-ACCOUNT-DETAIL-REQ-015` | Provide visible focus states and keyboard interaction. | Admin Shell accessibility |
+| `FE-ACCOUNT-DETAIL-REQ-016` | Preserve the Admin Shell across viewport sizes. | Admin Shell responsive requirements |
 
 ---
 
@@ -130,25 +147,26 @@ Authentication tokens, refresh credentials, or other secrets must never appear i
 The page header should use the following structure:
 
 ```text
-Administrator Accounts
+Administrator Account
 ← Back to Administrator Accounts
 
-Administrator Account
 Library Administrator
-admin@example.com                         [Active]
+admin@example.com
+Active
 
-[Save Changes]    [Deactivate]
+[Edit]
 ```
 
 | ID | Requirement |
 |---|---|
 | `FE-ACCOUNT-DETAIL-UI-001` | Use `Administrator Account` as the primary page heading. |
-| `FE-ACCOUNT-DETAIL-UI-002` | Provide a supporting account identifier using `display_name` when available. |
+| `FE-ACCOUNT-DETAIL-UI-002` | Display the account `display_name` when available. |
 | `FE-ACCOUNT-DETAIL-UI-003` | Display the Account email in the page header summary. |
 | `FE-ACCOUNT-DETAIL-UI-004` | Display lifecycle status using text and a non-color-only status treatment. |
 | `FE-ACCOUNT-DETAIL-UI-005` | Provide a link back to `/admin/accounts`. |
-| `FE-ACCOUNT-DETAIL-UI-006` | Place page-level actions in a clearly grouped action region. |
+| `FE-ACCOUNT-DETAIL-UI-006` | Provide an Edit action in the page header action region. |
 | `FE-ACCOUNT-DETAIL-UI-007` | Keep page actions inside the Main Content Area. |
+| `FE-ACCOUNT-DETAIL-UI-008` | Do not provide editable Account fields on this page. |
 
 The Back action must use a real link:
 
@@ -158,71 +176,59 @@ The Back action must use a real link:
 
 It must not use a clickable `div` or a button that simulates navigation.
 
+The Edit action must navigate to:
+
+```text
+/admin/accounts/:id/edit
+```
+
+The Edit action is a navigation control, not a form submission control.
+
 ---
 
 ## 4.2 Account Information
 
-The main Account information section should use a native HTML form.
+Account information is displayed as read-only content.
 
 ```text
 Account Information
 
 Display name
-[ Library Administrator                         ]
+Library Administrator
 
 Email
 admin@example.com
 
 Account ID
 019...
-
-[Save Changes]
 ```
 
 | ID | Field | Source | Editable |
 |---|---|---|---|
-| `FE-ACCOUNT-DETAIL-FIELD-001` | Display name | `display_name` | Yes |
+| `FE-ACCOUNT-DETAIL-FIELD-001` | Display name | `display_name` | No |
 | `FE-ACCOUNT-DETAIL-FIELD-002` | Email | `email` | No |
 | `FE-ACCOUNT-DETAIL-FIELD-003` | Account ID | `id` | No |
 
-The form must only submit Account fields supported by `AC_UC_04`.
+The page must not render these values as editable form controls.
 
-The current Account domain defines exactly one mutable Account field for this operation:
+The page must not provide:
 
 ```text
-display_name
+Save
+Save Changes
+Submit
+Reset
 ```
 
-Email changes must use the dedicated Change Email operation and are therefore not included in the primary Account update payload.
-
----
-
-## 4.3 Display Name
-
-| ID | Requirement |
-|---|---|
-| `FE-ACCOUNT-DETAIL-DISPLAY-001` | Render a visible label for the Display name field. |
-| `FE-ACCOUNT-DETAIL-DISPLAY-002` | Populate the field from the server `display_name` value. |
-| `FE-ACCOUNT-DETAIL-DISPLAY-003` | Represent a server `null` value as an empty form field. |
-| `FE-ACCOUNT-DETAIL-DISPLAY-004` | Allow the administrator to clear an existing display name. |
-| `FE-ACCOUNT-DETAIL-DISPLAY-005` | Do not perform client-side Unicode normalization that differs from the backend contract. |
-| `FE-ACCOUNT-DETAIL-DISPLAY-006` | Preserve internal whitespace and case. |
-| `FE-ACCOUNT-DETAIL-DISPLAY-007` | Reject an empty submitted value only when the backend contract requires a non-null string. |
-| `FE-ACCOUNT-DETAIL-DISPLAY-008` | Rely on the backend for authoritative validation and normalization. |
-
-The frontend may provide lightweight usability validation, but it must not replace backend validation.
-
-The backend contract defines:
+Account editing belongs to:
 
 ```text
-trim surrounding Unicode whitespace
-normalize to Unicode NFC
-1–100 Unicode scalar values
+/admin/accounts/:id/edit
 ```
 
 ---
 
-## 4.4 Account Metadata
+## 4.3 Account Metadata
 
 The page should display non-editable Account metadata:
 
@@ -260,7 +266,7 @@ The underlying timestamp must remain available to assistive technologies and mac
 
 ---
 
-## 4.5 Lifecycle Summary
+## 4.4 Lifecycle Summary
 
 The page must communicate lifecycle state explicitly.
 
@@ -272,13 +278,13 @@ The page must communicate lifecycle state explicitly.
 
 `Deleted` is a derived UI state and is not an Account `status` value.
 
-The UI must never represent `deleted` as a third server-side Account status.
+The page displays lifecycle state but does not provide lifecycle mutation controls.
 
 ---
 
 # 5. Account Data Contract
 
-The detail page consumes the authoritative Account response.
+The Account Detail page consumes the authoritative Account response.
 
 Expected representation:
 
@@ -299,12 +305,12 @@ Expected representation:
 | ID | Field | Type | Frontend Rule |
 |---|---|---|---|
 | `FE-ACCOUNT-DETAIL-DATA-001` | `id` | UUID string | Display as read-only identifier. |
-| `FE-ACCOUNT-DETAIL-DATA-002` | `email` | string | Display as read-only Account credential identifier. |
-| `FE-ACCOUNT-DETAIL-DATA-003` | `display_name` | string or null | Render as editable form field. |
-| `FE-ACCOUNT-DETAIL-DATA-004` | `status` | string | Render as lifecycle state. |
-| `FE-ACCOUNT-DETAIL-DATA-005` | `created_at` | RFC 3339 string | Render as localized timestamp. |
-| `FE-ACCOUNT-DETAIL-DATA-006` | `updated_at` | RFC 3339 string | Render as localized timestamp. |
-| `FE-ACCOUNT-DETAIL-DATA-007` | `deleted_at` | RFC 3339 string or null | Render when non-null. |
+| `FE-ACCOUNT-DETAIL-DATA-002` | `email` | string | Display as read-only Account identifier. |
+| `FE-ACCOUNT-DETAIL-DATA-003` | `display_name` | string or null | Display as read-only text. |
+| `FE-ACCOUNT-DETAIL-DATA-004` | `status` | string | Display as lifecycle state. |
+| `FE-ACCOUNT-DETAIL-DATA-005` | `created_at` | RFC 3339 string | Display as localized timestamp. |
+| `FE-ACCOUNT-DETAIL-DATA-006` | `updated_at` | RFC 3339 string | Display as localized timestamp. |
+| `FE-ACCOUNT-DETAIL-DATA-007` | `deleted_at` | RFC 3339 string or null | Display when non-null. |
 
 The frontend must never expect the Account response to contain:
 
@@ -315,211 +321,112 @@ password_hash
 
 Unknown fields must not be rendered automatically.
 
-The server response is authoritative. The frontend must not fabricate missing values.
+The server response is authoritative.
+
+The frontend must not fabricate missing values.
+
+Account data displayed by this page must not become editable through local form controls.
 
 ---
 
-# 6. Account Editing
+# 6. Edit Navigation
 
-## 6.1 Edit Contract
+The Account Detail page does not perform Account updates.
 
-The primary edit operation is:
+The page provides an Edit action that navigates to the dedicated Account Edit page:
 
-```http
-PATCH /admin/accounts/{id}
-Content-Type: application/merge-patch+json
-Authorization: Bearer <access-token>
+```text
+/admin/accounts/:id/edit
 ```
 
-Request body:
+Example:
 
-```json
-{
-  "display_name": "Library Administrator"
-}
-```
+```text
+Administrator Account
 
-To clear the display name:
+Library Administrator
+admin@example.com
+Active
 
-```json
-{
-  "display_name": null
-}
+[Edit]
 ```
 
 | ID | Requirement |
 |---|---|
-| `FE-ACCOUNT-DETAIL-EDIT-001` | Submit only supported Account fields. |
-| `FE-ACCOUNT-DETAIL-EDIT-002` | Use `application/merge-patch+json`. |
-| `FE-ACCOUNT-DETAIL-EDIT-003` | Send the Account ID only as the path parameter. |
-| `FE-ACCOUNT-DETAIL-EDIT-004` | Never send credentials in the request URL. |
-| `FE-ACCOUNT-DETAIL-EDIT-005` | Never send `password` or `password_hash`. |
-| `FE-ACCOUNT-DETAIL-EDIT-006` | Disable duplicate submissions while the update request is pending. |
-| `FE-ACCOUNT-DETAIL-EDIT-007` | Treat the successful `200 OK` response as the new authoritative Account state. |
-| `FE-ACCOUNT-DETAIL-EDIT-008` | Refresh the displayed Account state after a successful mutation. |
+| `FE-ACCOUNT-DETAIL-EDIT-001` | Provide an Edit action on the Account Detail page. |
+| `FE-ACCOUNT-DETAIL-EDIT-002` | Navigate to `/admin/accounts/:id/edit` when Edit is activated. |
+| `FE-ACCOUNT-DETAIL-EDIT-003` | Implement Edit as navigation rather than form submission. |
+| `FE-ACCOUNT-DETAIL-EDIT-004` | Do not render editable Account fields on the Detail page. |
+| `FE-ACCOUNT-DETAIL-EDIT-005` | Do not expose `PATCH /admin/accounts/{id}` from the Detail page. |
+| `FE-ACCOUNT-DETAIL-EDIT-006` | Do not expose Save or Save Changes controls on the Detail page. |
 
-The response is:
-
-```text
-200 OK
-```
-
-with the updated Account representation.
+The Edit action must remain clearly separate from the read-only Account information.
 
 ---
 
-## 6.2 Dirty State
+# 7. Account Detail Action Boundary
 
-The page should distinguish:
+The Account Detail page contains only navigation actions required to view the account and reach the dedicated editing page.
 
-```text
-Pristine
-Dirty
-Submitting
-Success
-Error
-```
-
-| ID | Behavior |
-|---|---|
-| `FE-ACCOUNT-DETAIL-EDIT-009` | Disable Save Changes while no editable value has changed. |
-| `FE-ACCOUNT-DETAIL-EDIT-010` | Enable Save Changes when a supported value differs from the loaded value. |
-| `FE-ACCOUNT-DETAIL-EDIT-011` | Disable form mutation controls while the update request is pending. |
-| `FE-ACCOUNT-DETAIL-EDIT-012` | Restore the pristine state after a successful update. |
-| `FE-ACCOUNT-DETAIL-EDIT-013` | Preserve user-entered values when validation fails. |
-| `FE-ACCOUNT-DETAIL-EDIT-014` | Do not optimistically replace the authoritative Account representation before the server confirms the mutation. |
-
-No account data should be persisted into browser storage to preserve an unsaved draft.
-
----
-
-## 6.3 Validation
-
-Validation errors use the backend Problem Details response.
-
-The frontend may provide immediate field-level feedback for obvious input problems, but backend validation remains authoritative.
-
-| ID | Error | Presentation |
-|---|---|---|
-| `FE-ACCOUNT-DETAIL-VAL-001` | Invalid display name | Inline error associated with Display name. |
-| `FE-ACCOUNT-DETAIL-VAL-002` | Empty unsupported patch | Preserve form and show actionable error. |
-| `FE-ACCOUNT-DETAIL-VAL-003` | Unsupported field | Treat as developer/API contract error rather than displaying raw server internals. |
-| `FE-ACCOUNT-DETAIL-VAL-004` | Unsupported media type | Show a generic request-format error. |
-
----
-
-# 7. Account Lifecycle Actions
-
-Lifecycle actions are displayed according to the authoritative Account state.
-
-Routine hard deletion is not exposed.
-
-## 7.1 Active Account
+## 7.1 Back Navigation
 
 ```text
-Status: Active
-
-[Save Changes]    [Deactivate]
+← Back to Administrator Accounts
 ```
-
-| ID | Action | API |
-|---|---|---|
-| `FE-ACCOUNT-DETAIL-ACTION-001` | Deactivate | `POST /admin/accounts/{id}/deactivate` |
-
-The Deactivate action is available only when:
-
-```text
-status=active
-deleted_at=null
-```
-
-The server remains authoritative for whether deactivation is permitted.
-
----
-
-## 7.2 Inactive Account
-
-```text
-Status: Inactive
-
-[Save Changes]    [Activate]
-```
-
-| ID | Action | API |
-|---|---|---|
-| `FE-ACCOUNT-DETAIL-ACTION-002` | Activate | `POST /admin/accounts/{id}/activate` |
-
-The Activate action is available only when:
-
-```text
-status=inactive
-deleted_at=null
-```
-
----
-
-## 7.3 Deleted Account
-
-If a deleted Account is returned by an authorized API response, the page must display:
-
-```text
-Status: Deleted
-
-[Restore]
-```
-
-| ID | Action | API |
-|---|---|---|
-| `FE-ACCOUNT-DETAIL-ACTION-003` | Restore | `POST /admin/accounts/{id}/restore` |
-
-Restoration results in:
-
-```text
-status = inactive
-deleted_at = null
-deleted_by = null
-```
-
-The page must not automatically activate the restored Account.
-
----
-
-## 7.4 Mutation Rules
 
 | ID | Requirement |
 |---|---|
-| `FE-ACCOUNT-DETAIL-ACTION-004` | Prevent duplicate lifecycle requests. |
-| `FE-ACCOUNT-DETAIL-ACTION-005` | Disable the pending lifecycle action while its request is running. |
-| `FE-ACCOUNT-DETAIL-ACTION-006` | Do not use optimistic lifecycle state changes. |
-| `FE-ACCOUNT-DETAIL-ACTION-007` | Use the successful API response as the authoritative new state when returned. |
-| `FE-ACCOUNT-DETAIL-ACTION-008` | Refresh the Account after a successful `204 No Content` operation. |
-| `FE-ACCOUNT-DETAIL-ACTION-009` | Preserve the user on the detail page after a successful mutation. |
-| `FE-ACCOUNT-DETAIL-ACTION-010` | Announce mutation success through accessible status feedback. |
+| `FE-ACCOUNT-DETAIL-ACTION-001` | Navigate to `/admin/accounts`. |
+| `FE-ACCOUNT-DETAIL-ACTION-002` | Use a native link. |
+| `FE-ACCOUNT-DETAIL-ACTION-003` | Preserve normal browser navigation semantics. |
 
 ---
 
-## 7.5 Last Active Administrator Conflict
-
-Deactivation and soft-delete operations may fail with:
+## 7.2 Edit Navigation
 
 ```text
-409 Conflict
-LAST_ACTIVE_ADMINISTRATOR
+[Edit]
 ```
 
-The UI must:
+Target:
 
-1. Preserve authentication state.
-2. Display an actionable conflict message.
-3. Refresh the Account from the server.
-4. Re-evaluate the lifecycle action state from the refreshed response.
-5. Never claim that the Account was deactivated when the request failed.
+```text
+/admin/accounts/:id/edit
+```
 
 | ID | Requirement |
 |---|---|
-| `FE-ACCOUNT-DETAIL-CONFLICT-001` | Handle `LAST_ACTIVE_ADMINISTRATOR`. |
-| `FE-ACCOUNT-DETAIL-CONFLICT-002` | Refresh authoritative Account state after the conflict. |
-| `FE-ACCOUNT-DETAIL-CONFLICT-003` | Keep the error within the page Main Content Area. |
+| `FE-ACCOUNT-DETAIL-ACTION-004` | Provide the Edit action when Account details are available. |
+| `FE-ACCOUNT-DETAIL-ACTION-005` | Navigate to the Account Edit route. |
+| `FE-ACCOUNT-DETAIL-ACTION-006` | Use a native link or equivalent accessible navigation control. |
+
+---
+
+## 7.3 Actions Not Provided by This Page
+
+The Account Detail page must not provide:
+
+```text
+Save Changes
+Deactivate
+Activate
+Restore
+Soft Delete
+Hard Delete
+```
+
+| ID | Requirement |
+|---|---|
+| `FE-ACCOUNT-DETAIL-ACTION-007` | Do not expose Account update mutations from the Detail page. |
+| `FE-ACCOUNT-DETAIL-ACTION-008` | Do not expose Deactivate from the Detail page. |
+| `FE-ACCOUNT-DETAIL-ACTION-009` | Do not expose Activate from the Detail page. |
+| `FE-ACCOUNT-DETAIL-ACTION-010` | Do not expose Restore from the Detail page. |
+| `FE-ACCOUNT-DETAIL-ACTION-011` | Do not expose Soft Delete from the Detail page. |
+| `FE-ACCOUNT-DETAIL-ACTION-012` | Do not expose Hard Delete from the Detail page. |
+
+Lifecycle mutations remain Account Management actions.
+
+Account editing remains an Account Edit page responsibility.
 
 ---
 
@@ -540,7 +447,9 @@ Authorization: Bearer <access-token>
 | `FE-ACCOUNT-DETAIL-API-004` | Do not send tokens in request bodies. |
 | `FE-ACCOUNT-DETAIL-API-005` | Treat the returned Account as authoritative. |
 
-The normal View Account endpoint does not return soft-deleted Accounts.
+The Account Detail page is a read-only consumer of the Account representation.
+
+The page does not perform Account update or lifecycle API calls.
 
 ---
 
@@ -552,21 +461,9 @@ Viewing an Account requires:
 account:view
 ```
 
-Updating requires:
-
-```text
-account:update
-```
-
-Lifecycle operations require the corresponding server-side permission.
-
 | Operation | Permission |
 |---|---|
 | View Account | `account:view` |
-| Update Account | `account:update` |
-| Deactivate | `account:deactivate` |
-| Activate | `account:activate` |
-| Restore | `account:restore` |
 
 The frontend must not treat client-held roles or permissions as proof of authorization.
 
@@ -574,27 +471,7 @@ The backend is the authorization authority.
 
 ---
 
-## 8.3 Update Account
-
-```http
-PATCH /admin/accounts/{id}
-Authorization: Bearer <access-token>
-Content-Type: application/merge-patch+json
-```
-
-Supported body:
-
-```json
-{
-  "display_name": "Library Administrator"
-}
-```
-
-Success:
-
-```text
-200 OK
-```
+## 8.3 Error Handling
 
 | ID | Error | UI Behavior |
 |---|---|---|
@@ -602,95 +479,14 @@ Success:
 | `FE-ACCOUNT-DETAIL-API-007` | `401` | Clear authentication state and redirect through Admin Shell behavior. |
 | `FE-ACCOUNT-DETAIL-API-008` | `403` | Preserve authentication and show authorization error. |
 | `FE-ACCOUNT-DETAIL-API-009` | `404 ACCOUNT_NOT_FOUND` | Show Not Found state. |
-| `FE-ACCOUNT-DETAIL-API-010` | `415 UNSUPPORTED_MEDIA_TYPE` | Show generic request-format error. |
-| `FE-ACCOUNT-DETAIL-API-011` | `422 VALIDATION_ERROR` | Show field/form validation feedback. |
-| `FE-ACCOUNT-DETAIL-API-012` | `500` | Show non-sensitive server error and retry action. |
-| `FE-ACCOUNT-DETAIL-API-013` | Network failure | Show network error and retry action. |
+| `FE-ACCOUNT-DETAIL-API-010` | `500` | Show non-sensitive server error and retry action. |
+| `FE-ACCOUNT-DETAIL-API-011` | Network failure | Show network error and retry action. |
+
+The Account Detail page must not convert a read operation into a mutation when handling an error.
 
 ---
 
-## 8.4 Deactivate
-
-```http
-POST /admin/accounts/{id}/deactivate
-Authorization: Bearer <access-token>
-```
-
-Success:
-
-```text
-200 OK
-```
-
-Expected response:
-
-```json
-{
-  "id": "019...",
-  "status": "inactive"
-}
-```
-
-Potential conflicts:
-
-```text
-ACCOUNT_ALREADY_INACTIVE
-LAST_ACTIVE_ADMINISTRATOR
-```
-
-The UI must display the server-provided error meaning without exposing internal implementation details.
-
----
-
-## 8.5 Activate
-
-```http
-POST /admin/accounts/{id}/activate
-Authorization: Bearer <access-token>
-```
-
-Success:
-
-```text
-200 OK
-```
-
-Potential conflicts:
-
-```text
-ACCOUNT_ALREADY_ACTIVE
-ACCOUNT_SOFT_DELETED
-```
-
-If the Account becomes unavailable during the operation, the UI must refresh or transition to the Not Found state according to the authoritative response.
-
----
-
-## 8.6 Restore
-
-```http
-POST /admin/accounts/{id}/restore
-Authorization: Bearer <access-token>
-```
-
-Success:
-
-```text
-200 OK
-```
-
-Expected lifecycle result:
-
-```text
-status = inactive
-deleted_at = null
-```
-
-The page must not automatically activate the restored Account.
-
----
-
-## 8.7 Cache
+## 8.4 Cache
 
 Account responses use:
 
@@ -710,7 +506,7 @@ The page must not use cached Account information as evidence for authentication 
 
 ---
 
-## 8.8 Problem Details
+## 8.5 Problem Details
 
 Errors use:
 
@@ -724,18 +520,18 @@ The frontend should parse:
 {
   "type": "...",
   "title": "...",
-  "status": 409,
+  "status": 404,
   "detail": "...",
-  "code": "LAST_ACTIVE_ADMINISTRATOR"
+  "code": "ACCOUNT_NOT_FOUND"
 }
 ```
 
 | ID | Requirement |
 |---|---|
-| `FE-ACCOUNT-DETAIL-API-014` | Prefer the structured `code` for deterministic application behavior. |
-| `FE-ACCOUNT-DETAIL-API-015` | Present user-facing messages appropriate to the operation. |
-| `FE-ACCOUNT-DETAIL-API-016` | Do not render raw stack traces or internal server details. |
-| `FE-ACCOUNT-DETAIL-API-017` | Preserve generic fallback messaging when the response is malformed or lacks a known code. |
+| `FE-ACCOUNT-DETAIL-API-012` | Prefer the structured `code` for deterministic application behavior. |
+| `FE-ACCOUNT-DETAIL-API-013` | Present user-facing messages appropriate to the read operation. |
+| `FE-ACCOUNT-DETAIL-API-014` | Do not render raw stack traces or internal server details. |
+| `FE-ACCOUNT-DETAIL-API-015` | Preserve generic fallback messaging when the response is malformed or lacks a known code. |
 
 ---
 
@@ -763,10 +559,7 @@ Administrator Account
 [loading account summary]
 
 Account Information
-[loading fields]
-
-Account Details
-[loading metadata]
+[loading account details]
 ```
 
 | ID | Requirement |
@@ -774,7 +567,7 @@ Account Details
 | `FE-ACCOUNT-DETAIL-STATE-004` | Keep the Admin Shell rendered. |
 | `FE-ACCOUNT-DETAIL-STATE-005` | Show an explicit loading state in Main Content. |
 | `FE-ACCOUNT-DETAIL-STATE-006` | Do not display invented Account values. |
-| `FE-ACCOUNT-DETAIL-STATE-007` | Do not enable mutation controls before Account data is loaded. |
+| `FE-ACCOUNT-DETAIL-STATE-007` | Do not display or enable the Edit action before Account data is loaded. |
 
 ---
 
@@ -790,54 +583,25 @@ Display Name
 Email
 Status
 
-Account Information
 Account Details
-Lifecycle Actions
+
+[Edit]
 ```
 
-The page is interactive only when its required data is available.
+The page displays read-only Account information.
 
----
-
-## 9.4 Saving
-
-During `PATCH /admin/accounts/{id}`:
-
-```text
-Display name
-[ Library Administrator                  ]
-
-[Saving...]
-```
+The page does not expose editable fields or lifecycle mutation actions.
 
 | ID | Requirement |
 |---|---|
-| `FE-ACCOUNT-DETAIL-STATE-008` | Disable Save Changes while the request is pending. |
-| `FE-ACCOUNT-DETAIL-STATE-009` | Keep the edited form value visible. |
-| `FE-ACCOUNT-DETAIL-STATE-010` | Prevent duplicate form submission. |
-| `FE-ACCOUNT-DETAIL-STATE-011` | Announce the pending state accessibly. |
+| `FE-ACCOUNT-DETAIL-STATE-008` | Display authoritative Account information. |
+| `FE-ACCOUNT-DETAIL-STATE-009` | Render Account fields as read-only. |
+| `FE-ACCOUNT-DETAIL-STATE-010` | Display the Edit action after Account data is available. |
+| `FE-ACCOUNT-DETAIL-STATE-011` | Do not display Save or lifecycle mutation controls. |
 
 ---
 
-## 9.5 Mutation Success
-
-After a successful mutation:
-
-```text
-Account updated successfully.
-```
-
-The Account representation must be refreshed or replaced with the authoritative successful response.
-
-| ID | Requirement |
-|---|---|
-| `FE-ACCOUNT-DETAIL-STATE-012` | Announce success using an accessible status mechanism. |
-| `FE-ACCOUNT-DETAIL-STATE-013` | Remove stale error messages. |
-| `FE-ACCOUNT-DETAIL-STATE-014` | Recalculate available lifecycle actions from authoritative state. |
-
----
-
-## 9.6 Not Found
+## 9.4 Not Found
 
 When the Account is unavailable:
 
@@ -852,32 +616,33 @@ The administrator account may no longer exist or may not be available.
 
 | ID | Requirement |
 |---|---|
-| `FE-ACCOUNT-DETAIL-STATE-015` | Explain that the requested Account is unavailable. |
-| `FE-ACCOUNT-DETAIL-STATE-016` | Provide a direct route back to `/admin/accounts`. |
-| `FE-ACCOUNT-DETAIL-STATE-017` | Do not display stale Account details as current data. |
+| `FE-ACCOUNT-DETAIL-STATE-012` | Explain that the requested Account is unavailable. |
+| `FE-ACCOUNT-DETAIL-STATE-013` | Provide a direct route back to `/admin/accounts`. |
+| `FE-ACCOUNT-DETAIL-STATE-014` | Do not display stale Account details as current data. |
+| `FE-ACCOUNT-DETAIL-STATE-015` | Do not display the Edit action when Account data is unavailable. |
 
 ---
 
-## 9.7 Authorization Error
+## 9.5 Authorization Error
 
 For `403 Forbidden`:
 
 ```text
 Administrator Account
 
-You are not authorized to perform this action.
+You are not authorized to view this administrator account.
 ```
 
 | ID | Requirement |
 |---|---|
-| `FE-ACCOUNT-DETAIL-STATE-018` | Preserve authenticated state. |
-| `FE-ACCOUNT-DETAIL-STATE-019` | Keep the error inside Main Content. |
-| `FE-ACCOUNT-DETAIL-STATE-020` | Do not redirect to `/login` for `403`. |
-| `FE-ACCOUNT-DETAIL-STATE-021` | Do not claim that authorization succeeded. |
+| `FE-ACCOUNT-DETAIL-STATE-016` | Preserve authenticated state. |
+| `FE-ACCOUNT-DETAIL-STATE-017` | Keep the error inside Main Content. |
+| `FE-ACCOUNT-DETAIL-STATE-018` | Do not redirect to `/login` for `403`. |
+| `FE-ACCOUNT-DETAIL-STATE-019` | Do not display Account details that were not authorized by the backend. |
 
 ---
 
-## 9.8 Authentication Expiry
+## 9.6 Authentication Expiry
 
 For `401 Unauthorized`:
 
@@ -887,11 +652,11 @@ Authentication has expired. Redirecting to login.
 
 The page must rely on the existing Authentication service to clear authentication state and navigate to `/login`.
 
-The Account detail page must not implement an independent authentication system.
+The Account Detail page must not implement an independent authentication system.
 
 ---
 
-## 9.9 General Error
+## 9.7 General Error
 
 ```text
 Unable to load this administrator account.
@@ -901,10 +666,10 @@ Unable to load this administrator account.
 
 | ID | Requirement |
 |---|---|
-| `FE-ACCOUNT-DETAIL-STATE-022` | Provide a retry action for retryable failures. |
-| `FE-ACCOUNT-DETAIL-STATE-023` | Keep server and network errors inside Main Content. |
-| `FE-ACCOUNT-DETAIL-STATE-024` | Do not expose internal diagnostics. |
-| `FE-ACCOUNT-DETAIL-STATE-025` | Preserve the Admin Shell. |
+| `FE-ACCOUNT-DETAIL-STATE-020` | Provide a retry action for retryable failures. |
+| `FE-ACCOUNT-DETAIL-STATE-021` | Keep server and network errors inside Main Content. |
+| `FE-ACCOUNT-DETAIL-STATE-022` | Do not expose internal diagnostics. |
+| `FE-ACCOUNT-DETAIL-STATE-023` | Preserve the Admin Shell. |
 
 ---
 
@@ -915,9 +680,9 @@ The page must inherit the Admin Shell responsive behavior and manage its own con
 | ID | Viewport | Layout |
 |---|---|---|
 | `FE-ACCOUNT-DETAIL-RESP-001` | `>= 1280px` | Two-column detail layout may be used for metadata and Account information. |
-| `FE-ACCOUNT-DETAIL-RESP-002` | `768px–1279px` | Reduce content width and maintain readable form controls. |
+| `FE-ACCOUNT-DETAIL-RESP-002` | `768px–1279px` | Reduce content width and maintain readable content. |
 | `FE-ACCOUNT-DETAIL-RESP-003` | `< 768px` | Stack all sections vertically. |
-| `FE-ACCOUNT-DETAIL-RESP-004` | `< 768px` | Keep primary actions reachable without horizontal scrolling. |
+| `FE-ACCOUNT-DETAIL-RESP-004` | `< 768px` | Keep the Edit action reachable without horizontal scrolling. |
 | `FE-ACCOUNT-DETAIL-RESP-005` | All viewports | Prevent unintended page-level horizontal scrolling. |
 | `FE-ACCOUNT-DETAIL-RESP-006` | All viewports | Preserve keyboard accessibility. |
 | `FE-ACCOUNT-DETAIL-RESP-007` | All viewports | Preserve authentication and authorization behavior. |
@@ -930,7 +695,7 @@ Desktop
 ┌───────────────────────────────────────────────────────────┐
 │ Back to Administrator Accounts                            │
 │                                                           │
-│ Administrator Account                     [Actions]       │
+│ Administrator Account                         [Edit]      │
 │                                                           │
 │ ┌──────────────────────────┐ ┌──────────────────────────┐ │
 │ │ Account Information      │ │ Account Details          │ │
@@ -938,7 +703,7 @@ Desktop
 │ │ Display name             │ │ Status                   │ │
 │ │ Email                    │ │ Account ID               │ │
 │ │                          │ │ Created                  │ │
-│ │ [Save Changes]           │ │ Updated                  │ │
+│ │                          │ │ Updated                  │ │
 │ └──────────────────────────┘ └──────────────────────────┘ │
 └───────────────────────────────────────────────────────────┘
 ```
@@ -947,23 +712,18 @@ Desktop
 Mobile
 
 Administrator Account
-Display Name
-Email
-Status
+
+[Edit]
 
 Account Information
 Display name
 Email
-[Save Changes]
 
 Account Details
 Status
 Account ID
 Created
 Updated
-
-Lifecycle Actions
-[Deactivate]
 ```
 
 The exact visual styling must use the existing native CSS architecture and design conventions established by the frontend application.
@@ -987,7 +747,7 @@ The Account Detail page must follow the Authentication, Authorization, and Accou
 | `FE-ACCOUNT-DETAIL-SEC-009` | Client authorization | Client roles and permissions are not trusted as authorization proof. |
 | `FE-ACCOUNT-DETAIL-SEC-010` | Account persistence | Account response data is not stored in browser persistence. |
 | `FE-ACCOUNT-DETAIL-SEC-011` | Cache | Account responses are treated as `no-store`. |
-| `FE-ACCOUNT-DETAIL-SEC-012` | Server confirmation | Mutations require successful server confirmation before the UI treats them as committed. |
+| `FE-ACCOUNT-DETAIL-SEC-012` | Mutation boundary | The Detail page does not perform Account mutations. |
 | `FE-ACCOUNT-DETAIL-SEC-013` | Error exposure | Internal server diagnostics are not exposed to administrators. |
 
 The frontend must not infer authorization from:
@@ -1010,11 +770,11 @@ Server-side authorization remains the security boundary.
 
 | ID | Requirement |
 |---|---|
-| `FE-ACCOUNT-DETAIL-A11Y-001` | Use semantic layout elements such as `main`, `header`, `section`, and `form`. |
+| `FE-ACCOUNT-DETAIL-A11Y-001` | Use semantic layout elements such as `main`, `header`, and `section`. |
 | `FE-ACCOUNT-DETAIL-A11Y-002` | Provide exactly one primary `h1` for the page. |
 | `FE-ACCOUNT-DETAIL-A11Y-003` | Use logical heading hierarchy for Account sections. |
-| `FE-ACCOUNT-DETAIL-A11Y-004` | Use native form controls. |
-| `FE-ACCOUNT-DETAIL-A11Y-005` | Associate every form control with a visible label. |
+| `FE-ACCOUNT-DETAIL-A11Y-004` | Use semantic read-only content elements rather than editable controls. |
+| `FE-ACCOUNT-DETAIL-A11Y-005` | Provide accessible names for displayed Account data. |
 
 ---
 
@@ -1023,34 +783,22 @@ Server-side authorization remains the security boundary.
 | ID | Requirement |
 |---|---|
 | `FE-ACCOUNT-DETAIL-A11Y-006` | Back to Accounts uses a native link. |
-| `FE-ACCOUNT-DETAIL-A11Y-007` | Action controls use native buttons. |
+| `FE-ACCOUNT-DETAIL-A11Y-007` | Edit navigation uses a native link or equivalent accessible navigation control. |
 | `FE-ACCOUNT-DETAIL-A11Y-008` | Keyboard order follows the visual and logical reading order. |
 | `FE-ACCOUNT-DETAIL-A11Y-009` | Focus is visibly indicated. |
 | `FE-ACCOUNT-DETAIL-A11Y-010` | Focus is not obscured by responsive UI or sticky controls. |
 
 ---
 
-## 12.3 Form Errors
+## 12.3 Async Status
+
+Loading and error states must be communicated to assistive technology.
 
 | ID | Requirement |
 |---|---|
-| `FE-ACCOUNT-DETAIL-A11Y-011` | Inline validation errors are programmatically associated with their fields. |
-| `FE-ACCOUNT-DETAIL-A11Y-012` | Error messages are understandable without relying on color. |
-| `FE-ACCOUNT-DETAIL-A11Y-013` | The invalid field is identifiable without visual guessing. |
-| `FE-ACCOUNT-DETAIL-A11Y-014` | Form submission errors remain available to assistive technologies. |
-
----
-
-## 12.4 Async Status
-
-Mutation and loading state must be communicated to assistive technology.
-
-| ID | Requirement |
-|---|---|
-| `FE-ACCOUNT-DETAIL-A11Y-015` | Loading state is announced appropriately. |
-| `FE-ACCOUNT-DETAIL-A11Y-016` | Mutation success is announced appropriately. |
-| `FE-ACCOUNT-DETAIL-A11Y-017` | Mutation errors are announced appropriately. |
-| `FE-ACCOUNT-DETAIL-A11Y-018` | Status messages do not steal focus unnecessarily. |
+| `FE-ACCOUNT-DETAIL-A11Y-011` | Loading state is announced appropriately. |
+| `FE-ACCOUNT-DETAIL-A11Y-012` | Read failures are announced appropriately. |
+| `FE-ACCOUNT-DETAIL-A11Y-013` | Status messages do not steal focus unnecessarily. |
 
 A suitable status region may use:
 
@@ -1062,7 +810,7 @@ Error messaging may use an appropriate assertive live region when necessary.
 
 ---
 
-## 12.5 Status Presentation
+## 12.4 Status Presentation
 
 Status must not depend on color alone.
 
@@ -1088,7 +836,8 @@ Suggested structure:
 src/pages/accounts/
 ├── AccountListPage
 ├── AccountCreatePage
-└── AccountDetailPage
+├── AccountDetailPage
+└── AccountEditPage
 ```
 
 Suggested page-local components:
@@ -1098,8 +847,6 @@ AccountDetailPage
 ├── AccountDetailHeader
 ├── AccountInformationSection
 ├── AccountDetailsSection
-├── AccountLifecycleSection
-├── AccountForm
 ├── AccountStatus
 ├── AccountActionGroup
 ├── AccountLoadingState
@@ -1109,15 +856,25 @@ AccountDetailPage
 
 | ID | Component | Responsibility |
 |---|---|---|
-| `FE-ACCOUNT-DETAIL-COMP-001` | `AccountDetailPage` | Coordinate route state, loading, data, mutations, and page layout. |
-| `FE-ACCOUNT-DETAIL-COMP-002` | `AccountDetailHeader` | Render page title, summary, status, and navigation. |
-| `FE-ACCOUNT-DETAIL-COMP-003` | `AccountInformationSection` | Render editable Account fields. |
-| `FE-ACCOUNT-DETAIL-COMP-004` | `AccountDetailsSection` | Render non-editable metadata. |
-| `FE-ACCOUNT-DETAIL-COMP-005` | `AccountLifecycleSection` | Render applicable lifecycle actions. |
-| `FE-ACCOUNT-DETAIL-COMP-006` | `AccountStatus` | Render accessible lifecycle status. |
+| `FE-ACCOUNT-DETAIL-COMP-001` | `AccountDetailPage` | Coordinate route state, loading, Account data, navigation, and page layout. |
+| `FE-ACCOUNT-DETAIL-COMP-002` | `AccountDetailHeader` | Render page title, summary, status, Back navigation, and Edit navigation. |
+| `FE-ACCOUNT-DETAIL-COMP-003` | `AccountInformationSection` | Render read-only Account information. |
+| `FE-ACCOUNT-DETAIL-COMP-004` | `AccountDetailsSection` | Render read-only metadata. |
+| `FE-ACCOUNT-DETAIL-COMP-005` | `AccountStatus` | Render accessible lifecycle status. |
+| `FE-ACCOUNT-DETAIL-COMP-006` | `AccountActionGroup` | Render Back and Edit navigation controls only. |
 | `FE-ACCOUNT-DETAIL-COMP-007` | `AccountLoadingState` | Render initial loading state. |
 | `FE-ACCOUNT-DETAIL-COMP-008` | `AccountErrorState` | Render non-recoverable and retryable errors. |
 | `FE-ACCOUNT-DETAIL-COMP-009` | `AccountNotFoundState` | Render unavailable Account state. |
+
+The page must not introduce:
+
+```text
+AccountForm
+AccountSaveButton
+AccountLifecycleSection
+```
+
+because Account editing and lifecycle mutation controls do not belong on the Detail page.
 
 API calls should remain in the existing frontend service layer:
 
@@ -1156,17 +913,19 @@ Manual
 | ID | Test |
 |---|---|
 | `FE-ACCOUNT-DETAIL-TEST-UNIT-001` | Account response maps to the detail view correctly. |
-| `FE-ACCOUNT-DETAIL-TEST-UNIT-002` | `display_name=null` renders as an empty input. |
-| `FE-ACCOUNT-DETAIL-TEST-UNIT-003` | Dirty form state is detected correctly. |
-| `FE-ACCOUNT-DETAIL-TEST-UNIT-004` | Duplicate Save submissions are prevented. |
-| `FE-ACCOUNT-DETAIL-TEST-UNIT-005` | Active Account shows Deactivate. |
-| `FE-ACCOUNT-DETAIL-TEST-UNIT-006` | Inactive Account shows Activate. |
-| `FE-ACCOUNT-DETAIL-TEST-UNIT-007` | Deleted Account shows Restore when represented by the API. |
-| `FE-ACCOUNT-DETAIL-TEST-UNIT-008` | Lifecycle mutations remain pending until server confirmation. |
-| `FE-ACCOUNT-DETAIL-TEST-UNIT-009` | `401` is delegated to authentication handling. |
-| `FE-ACCOUNT-DETAIL-TEST-UNIT-010` | `403` preserves authentication and renders an authorization error. |
-| `FE-ACCOUNT-DETAIL-TEST-UNIT-011` | `404` renders Not Found. |
-| `FE-ACCOUNT-DETAIL-TEST-UNIT-012` | `LAST_ACTIVE_ADMINISTRATOR` renders the conflict state. |
+| `FE-ACCOUNT-DETAIL-TEST-UNIT-002` | `display_name=null` renders as a read-only value. |
+| `FE-ACCOUNT-DETAIL-TEST-UNIT-003` | Email renders as read-only content. |
+| `FE-ACCOUNT-DETAIL-TEST-UNIT-004` | Account ID renders as read-only content. |
+| `FE-ACCOUNT-DETAIL-TEST-UNIT-005` | Active Account renders `Active`. |
+| `FE-ACCOUNT-DETAIL-TEST-UNIT-006` | Inactive Account renders `Inactive`. |
+| `FE-ACCOUNT-DETAIL-TEST-UNIT-007` | Deleted Account renders `Deleted` when represented by the API. |
+| `FE-ACCOUNT-DETAIL-TEST-UNIT-008` | Edit action targets `/admin/accounts/:id/edit`. |
+| `FE-ACCOUNT-DETAIL-TEST-UNIT-009` | Back action targets `/admin/accounts`. |
+| `FE-ACCOUNT-DETAIL-TEST-UNIT-010` | No editable form controls are rendered. |
+| `FE-ACCOUNT-DETAIL-TEST-UNIT-011` | No lifecycle mutation controls are rendered. |
+| `FE-ACCOUNT-DETAIL-TEST-UNIT-012` | `401` is delegated to authentication handling. |
+| `FE-ACCOUNT-DETAIL-TEST-UNIT-013` | `403` preserves authentication and renders an authorization error. |
+| `FE-ACCOUNT-DETAIL-TEST-UNIT-014` | `404` renders Not Found. |
 
 ---
 
@@ -1176,18 +935,16 @@ Manual
 |---|---|
 | `FE-ACCOUNT-DETAIL-TEST-INT-001` | Authenticated navigation from Account List to Account Detail works. |
 | `FE-ACCOUNT-DETAIL-TEST-INT-002` | Account detail loads from `GET /admin/accounts/{id}`. |
-| `FE-ACCOUNT-DETAIL-TEST-INT-003` | Display name update uses `PATCH /admin/accounts/{id}`. |
-| `FE-ACCOUNT-DETAIL-TEST-INT-004` | Correct `Content-Type` is sent for merge patch. |
-| `FE-ACCOUNT-DETAIL-TEST-INT-005` | Deactivation sends the correct endpoint. |
-| `FE-ACCOUNT-DETAIL-TEST-INT-006` | Activation sends the correct endpoint. |
-| `FE-ACCOUNT-DETAIL-TEST-INT-007` | Restoration sends the correct endpoint. |
-| `FE-ACCOUNT-DETAIL-TEST-INT-008` | Successful mutations update authoritative UI state. |
-| `FE-ACCOUNT-DETAIL-TEST-INT-009` | `401` redirects to `/login`. |
-| `FE-ACCOUNT-DETAIL-TEST-INT-010` | `403` preserves authentication. |
-| `FE-ACCOUNT-DETAIL-TEST-INT-011` | `404` renders Account Not Found. |
-| `FE-ACCOUNT-DETAIL-TEST-INT-012` | `409 LAST_ACTIVE_ADMINISTRATOR` refreshes the Account. |
-| `FE-ACCOUNT-DETAIL-TEST-INT-013` | Account data is not persisted in browser storage. |
-| `FE-ACCOUNT-DETAIL-TEST-INT-014` | Tokens do not appear in URLs or rendered output. |
+| `FE-ACCOUNT-DETAIL-TEST-INT-003` | Account fields render as read-only values. |
+| `FE-ACCOUNT-DETAIL-TEST-INT-004` | Edit action navigates to `/admin/accounts/{id}/edit`. |
+| `FE-ACCOUNT-DETAIL-TEST-INT-005` | Back action returns to `/admin/accounts`. |
+| `FE-ACCOUNT-DETAIL-TEST-INT-006` | `401` redirects to `/login`. |
+| `FE-ACCOUNT-DETAIL-TEST-INT-007` | `403` preserves authentication. |
+| `FE-ACCOUNT-DETAIL-TEST-INT-008` | `404` renders Account Not Found. |
+| `FE-ACCOUNT-DETAIL-TEST-INT-009` | Account data is not persisted in browser storage. |
+| `FE-ACCOUNT-DETAIL-TEST-INT-010` | Tokens do not appear in URLs or rendered output. |
+| `FE-ACCOUNT-DETAIL-TEST-INT-011` | Account Detail performs no update request. |
+| `FE-ACCOUNT-DETAIL-TEST-INT-012` | Account Detail performs no lifecycle mutation request. |
 
 ---
 
@@ -1196,16 +953,14 @@ Manual
 | ID | Test |
 |---|---|
 | `FE-ACCOUNT-DETAIL-TEST-E2E-001` | Login → Admin Shell → Accounts works. |
-| `FE-ACCOUNT-DETAIL-TEST-E2E-002` | Account row opens the correct Edit Account route. |
+| `FE-ACCOUNT-DETAIL-TEST-E2E-002` | Account row opens the correct Account Detail route. |
 | `FE-ACCOUNT-DETAIL-TEST-E2E-003` | Account details render correctly. |
-| `FE-ACCOUNT-DETAIL-TEST-E2E-004` | Display name can be changed successfully. |
-| `FE-ACCOUNT-DETAIL-TEST-E2E-005` | Active Account can be deactivated when authorized. |
-| `FE-ACCOUNT-DETAIL-TEST-E2E-006` | Inactive Account can be activated when authorized. |
-| `FE-ACCOUNT-DETAIL-TEST-E2E-007` | Deleted Account can be restored when authorized. |
-| `FE-ACCOUNT-DETAIL-TEST-E2E-008` | Last-active-administrator conflict is displayed. |
-| `FE-ACCOUNT-DETAIL-TEST-E2E-009` | Authentication expiry redirects to `/login`. |
-| `FE-ACCOUNT-DETAIL-TEST-E2E-010` | Unauthorized operations display `403` without logout. |
-| `FE-ACCOUNT-DETAIL-TEST-E2E-011` | Mobile layout remains usable below `768px`. |
+| `FE-ACCOUNT-DETAIL-TEST-E2E-004` | Account detail fields remain read-only. |
+| `FE-ACCOUNT-DETAIL-TEST-E2E-005` | Edit action navigates to the Account Edit route. |
+| `FE-ACCOUNT-DETAIL-TEST-E2E-006` | Back navigation returns to Account Management. |
+| `FE-ACCOUNT-DETAIL-TEST-E2E-007` | Authentication expiry redirects to `/login`. |
+| `FE-ACCOUNT-DETAIL-TEST-E2E-008` | Unauthorized detail access displays `403` without logout. |
+| `FE-ACCOUNT-DETAIL-TEST-E2E-009` | Mobile layout remains usable below `768px`. |
 
 ---
 
@@ -1214,14 +969,12 @@ Manual
 | ID | Test |
 |---|---|
 | `FE-ACCOUNT-DETAIL-TEST-A11Y-001` | Heading hierarchy is correct. |
-| `FE-ACCOUNT-DETAIL-TEST-A11Y-002` | All fields have accessible labels. |
+| `FE-ACCOUNT-DETAIL-TEST-A11Y-002` | Account information has accessible names. |
 | `FE-ACCOUNT-DETAIL-TEST-A11Y-003` | Back navigation is keyboard accessible. |
-| `FE-ACCOUNT-DETAIL-TEST-A11Y-004` | Action buttons are keyboard accessible. |
+| `FE-ACCOUNT-DETAIL-TEST-A11Y-004` | Edit navigation is keyboard accessible. |
 | `FE-ACCOUNT-DETAIL-TEST-A11Y-005` | Focus is visible. |
-| `FE-ACCOUNT-DETAIL-TEST-A11Y-006` | Validation errors are associated with fields. |
-| `FE-ACCOUNT-DETAIL-TEST-A11Y-007` | Async status is announced. |
-| `FE-ACCOUNT-DETAIL-TEST-A11Y-008` | Account status does not rely on color alone. |
-| `FE-ACCOUNT-DETAIL-TEST-A11Y-009` | Responsive layout remains usable with keyboard navigation. |
+| `FE-ACCOUNT-DETAIL-TEST-A11Y-006` | Async status is announced. |
+| `FE-ACCOUNT-DETAIL-TEST-A11Y-007` | Account status does not rely on color alone. |
 
 ---
 
@@ -1233,7 +986,7 @@ Manual
 | `FE-ACCOUNT-DETAIL-TEST-RESP-002` | Tablet layout works at `768px–1279px`. |
 | `FE-ACCOUNT-DETAIL-TEST-RESP-003` | Mobile layout works below `768px`. |
 | `FE-ACCOUNT-DETAIL-TEST-RESP-004` | No unintended page-level horizontal scrolling occurs. |
-| `FE-ACCOUNT-DETAIL-TEST-RESP-005` | Primary actions remain accessible on mobile. |
+| `FE-ACCOUNT-DETAIL-TEST-RESP-005` | Back and Edit actions remain accessible on mobile. |
 | `FE-ACCOUNT-DETAIL-TEST-RESP-006` | Admin Shell behavior is preserved at every viewport size. |
 | `FE-ACCOUNT-DETAIL-TEST-RESP-007` | Authentication and authorization behavior is unchanged across viewports. |
 
@@ -1243,77 +996,77 @@ Manual
 
 ## 15.1 Route
 
-| ID                           | Criteria                                                                  | Status         | Reason |
-| ---------------------------- | ------------------------------------------------------------------------- | -------------- | ------ |
-| `FE-ACCOUNT-DETAIL-IMPL-001` | `/admin/accounts/:id/edit` renders inside the Admin Shell.                | 🟢 Implemented |        |
-| `FE-ACCOUNT-DETAIL-IMPL-002` | Unauthenticated access is handled by Admin Shell authentication behavior. | 🟢 Implemented |        |
-| `FE-ACCOUNT-DETAIL-IMPL-003` | Accounts navigation remains active while viewing the detail page.         | 🟢 Implemented |        |
-| `FE-ACCOUNT-DETAIL-IMPL-004` | Back navigation returns to `/admin/accounts`.                             | 🟢 Implemented |        |
+| ID                           | Criteria                                                                  | Status |
+| ---------------------------- | ------------------------------------------------------------------------- | ------ |
+| `FE-ACCOUNT-DETAIL-IMPL-001` | `/admin/accounts/:id` renders inside the Admin Shell.                    | 🟡 Defined |
+| `FE-ACCOUNT-DETAIL-IMPL-002` | Unauthenticated access is handled by Admin Shell authentication behavior. | 🟢 Implemented |
+| `FE-ACCOUNT-DETAIL-IMPL-003` | Accounts navigation remains active while viewing the detail page.       | 🟢 Implemented |
+| `FE-ACCOUNT-DETAIL-IMPL-004` | Back navigation returns to `/admin/accounts`.                            | 🟢 Implemented |
+| `FE-ACCOUNT-DETAIL-IMPL-005` | Edit action navigates to `/admin/accounts/:id/edit`.                     | 🟡 Defined |
 
 ---
 
 ## 15.2 Data
 
-| ID                           | Criteria                                             | Status         | Reason |
-| ---------------------------- | ---------------------------------------------------- | -------------- | ------ |
-| `FE-ACCOUNT-DETAIL-IMPL-005` | Detail data comes from `GET /admin/accounts/{id}`.   | 🟢 Implemented |        |
-| `FE-ACCOUNT-DETAIL-IMPL-006` | Server Account response is authoritative.            | 🟢 Implemented |        |
-| `FE-ACCOUNT-DETAIL-IMPL-007` | Password credentials are never expected or rendered. | 🟢 Implemented |        |
-| `FE-ACCOUNT-DETAIL-IMPL-008` | Account data is not stored in browser persistence.   | 🟢 Implemented |        |
-| `FE-ACCOUNT-DETAIL-IMPL-009` | Account response cache policy remains `no-store`.    | 🟢 Implemented |        |
+| ID                           | Criteria                                             | Status |
+| ---------------------------- | ---------------------------------------------------- | ------ |
+| `FE-ACCOUNT-DETAIL-IMPL-006` | Detail data comes from `GET /admin/accounts/{id}`.   | 🟢 Implemented |
+| `FE-ACCOUNT-DETAIL-IMPL-007` | Server Account response is authoritative.            | 🟢 Implemented |
+| `FE-ACCOUNT-DETAIL-IMPL-008` | Password credentials are never expected or rendered. | 🟢 Implemented |
+| `FE-ACCOUNT-DETAIL-IMPL-009` | Account data is not stored in browser persistence.   | 🟢 Implemented |
+| `FE-ACCOUNT-DETAIL-IMPL-010` | Account response cache policy remains `no-store`.    | 🟢 Implemented |
+| `FE-ACCOUNT-DETAIL-IMPL-011` | Account fields render as read-only values.            | 🟡 Defined |
 
 ---
 
-## 15.3 Editing
+## 15.3 Editing Boundary
 
-| ID                           | Criteria                                                                            | Status         | Reason |
-| ---------------------------- | ----------------------------------------------------------------------------------- | -------------- | ------ |
-| `FE-ACCOUNT-DETAIL-IMPL-010` | `display_name` is the only field submitted through the primary Account update form. | 🟢 Implemented |        |
-| `FE-ACCOUNT-DETAIL-IMPL-011` | Update uses `PATCH /admin/accounts/{id}`.                                           | 🟢 Implemented |        |
-| `FE-ACCOUNT-DETAIL-IMPL-012` | Update uses `application/merge-patch+json`.                                         | 🟢 Implemented |        |
-| `FE-ACCOUNT-DETAIL-IMPL-013` | Duplicate submissions are prevented.                                                | 🟢 Implemented |        |
-| `FE-ACCOUNT-DETAIL-IMPL-014` | Successful updates replace or refresh authoritative Account state.                  | 🟢 Implemented |        |
+| ID                           | Criteria                                                                  | Status |
+| ---------------------------- | ------------------------------------------------------------------------- | ------ |
+| `FE-ACCOUNT-DETAIL-IMPL-012` | No editable Account fields are rendered on the Detail page.               | 🟡 Defined |
+| `FE-ACCOUNT-DETAIL-IMPL-013` | No Save or Save Changes control is rendered on the Detail page.           | 🟡 Defined |
+| `FE-ACCOUNT-DETAIL-IMPL-014` | The Detail page does not submit `PATCH /admin/accounts/{id}`.             | 🟡 Defined |
+| `FE-ACCOUNT-DETAIL-IMPL-015` | Edit navigation is provided from the Detail page.                         | 🟡 Defined |
 
 ---
 
-## 15.4 Lifecycle
+## 15.4 Lifecycle Boundary
 
-| ID                           | Criteria                                                                           | Status         | Reason |
-| ---------------------------- | ---------------------------------------------------------------------------------- | -------------- | ------ |
-| `FE-ACCOUNT-DETAIL-IMPL-015` | Deactivate is available for active, non-deleted Accounts.                          | 🟢 Implemented |        |
-| `FE-ACCOUNT-DETAIL-IMPL-016` | Activate is available for inactive, non-deleted Accounts.                          | 🟢 Implemented |        |
-| `FE-ACCOUNT-DETAIL-IMPL-017` | Restore is available for soft-deleted Accounts returned by the API.                | 🟡 In Progress | The frontend Restore action is implemented, but the current backend `GET /admin/accounts/{id}` excludes soft-deleted accounts, so a deleted account cannot currently reach this detail state through the real API. |
-| `FE-ACCOUNT-DETAIL-IMPL-018` | Hard delete is not exposed.                                                        | 🟢 Implemented |        |
-| `FE-ACCOUNT-DETAIL-IMPL-019` | Lifecycle actions are confirmed by the server before the UI commits the new state. | 🟢 Implemented |        |
-| `FE-ACCOUNT-DETAIL-IMPL-020` | `LAST_ACTIVE_ADMINISTRATOR` is handled as an explicit conflict.                    | 🟢 Implemented |        |
+| ID                           | Criteria                                                                  | Status |
+| ---------------------------- | ------------------------------------------------------------------------- | ------ |
+| `FE-ACCOUNT-DETAIL-IMPL-016` | Deactivate is not exposed on the Detail page.                             | 🟡 Defined |
+| `FE-ACCOUNT-DETAIL-IMPL-017` | Activate is not exposed on the Detail page.                               | 🟡 Defined |
+| `FE-ACCOUNT-DETAIL-IMPL-018` | Restore is not exposed on the Detail page.                                | 🟡 Defined |
+| `FE-ACCOUNT-DETAIL-IMPL-019` | Hard delete is not exposed.                                                | 🟢 Implemented |
+| `FE-ACCOUNT-DETAIL-IMPL-020` | Lifecycle mutation APIs are not called by the Detail page.                 | 🟡 Defined |
 
 ---
 
 ## 15.5 Security
 
-| ID                           | Criteria                                                                            | Status         | Reason |
-| ---------------------------- | ----------------------------------------------------------------------------------- | -------------- | ------ |
-| `FE-ACCOUNT-DETAIL-IMPL-021` | Backend authentication remains authoritative.                                       | 🟢 Implemented |        |
-| `FE-ACCOUNT-DETAIL-IMPL-022` | Backend authorization remains authoritative.                                        | 🟢 Implemented |        |
-| `FE-ACCOUNT-DETAIL-IMPL-023` | Tokens are only sent through the `Authorization` header for protected Account APIs. | 🟢 Implemented |        |
-| `FE-ACCOUNT-DETAIL-IMPL-024` | Tokens never appear in URLs.                                                        | 🟢 Implemented |        |
-| `FE-ACCOUNT-DETAIL-IMPL-025` | Tokens never render in the UI.                                                      | 🟢 Implemented |        |
-| `FE-ACCOUNT-DETAIL-IMPL-026` | Tokens never appear in logs.                                                        | 🟢 Implemented |        |
-| `FE-ACCOUNT-DETAIL-IMPL-027` | Passwords and password hashes never render.                                         | 🟢 Implemented |        |
+| ID                           | Criteria                                                                            | Status |
+| ---------------------------- | ----------------------------------------------------------------------------------- | ------ |
+| `FE-ACCOUNT-DETAIL-IMPL-021` | Backend authentication remains authoritative.                                       | 🟢 Implemented |
+| `FE-ACCOUNT-DETAIL-IMPL-022` | Backend authorization remains authoritative.                                        | 🟢 Implemented |
+| `FE-ACCOUNT-DETAIL-IMPL-023` | Tokens are only sent through the `Authorization` header for protected Account APIs. | 🟢 Implemented |
+| `FE-ACCOUNT-DETAIL-IMPL-024` | Tokens never appear in URLs.                                                        | 🟢 Implemented |
+| `FE-ACCOUNT-DETAIL-IMPL-025` | Tokens never render in the UI.                                                      | 🟢 Implemented |
+| `FE-ACCOUNT-DETAIL-IMPL-026` | Tokens never appear in logs.                                                        | 🟢 Implemented |
+| `FE-ACCOUNT-DETAIL-IMPL-027` | Passwords and password hashes never render.                                         | 🟢 Implemented |
 
 ---
 
 ## 15.6 Accessibility
 
-| ID                           | Criteria                                              | Status         | Reason |
-| ---------------------------- | ----------------------------------------------------- | -------------- | ------ |
-| `FE-ACCOUNT-DETAIL-IMPL-028` | Semantic page structure is used.                      | 🟢 Implemented |        |
-| `FE-ACCOUNT-DETAIL-IMPL-029` | Primary page heading is present.                      | 🟢 Implemented |        |
-| `FE-ACCOUNT-DETAIL-IMPL-030` | Form controls have visible labels.                    | 🟢 Implemented |        |
-| `FE-ACCOUNT-DETAIL-IMPL-031` | Navigation and actions are keyboard accessible.       | 🟢 Implemented |        |
-| `FE-ACCOUNT-DETAIL-IMPL-032` | Focus is visible and not obscured.                    | 🟢 Implemented |        |
-| `FE-ACCOUNT-DETAIL-IMPL-033` | Async status is accessible.                           | 🟢 Implemented |        |
-| `FE-ACCOUNT-DETAIL-IMPL-034` | Account lifecycle status does not rely only on color. | 🟢 Implemented |        |
+| ID                           | Criteria                                              | Status |
+| ---------------------------- | ----------------------------------------------------- | ------ |
+| `FE-ACCOUNT-DETAIL-IMPL-028` | Semantic page structure is used.                      | 🟢 Implemented |
+| `FE-ACCOUNT-DETAIL-IMPL-029` | Primary page heading is present.                      | 🟢 Implemented |
+| `FE-ACCOUNT-DETAIL-IMPL-030` | Account information has accessible labels or names.   | 🟢 Implemented |
+| `FE-ACCOUNT-DETAIL-IMPL-031` | Navigation and actions are keyboard accessible.       | 🟢 Implemented |
+| `FE-ACCOUNT-DETAIL-IMPL-032` | Focus is visible and not obscured.                    | 🟢 Implemented |
+| `FE-ACCOUNT-DETAIL-IMPL-033` | Async status is accessible.                           | 🟢 Implemented |
+| `FE-ACCOUNT-DETAIL-IMPL-034` | Account lifecycle status does not rely only on color. | 🟢 Implemented |
 
 ---
 
@@ -1325,34 +1078,26 @@ Manual
 |---|---|---|---|
 | `ADM-AUTH-001` | `FE-ACCOUNT-DETAIL-ROUTE-001` | Authentication domain | `FE-ACCOUNT-DETAIL-TEST-E2E-001` |
 | `ADM-AUTH-004` | `FE-ACCOUNT-DETAIL-REQ-002` | `AC_UC_03`, `AC_API_03` | `FE-ACCOUNT-DETAIL-TEST-INT-002` |
-| `ADM-AUTH-005` | `FE-ACCOUNT-DETAIL-REQ-004` | `AC_UC_04`, `AC_API_04` | `FE-ACCOUNT-DETAIL-TEST-E2E-004` |
-| `ADM-AUTH-006` | `FE-ACCOUNT-DETAIL-ACTION-001` | `AC_UC_05`, `AC_API_05` | `FE-ACCOUNT-DETAIL-TEST-E2E-005` |
+| `ADM-AUTH-005` | `FE-ACCOUNT-DETAIL-EDIT-001` | `AC_UC_04`, `AC_API_04` | `FE-ACCOUNT-DETAIL-TEST-E2E-005` |
 | `AC_UC_03` | `FE-ACCOUNT-DETAIL-API-001` | `GET /admin/accounts/{id}` | `FE-ACCOUNT-DETAIL-TEST-INT-002` |
-| `AC_UC_04` | `FE-ACCOUNT-DETAIL-EDIT-001` | `PATCH /admin/accounts/{id}` | `FE-ACCOUNT-DETAIL-TEST-E2E-004` |
-| `AC_UC_05` | `FE-ACCOUNT-DETAIL-ACTION-001` | Deactivate API | `FE-ACCOUNT-DETAIL-TEST-E2E-005` |
-| `AC_UC_06` | `FE-ACCOUNT-DETAIL-ACTION-002` | Activate API | `FE-ACCOUNT-DETAIL-TEST-E2E-006` |
-| `AC_UC_08` | `FE-ACCOUNT-DETAIL-ACTION-003` | Restore API | `FE-ACCOUNT-DETAIL-TEST-E2E-007` |
-| `account:view` | `FE-ACCOUNT-DETAIL-API-001` | Authorization domain | `FE-ACCOUNT-DETAIL-TEST-INT-010` |
-| `account:update` | `FE-ACCOUNT-DETAIL-EDIT-006` | Authorization domain | `FE-ACCOUNT-DETAIL-TEST-INT-010` |
-| `account:deactivate` | `FE-ACCOUNT-DETAIL-ACTION-001` | Authorization domain | `FE-ACCOUNT-DETAIL-TEST-E2E-005` |
-| `account:activate` | `FE-ACCOUNT-DETAIL-ACTION-002` | Authorization domain | `FE-ACCOUNT-DETAIL-TEST-E2E-006` |
-| `account:restore` | `FE-ACCOUNT-DETAIL-ACTION-003` | Authorization domain | `FE-ACCOUNT-DETAIL-TEST-E2E-007` |
-| Authentication `401` | `FE-ACCOUNT-DETAIL-API-007` | Authentication domain | `FE-ACCOUNT-DETAIL-TEST-E2E-009` |
-| Authorization `403` | `FE-ACCOUNT-DETAIL-API-008` | Authorization domain | `FE-ACCOUNT-DETAIL-TEST-INT-010` |
-| `LAST_ACTIVE_ADMINISTRATOR` | `FE-ACCOUNT-DETAIL-CONFLICT-001` | Account invariant | `FE-ACCOUNT-DETAIL-TEST-INT-012` |
+| `account:view` | `FE-ACCOUNT-DETAIL-API-001` | Authorization domain | `FE-ACCOUNT-DETAIL-TEST-INT-007` |
+| Authentication `401` | `FE-ACCOUNT-DETAIL-API-007` | Authentication domain | `FE-ACCOUNT-DETAIL-TEST-E2E-007` |
+| Authorization `403` | `FE-ACCOUNT-DETAIL-API-008` | Authorization domain | `FE-ACCOUNT-DETAIL-TEST-INT-007` |
+| Account Detail navigation | `FE-ACCOUNT-DETAIL-ACTION-001` | Frontend navigation | `FE-ACCOUNT-DETAIL-TEST-INT-005` |
+| Edit navigation | `FE-ACCOUNT-DETAIL-EDIT-001` | `PAGE-ADM-010` | `FE-ACCOUNT-DETAIL-TEST-INT-004` |
 | Admin Shell | `FE-ACCOUNT-DETAIL-ROUTE-001`, `FE-ACCOUNT-DETAIL-RESP-*` | `admin_shell.md` | `FE-ACCOUNT-DETAIL-TEST-E2E-001` |
 
 ## Domain References
 
 | Domain | Relevant References |
 |---|---|
-| Requirements | `ADM-AUTH-001` to `ADM-AUTH-007`, `CNT-ADMIN-*`, `SCP-009` |
+| Requirements | `ADM-AUTH-001` to `ADM-AUTH-005`, `CNT-ADMIN-*`, `SCP-009` |
 | Sitemap | `PAGE-ADM-008`, `PAGE-ADM-010` |
-| Account | `AC_UC_03`, `AC_UC_04`, `AC_UC_05`, `AC_UC_06`, `AC_UC_08`, `AC_API_03` to `AC_API_08` |
+| Account | `AC_UC_03`, `AC_API_03`, `AC_UC_04`, `AC_API_04` |
 | Authentication | Protected route behavior, bearer authentication, `401` handling |
-| Authorization | `account:view`, `account:update`, `account:deactivate`, `account:activate`, `account:restore`, `403` |
+| Authorization | `account:view`, deny-by-default, `403` |
 | Admin Shell | Shell layout, route protection, active Accounts navigation, responsive behavior |
-| Account Management | `/admin/accounts`, Edit Account navigation, lifecycle action semantics |
+| Account Management | `/admin/accounts`, View navigation, Edit navigation, lifecycle action separation |
 
 ## Design Boundary
 
@@ -1365,7 +1110,11 @@ Admin Shell
     ↓
 Account Management
     ↓
-Account Detail / Edit
+Account Detail
+    ├── Read-only account information
+    └── Edit navigation
+            ↓
+        Account Edit
     ↓
 Account API
     ↓
