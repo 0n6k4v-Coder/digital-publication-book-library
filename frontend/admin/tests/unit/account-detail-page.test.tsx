@@ -59,8 +59,7 @@ describe("AccountDetailPage", () => {
 
     expect(
       await screen.findByRole("heading", {
-        name: "Administrator Account",
-        exact: true,
+        name: /^Administrator Account$/,
       }),
     ).toBeInTheDocument();
 
@@ -69,20 +68,23 @@ describe("AccountDetailPage", () => {
         selector: "dd",
       }),
     ).toBeInTheDocument();
+
     expect(
       screen.getByText("admin@example.com", {
         selector: "dd",
       }),
     ).toBeInTheDocument();
+
     expect(screen.getAllByText(activeAccount.id)).toHaveLength(2);
 
     expect(
-      screen.getByText("Active", {
+      screen.getAllByText(/^Active$/, {
         selector: ".account-detail-status",
       }),
-    ).toBeInTheDocument();
+    ).toHaveLength(2);
 
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+
     expect(
       screen.queryByRole("button", {
         name: /save/i,
@@ -122,8 +124,7 @@ describe("AccountDetailPage", () => {
     render(<AccountDetailPage />);
 
     await screen.findByRole("heading", {
-      name: "Administrator Account",
-      exact: true,
+      name: /^Administrator Account$/,
     });
 
     expect(screen.queryByLabelText(/password/i)).not.toBeInTheDocument();

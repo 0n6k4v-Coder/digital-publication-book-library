@@ -157,12 +157,11 @@ test.describe("admin accounts routes", () => {
 
     await expect(
       page.getByRole("heading", {
-        name: "Administrator Account",
-        exact: true,
+        name: /^Administrator Account$/,
       }),
     ).toBeVisible();
 
-    await expect(page.getByText("admin@example.com")).toBeVisible();
+    await expect(page.getByText(/^admin@example\.com$/)).toBeVisible();
 
     await expect(page.getByRole("link", { name: "Edit" })).toHaveAttribute(
       "href",
