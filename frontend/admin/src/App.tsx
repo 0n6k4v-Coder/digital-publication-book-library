@@ -1,8 +1,8 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { AdminShell } from "./layouts/AdminShell";
+import { AccountCreatePage } from "./pages/accounts/AccountCreatePage";
 import { AccountDetailPage } from "./pages/accounts/AccountDetailPage";
 import { AccountEditPage } from "./pages/accounts/AccountEditPage";
-import { AccountRoutePlaceholderPage } from "./pages/accounts/AccountRoutePlaceholderPage";
 import { AccountsPage } from "./pages/accounts/AccountsPage";
 import { LoginPage } from "./pages/login/LoginPage";
 import { authService } from "./services/auth";
@@ -134,7 +134,7 @@ export default function App() {
   if (pathname === "/admin/accounts/create") {
     return (
       <AdminShell onLogout={authService.logout}>
-        <AccountRoutePlaceholderPage />
+        <AccountCreatePage />
       </AdminShell>
     );
   }

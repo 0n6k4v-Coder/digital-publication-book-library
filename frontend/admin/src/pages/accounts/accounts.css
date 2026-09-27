@@ -194,6 +194,53 @@
   text-decoration: none;
 }
 
+.account-create-card {
+  inline-size: min(100%, 40rem);
+  padding: clamp(1.25rem, 3vw, 1.75rem);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: var(--surface);
+  box-shadow: 0 16px 36px rgb(23 32 51 / 8%);
+}
+
+.account-create-card__header {
+  display: grid;
+  gap: 0.45rem;
+  margin-block-end: 1.5rem;
+}
+
+.account-create-card__title {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: 1.2rem;
+  line-height: 1.25;
+}
+
+.account-create-form {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.account-create-form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding-block-start: 0.25rem;
+}
+
+.account-create-form__action {
+  inline-size: auto;
+  min-inline-size: 10rem;
+  text-decoration: none;
+}
+
+.account-create-form__status {
+  margin: 0.9rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
 .account-dialog {
   inline-size: min(100% - 2rem, 32rem);
   max-inline-size: calc(100vw - 2rem);
@@ -292,6 +339,15 @@
     inline-size: 100%;
   }
 
+  .account-create-form__actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .account-create-form__action {
+    inline-size: 100%;
+  }
+
   .account-dialog__actions {
     display: grid;
     grid-template-columns: 1fr;
@@ -313,6 +369,7 @@
 @media (forced-colors: active) {
   .account-page__notice,
   .account-route-page__note,
+  .account-create-card,
   .account-dialog,
   .account-controls {
     border-color: CanvasText;
