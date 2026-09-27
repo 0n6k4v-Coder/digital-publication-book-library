@@ -25,7 +25,7 @@ The primary page is:
 
 ```text
 /admin/accounts
-```
+````
 
 The feature is rendered inside the existing [Admin Shell](./admin_shell.md).
 
@@ -39,7 +39,7 @@ The feature is rendered inside the existing [Admin Shell](./admin_shell.md).
 | `FE-ACCOUNT-SCOPE-004` | Paginate server-provided results.                                                 |
 | `FE-ACCOUNT-SCOPE-005` | Navigate to Create Account.                                                       |
 | `FE-ACCOUNT-SCOPE-006` | Navigate to Account Detail for viewing.                                           |
-| `FE-ACCOUNT-SCOPE-007` | Navigate to Edit Account for editing.                                            |
+| `FE-ACCOUNT-SCOPE-007` | Navigate to Edit Account for editing.                                             |
 | `FE-ACCOUNT-SCOPE-008` | Activate administrator accounts.                                                  |
 | `FE-ACCOUNT-SCOPE-009` | Deactivate administrator accounts.                                                |
 | `FE-ACCOUNT-SCOPE-010` | Restore soft-deleted administrator accounts.                                      |
@@ -66,13 +66,13 @@ The feature is rendered inside the existing [Admin Shell](./admin_shell.md).
 
 # 2. Routes
 
-| ID                     | Route                      | Access          | Behavior                         | References                                     |
-| ---------------------- | -------------------------- | --------------- | -------------------------------- | ---------------------------------------------- |
-| `FE-ACCOUNT-ROUTE-001` | `/admin/accounts`          | Authenticated   | Render Account Management page.  | `ADM-AUTH-001`, `ADM-AUTH-002`, `PAGE-ADM-008` |
-| `FE-ACCOUNT-ROUTE-002` | `/admin/accounts`          | Unauthenticated | Redirect to `/login`.            | `FE_SHELL_ROUTE_05`, Authentication domain     |
-| `FE-ACCOUNT-ROUTE-003` | `/admin/accounts/create`   | Authenticated   | Render Create Account page.      | `ADM-AUTH-003`, `PAGE-ADM-009`                 |
-| `FE-ACCOUNT-ROUTE-004` | `/admin/accounts/:id`      | Authenticated   | Render Account Detail page.      | `ADM-AUTH-004`, `PAGE-ADM-010`                 |
-| `FE-ACCOUNT-ROUTE-005` | `/admin/accounts/:id/edit` | Authenticated   | Render Edit Account page.        | `ADM-AUTH-005`, `PAGE-ADM-010`                 |
+| ID                     | Route                      | Access          | Behavior                        | References                                     |
+| ---------------------- | -------------------------- | --------------- | ------------------------------- | ---------------------------------------------- |
+| `FE-ACCOUNT-ROUTE-001` | `/admin/accounts`          | Authenticated   | Render Account Management page. | `ADM-AUTH-001`, `ADM-AUTH-002`, `PAGE-ADM-008` |
+| `FE-ACCOUNT-ROUTE-002` | `/admin/accounts`          | Unauthenticated | Redirect to `/login`.           | `FE_SHELL_ROUTE_05`, Authentication domain     |
+| `FE-ACCOUNT-ROUTE-003` | `/admin/accounts/create`   | Authenticated   | Render Create Account page.     | `ADM-AUTH-003`, `PAGE-ADM-009`                 |
+| `FE-ACCOUNT-ROUTE-004` | `/admin/accounts/:id`      | Authenticated   | Render Account Detail page.     | `ADM-AUTH-004`, `PAGE-ADM-010`                 |
+| `FE-ACCOUNT-ROUTE-005` | `/admin/accounts/:id/edit` | Authenticated   | Render Edit Account page.       | `ADM-AUTH-005`, `PAGE-ADM-010`                 |
 
 The page must render inside the Admin Shell:
 
@@ -128,7 +128,7 @@ The list state may be represented in the URL:
 | `FE-ACCOUNT-REQ-001` | Provide a protected `/admin/accounts` route.                   | `ADM-AUTH-001`, `PAGE-ADM-008`                             |
 | `FE-ACCOUNT-REQ-002` | Display administrator accounts.                                | `ADM-AUTH-004`, `AC_UC_02`, `AC_API_02`                    |
 | `FE-ACCOUNT-REQ-003` | Support Create Account navigation.                             | `ADM-AUTH-003`, `AC_UC_01`, `AC_API_01`                    |
-| `FE-ACCOUNT-REQ-004` | Support View Account navigation.                               | `ADM-AUTH-004`, `AC_UC_03`, `AC_API_03`                    |
+| `FE-ACCOUNT-REQ-004` | Support View Account navigation for non-deleted accounts.      | `ADM-AUTH-004`, `AC_UC_03`, `AC_API_03`                    |
 | `FE-ACCOUNT-REQ-005` | Support Edit Account navigation.                               | `ADM-AUTH-005`, `AC_UC_04`, `AC_API_04`                    |
 | `FE-ACCOUNT-REQ-006` | Support administrator deactivation.                            | `ADM-AUTH-006`, `ADM-AUTH-007`, `AC_UC_05`, `AC_API_05`    |
 | `FE-ACCOUNT-REQ-007` | Support administrator activation.                              | `AC_UC_06`, `AC_API_06`                                    |
@@ -210,13 +210,13 @@ The UI must not add:
 
 Use a native HTML `table`.
 
-| ID                     | Column  | Source                 | Display                                |
-| ---------------------- | ------- | ---------------------- | -------------------------------------- |
-| `FE-ACCOUNT-TABLE-001` | Name    | `display_name`         | Value or `—`                           |
-| `FE-ACCOUNT-TABLE-002` | Email   | `email`                | Email address                          |
-| `FE-ACCOUNT-TABLE-003` | Status  | `status`, `deleted_at` | Active / Inactive / Deleted            |
-| `FE-ACCOUNT-TABLE-004` | Created | `created_at`           | Localized date/time                    |
-| `FE-ACCOUNT-TABLE-005` | Updated | `updated_at`           | Localized date/time                    |
+| ID                     | Column  | Source                 | Display                                       |
+| ---------------------- | ------- | ---------------------- | --------------------------------------------- |
+| `FE-ACCOUNT-TABLE-001` | Name    | `display_name`         | Value or `—`                                  |
+| `FE-ACCOUNT-TABLE-002` | Email   | `email`                | Email address                                 |
+| `FE-ACCOUNT-TABLE-003` | Status  | `status`, `deleted_at` | Active / Inactive / Deleted                   |
+| `FE-ACCOUNT-TABLE-004` | Created | `created_at`           | Localized date/time                           |
+| `FE-ACCOUNT-TABLE-005` | Updated | `updated_at`           | Localized date/time                           |
 | `FE-ACCOUNT-TABLE-006` | Actions | Derived                | View / Edit / Activate / Deactivate / Restore |
 
 The table should provide an accessible caption or equivalent accessible name:
@@ -239,11 +239,11 @@ The table must not be implemented as an ARIA `grid` unless grid-specific interac
 
 ### Row Actions
 
-| ID                     | Account State         | Actions                         | References |
-| ---------------------- | --------------------- | ------------------------------ | ---------- |
-| `FE-ACCOUNT-TABLE-007` | Active, non-deleted   | View, Edit, Deactivate         | `ADM-AUTH-004`, `ADM-AUTH-005`, `ADM-AUTH-006` |
-| `FE-ACCOUNT-TABLE-008` | Inactive, non-deleted | View, Edit, Activate           | `ADM-AUTH-004`, `ADM-AUTH-005`, `AC_UC_06` |
-| `FE-ACCOUNT-TABLE-009` | Soft-deleted          | View, Restore                  | `ADM-AUTH-004`, `AC_UC_08` |
+| ID                     | Account State         | Actions                | References                                     |
+| ---------------------- | --------------------- | ---------------------- | ---------------------------------------------- |
+| `FE-ACCOUNT-TABLE-007` | Active, non-deleted   | View, Edit, Deactivate | `ADM-AUTH-004`, `ADM-AUTH-005`, `ADM-AUTH-006` |
+| `FE-ACCOUNT-TABLE-008` | Inactive, non-deleted | View, Edit, Activate   | `ADM-AUTH-004`, `ADM-AUTH-005`, `AC_UC_06`     |
+| `FE-ACCOUNT-TABLE-009` | Soft-deleted          | Restore                | `AC_UC_08`                                     |
 
 The actions have distinct responsibilities:
 
@@ -251,10 +251,12 @@ The actions have distinct responsibilities:
 View
     → /admin/accounts/:id
     → read-only Account Detail
+    → available for non-deleted accounts
 
 Edit
     → /admin/accounts/:id/edit
     → Account editing
+    → available for non-deleted accounts
 
 Deactivate
     → account lifecycle mutation
@@ -267,6 +269,8 @@ Restore
 ```
 
 View and Edit must be separate controls.
+
+Soft-deleted accounts must not expose View or Edit because the Account Detail and Account Update contracts do not support normal access to soft-deleted accounts.
 
 Hard Delete must not be exposed as a routine row action.
 
@@ -527,10 +531,12 @@ VALIDATION_ERROR
 
 The View action opens the read-only Account Detail page.
 
-| ID                      | Requirement                                            | References                  |
-| ----------------------- | ------------------------------------------------------ | --------------------------- |
-| `FE-ACCOUNT-ACTION-001` | Navigate to `/admin/accounts/:id`.                    | `ADM-AUTH-004`, `AC_API_03` |
-| `FE-ACCOUNT-ACTION-002` | Offer View for accounts displayed by the Account List. | `AC_UC_03`                  |
+View is available only for non-deleted accounts because `GET /admin/accounts/{id}` does not return soft-deleted accounts under the current Account API contract.
+
+| ID                      | Requirement                                                        | References                  |
+| ----------------------- | ------------------------------------------------------------------ | --------------------------- |
+| `FE-ACCOUNT-ACTION-001` | Navigate to `/admin/accounts/:id`.                                 | `ADM-AUTH-004`, `AC_API_03` |
+| `FE-ACCOUNT-ACTION-002` | Offer View for non-deleted accounts displayed by the Account List. | `AC_UC_03`                  |
 
 The View action must not enter an editable state.
 
@@ -844,7 +850,7 @@ References:
 | `FE-ACCOUNT-SEC-007` | Never log access tokens.                                               | `FE_SHELL_SEC_07`                       |
 | `FE-ACCOUNT-SEC-008` | Never render passwords or password hashes.                             | `AC_SEC_REQ_NON_FC_08`                  |
 | `FE-ACCOUNT-SEC-009` | Never use client-provided roles or permissions as authorization proof. | Authorization domain                    |
-| `FE-ACCOUNT-SEC-010` | UI visibility is not an authorization boundary.                       | Authorization domain                    |
+| `FE-ACCOUNT-SEC-010` | UI visibility is not an authorization boundary.                        | Authorization domain                    |
 | `FE-ACCOUNT-SEC-011` | Do not treat mutations as successful before backend confirmation.      | Account domain                          |
 | `FE-ACCOUNT-SEC-012` | Do not persist Account List data in browser storage.                   | Account API                             |
 | `FE-ACCOUNT-SEC-013` | Do not expose backend stack traces or internal infrastructure details. | Security requirement                    |
@@ -894,7 +900,7 @@ The feature follows the Admin Shell accessibility requirements and should target
 | `FE-ACCOUNT-A11Y-004` | Use semantic table headers.                             |
 | `FE-ACCOUNT-A11Y-005` | Provide an accessible table caption or equivalent name. |
 | `FE-ACCOUNT-A11Y-006` | Use actual links for navigation.                        |
-| `FE-ACCOUNT-A11Y-007` | Use actual buttons for actions.                         |
+| `FE-ACCOUNT-A11Y-007` | Use actual buttons for lifecycle actions.               |
 | `FE-ACCOUNT-A11Y-008` | Provide visible keyboard focus.                         |
 | `FE-ACCOUNT-A11Y-009` | Ensure focused elements are not completely obscured.    |
 | `FE-ACCOUNT-A11Y-010` | Provide explicit labels for filters.                    |
@@ -916,6 +922,10 @@ The feature follows the Admin Shell accessibility requirements and should target
 | Deactivate | `Deactivate account: Library Administrator` |
 | Restore    | `Restore account: Former Administrator`     |
 
+View and Edit are navigation controls and should use links.
+
+Activate, Deactivate, and Restore are lifecycle actions and should use buttons.
+
 ## Status
 
 Status must always have text:
@@ -934,69 +944,74 @@ Color may supplement the label but must not carry the meaning alone.
 
 ## 10.1 Unit
 
-| ID                         | Test                                            | Verifies                        |
-| -------------------------- | ----------------------------------------------- | ------------------------------- |
-| `FE-ACCOUNT-TEST-UNIT-001` | Account Management page renders                 | `FE-ACCOUNT-REQ-001`            |
-| `FE-ACCOUNT-TEST-UNIT-002` | Table columns render correctly                  | `FE-ACCOUNT-TABLE-001` to `006` |
-| `FE-ACCOUNT-TEST-UNIT-003` | Active/inactive/deleted states render correctly | `FE-ACCOUNT-TABLE-003`          |
-| `FE-ACCOUNT-TEST-UNIT-004` | Null `display_name` renders safely              | `FE-ACCOUNT-TABLE-001`          |
-| `FE-ACCOUNT-TEST-UNIT-005` | Pagination calculations are correct             | `FE-ACCOUNT-UI-011` to `018`    |
-| `FE-ACCOUNT-TEST-UNIT-006` | Loading states render correctly                 | `FE-ACCOUNT-STATE-001` to `004` |
-| `FE-ACCOUNT-TEST-UNIT-007` | Empty states render correctly                   | `FE-ACCOUNT-STATE-005` to `007` |
-| `FE-ACCOUNT-TEST-UNIT-008` | 401 and 403 handling are distinct              | `FE-ACCOUNT-API-031`, `032`     |
-| `FE-ACCOUNT-TEST-UNIT-009` | Duplicate mutation submission is prevented     | `FE-ACCOUNT-ACTION-025`         |
-| `FE-ACCOUNT-TEST-UNIT-010` | Successful mutations trigger refresh           | `FE-ACCOUNT-ACTION-027`         |
-| `FE-ACCOUNT-TEST-UNIT-011` | View action destination is generated correctly  | `FE-ACCOUNT-ACTION-001`         |
-| `FE-ACCOUNT-TEST-UNIT-012` | Edit action destination is generated correctly  | `FE-ACCOUNT-ACTION-003`         |
-| `FE-ACCOUNT-TEST-UNIT-013` | Action accessible names are generated correctly | `FE-ACCOUNT-A11Y-011`           |
+| ID                         | Test                                                  | Verifies                                               |
+| -------------------------- | ----------------------------------------------------- | ------------------------------------------------------ |
+| `FE-ACCOUNT-TEST-UNIT-001` | Account Management page renders                       | `FE-ACCOUNT-REQ-001`                                   |
+| `FE-ACCOUNT-TEST-UNIT-002` | Table columns render correctly                        | `FE-ACCOUNT-TABLE-001` to `006`                        |
+| `FE-ACCOUNT-TEST-UNIT-003` | Active/inactive/deleted states render correctly       | `FE-ACCOUNT-TABLE-003`                                 |
+| `FE-ACCOUNT-TEST-UNIT-004` | Null `display_name` renders safely                    | `FE-ACCOUNT-TABLE-001`                                 |
+| `FE-ACCOUNT-TEST-UNIT-005` | Pagination calculations are correct                   | `FE-ACCOUNT-UI-011` to `018`                           |
+| `FE-ACCOUNT-TEST-UNIT-006` | Loading states render correctly                       | `FE-ACCOUNT-STATE-001` to `004`                        |
+| `FE-ACCOUNT-TEST-UNIT-007` | Empty states render correctly                         | `FE-ACCOUNT-STATE-005` to `007`                        |
+| `FE-ACCOUNT-TEST-UNIT-008` | 401 and 403 handling are distinct                     | `FE-ACCOUNT-API-031`, `032`                            |
+| `FE-ACCOUNT-TEST-UNIT-009` | Duplicate mutation submission is prevented            | `FE-ACCOUNT-ACTION-025`                                |
+| `FE-ACCOUNT-TEST-UNIT-010` | Successful mutations trigger refresh                  | `FE-ACCOUNT-ACTION-027`                                |
+| `FE-ACCOUNT-TEST-UNIT-011` | View action destination is generated correctly        | `FE-ACCOUNT-ACTION-001`                                |
+| `FE-ACCOUNT-TEST-UNIT-012` | Edit action destination is generated correctly        | `FE-ACCOUNT-ACTION-003`                                |
+| `FE-ACCOUNT-TEST-UNIT-013` | Action accessible names are generated correctly       | `FE-ACCOUNT-A11Y-011`                                  |
+| `FE-ACCOUNT-TEST-UNIT-014` | Soft-deleted rows expose Restore without View or Edit | `FE-ACCOUNT-TABLE-009`, `FE-ACCOUNT-ACTION-002`, `004` |
 
 ---
 
 ## 10.2 Integration
 
-| ID                        | Test                                             | Verifies                          |
-| ------------------------- | ------------------------------------------------ | --------------------------------- |
-| `FE-ACCOUNT-TEST-INT-001` | Authenticated user opens `/admin/accounts`       | `FE-ACCOUNT-ROUTE-001`            |
-| `FE-ACCOUNT-TEST-INT-002` | Unauthenticated user redirects to `/login`       | `FE-ACCOUNT-ROUTE-002`            |
-| `FE-ACCOUNT-TEST-INT-003` | Accounts navigation is active                    | `FE-ACCOUNT-REQ-001`, Admin Shell |
-| `FE-ACCOUNT-TEST-INT-004` | List uses `GET /admin/accounts`                  | `FE-ACCOUNT-API-001`              |
-| `FE-ACCOUNT-TEST-INT-005` | Default request excludes deleted accounts        | `FE-ACCOUNT-API-008`              |
-| `FE-ACCOUNT-TEST-INT-006` | Status filter sends correct API value            | `FE-ACCOUNT-API-007`              |
-| `FE-ACCOUNT-TEST-INT-007` | Pagination sends correct `page` and `page_size`  | `FE-ACCOUNT-API-004` to `006`     |
-| `FE-ACCOUNT-TEST-INT-008` | Include Deleted sends `include_deleted=true`     | `FE-ACCOUNT-API-008`              |
-| `FE-ACCOUNT-TEST-INT-009` | Create navigation uses correct route             | `FE-ACCOUNT-ACTION-001`           |
-| `FE-ACCOUNT-TEST-INT-010` | View navigation uses `/admin/accounts/:id`       | `FE-ACCOUNT-ACTION-001`           |
-| `FE-ACCOUNT-TEST-INT-011` | Edit navigation uses `/admin/accounts/:id/edit`  | `FE-ACCOUNT-ACTION-003`           |
-| `FE-ACCOUNT-TEST-INT-012` | Deactivate calls correct endpoint                | `FE-ACCOUNT-ACTION-007`           |
-| `FE-ACCOUNT-TEST-INT-013` | Activate calls correct endpoint                  | `FE-ACCOUNT-ACTION-012`           |
-| `FE-ACCOUNT-TEST-INT-014` | Restore calls correct endpoint                   | `FE-ACCOUNT-ACTION-016`           |
-| `FE-ACCOUNT-TEST-INT-015` | Successful mutations refresh the list            | `FE-ACCOUNT-ACTION-027`           |
-| `FE-ACCOUNT-TEST-INT-016` | 401 clears auth and navigates to login           | `FE-ACCOUNT-API-031`              |
-| `FE-ACCOUNT-TEST-INT-017` | 403 preserves authentication                    | `FE-ACCOUNT-API-032`              |
-| `FE-ACCOUNT-TEST-INT-018` | 409 conflict refreshes authoritative state       | `FE-ACCOUNT-API-034`              |
-| `FE-ACCOUNT-TEST-INT-019` | Problem Details codes are handled                | `FE-ACCOUNT-API-025` to `027`     |
-| `FE-ACCOUNT-TEST-INT-020` | Tokens are not present in URLs                   | `FE-ACCOUNT-SEC-005`              |
-| `FE-ACCOUNT-TEST-INT-021` | Account data is not persisted in browser storage | `FE-ACCOUNT-SEC-012`              |
+| ID                        | Test                                                                                | Verifies                                               |
+| ------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| `FE-ACCOUNT-TEST-INT-001` | Authenticated user opens `/admin/accounts`                                          | `FE-ACCOUNT-ROUTE-001`                                 |
+| `FE-ACCOUNT-TEST-INT-002` | Unauthenticated user redirects to `/login`                                          | `FE-ACCOUNT-ROUTE-002`                                 |
+| `FE-ACCOUNT-TEST-INT-003` | Accounts navigation is active                                                       | `FE-ACCOUNT-REQ-001`, Admin Shell                      |
+| `FE-ACCOUNT-TEST-INT-004` | List uses `GET /admin/accounts`                                                     | `FE-ACCOUNT-API-001`                                   |
+| `FE-ACCOUNT-TEST-INT-005` | Default request excludes deleted accounts                                           | `FE-ACCOUNT-API-008`                                   |
+| `FE-ACCOUNT-TEST-INT-006` | Status filter sends correct API value                                               | `FE-ACCOUNT-API-007`                                   |
+| `FE-ACCOUNT-TEST-INT-007` | Pagination sends correct `page` and `page_size`                                     | `FE-ACCOUNT-API-004` to `006`                          |
+| `FE-ACCOUNT-TEST-INT-008` | Include Deleted sends `include_deleted=true`                                        | `FE-ACCOUNT-API-008`                                   |
+| `FE-ACCOUNT-TEST-INT-009` | Create navigation uses correct route                                                | `FE-ACCOUNT-UI-003`                                    |
+| `FE-ACCOUNT-TEST-INT-010` | View navigation uses `/admin/accounts/:id`                                          | `FE-ACCOUNT-ACTION-001`                                |
+| `FE-ACCOUNT-TEST-INT-011` | Edit navigation uses `/admin/accounts/:id/edit`                                     | `FE-ACCOUNT-ACTION-003`                                |
+| `FE-ACCOUNT-TEST-INT-012` | Deactivate calls correct endpoint                                                   | `FE-ACCOUNT-ACTION-007`                                |
+| `FE-ACCOUNT-TEST-INT-013` | Activate calls correct endpoint                                                     | `FE-ACCOUNT-ACTION-012`                                |
+| `FE-ACCOUNT-TEST-INT-014` | Restore calls correct endpoint                                                      | `FE-ACCOUNT-ACTION-016`                                |
+| `FE-ACCOUNT-TEST-INT-015` | Successful mutations refresh the list                                               | `FE-ACCOUNT-ACTION-027`                                |
+| `FE-ACCOUNT-TEST-INT-016` | 401 clears auth and navigates to login                                              | `FE-ACCOUNT-API-031`                                   |
+| `FE-ACCOUNT-TEST-INT-017` | 403 preserves authentication                                                        | `FE-ACCOUNT-API-032`                                   |
+| `FE-ACCOUNT-TEST-INT-018` | 409 conflict refreshes authoritative state                                          | `FE-ACCOUNT-API-034`                                   |
+| `FE-ACCOUNT-TEST-INT-019` | Problem Details codes are handled                                                   | `FE-ACCOUNT-API-025` to `027`                          |
+| `FE-ACCOUNT-TEST-INT-020` | Tokens are not present in URLs                                                      | `FE-ACCOUNT-SEC-005`                                   |
+| `FE-ACCOUNT-TEST-INT-021` | Account data is not persisted in browser storage                                    | `FE-ACCOUNT-SEC-012`                                   |
+| `FE-ACCOUNT-TEST-INT-022` | Soft-deleted rows do not expose View or Edit                                        | `FE-ACCOUNT-TABLE-009`, `FE-ACCOUNT-ACTION-002`, `004` |
+| `FE-ACCOUNT-TEST-INT-023` | Missing `account:view` permission returns `403`                                     | `FE-ACCOUNT-API-009`, `012`                            |
+| `FE-ACCOUNT-TEST-INT-024` | Missing `account:view_deleted` permission returns `403` when `include_deleted=true` | `FE-ACCOUNT-API-010`, `012`                            |
 
 ---
 
 ## 10.3 E2E
 
-| ID                        | Test                                        | Verifies                     |
-| ------------------------- | ------------------------------------------- | ---------------------------- |
-| `FE-ACCOUNT-TEST-E2E-001` | Login → Admin Shell → Accounts works        | `FE-ACCOUNT-ROUTE-001`       |
-| `FE-ACCOUNT-TEST-E2E-002` | Account rows render                         | `FE-ACCOUNT-REQ-002`         |
-| `FE-ACCOUNT-TEST-E2E-003` | Status filter works                         | `FE-ACCOUNT-REQ-010`, `011`  |
-| `FE-ACCOUNT-TEST-E2E-004` | Pagination works                            | `FE-ACCOUNT-REQ-013`         |
-| `FE-ACCOUNT-TEST-E2E-005` | Create Account navigation works             | `FE-ACCOUNT-REQ-003`         |
-| `FE-ACCOUNT-TEST-E2E-006` | View Account navigation works               | `FE-ACCOUNT-REQ-004`         |
-| `FE-ACCOUNT-TEST-E2E-007` | Edit Account navigation works               | `FE-ACCOUNT-REQ-005`         |
-| `FE-ACCOUNT-TEST-E2E-008` | Deactivate works                            | `FE-ACCOUNT-REQ-006`         |
-| `FE-ACCOUNT-TEST-E2E-009` | Activate works                              | `FE-ACCOUNT-REQ-007`         |
-| `FE-ACCOUNT-TEST-E2E-010` | Restore works when authorized               | `FE-ACCOUNT-REQ-008`         |
-| `FE-ACCOUNT-TEST-E2E-011` | Last-active-administrator conflict is shown | `FE-ACCOUNT-ACTION-011`      |
-| `FE-ACCOUNT-TEST-E2E-012` | Authentication expiry redirects to `/login` | `FE-ACCOUNT-REQ-017`         |
-| `FE-ACCOUNT-TEST-E2E-013` | Mobile layout remains usable                | `FE-ACCOUNT-UI-019` to `025` |
+| ID                        | Test                                                | Verifies                                        |
+| ------------------------- | --------------------------------------------------- | ----------------------------------------------- |
+| `FE-ACCOUNT-TEST-E2E-001` | Login → Admin Shell → Accounts works                | `FE-ACCOUNT-ROUTE-001`                          |
+| `FE-ACCOUNT-TEST-E2E-002` | Account rows render                                 | `FE-ACCOUNT-REQ-002`                            |
+| `FE-ACCOUNT-TEST-E2E-003` | Status filter works                                 | `FE-ACCOUNT-REQ-010`, `011`                     |
+| `FE-ACCOUNT-TEST-E2E-004` | Pagination works                                    | `FE-ACCOUNT-REQ-013`                            |
+| `FE-ACCOUNT-TEST-E2E-005` | Create Account navigation works                     | `FE-ACCOUNT-REQ-003`                            |
+| `FE-ACCOUNT-TEST-E2E-006` | View Account navigation works                       | `FE-ACCOUNT-REQ-004`                            |
+| `FE-ACCOUNT-TEST-E2E-007` | Edit Account navigation works                       | `FE-ACCOUNT-REQ-005`                            |
+| `FE-ACCOUNT-TEST-E2E-008` | Deactivate works                                    | `FE-ACCOUNT-REQ-006`                            |
+| `FE-ACCOUNT-TEST-E2E-009` | Activate works                                      | `FE-ACCOUNT-REQ-007`                            |
+| `FE-ACCOUNT-TEST-E2E-010` | Restore works when authorized                       | `FE-ACCOUNT-REQ-008`                            |
+| `FE-ACCOUNT-TEST-E2E-011` | Last-active-administrator conflict is shown         | `FE-ACCOUNT-ACTION-011`                         |
+| `FE-ACCOUNT-TEST-E2E-012` | Authentication expiry redirects to `/login`         | `FE-ACCOUNT-REQ-017`                            |
+| `FE-ACCOUNT-TEST-E2E-013` | Mobile layout remains usable                        | `FE-ACCOUNT-UI-019` to `025`                    |
+| `FE-ACCOUNT-TEST-E2E-014` | Soft-deleted rows show Restore without View or Edit | `FE-ACCOUNT-TABLE-009`, `FE-ACCOUNT-ACTION-016` |
 
 ---
 
@@ -1034,26 +1049,25 @@ Color may supplement the label but must not carry the meaning alone.
 
 ## 11.1 Route
 
-| ID                     | Criteria                                      | Status |
-| ---------------------- | --------------------------------------------- | ------ |
+| ID                     | Criteria                                      | Status         |
+| ---------------------- | --------------------------------------------- | -------------- |
 | `FE-ACCOUNT-ROUTE-001` | `/admin/accounts` renders inside Admin Shell. | 🟢 Implemented |
 | `FE-ACCOUNT-ROUTE-002` | Unauthenticated access redirects to `/login`. | 🟢 Implemented |
-| `FE-ACCOUNT-ROUTE-003` | Accounts navigation is active.                | 🟢 Implemented |
-| `FE-ACCOUNT-ROUTE-004` | Create Account route exists.                  | 🟢 Implemented |
-| `FE-ACCOUNT-ROUTE-005` | Account Detail route is defined.              | 🟡 Defined |
-| `FE-ACCOUNT-ROUTE-006` | Edit Account route is defined separately.     | 🟡 Defined |
+| `FE-ACCOUNT-ROUTE-003` | Create Account route exists.                  | 🟢 Implemented |
+| `FE-ACCOUNT-ROUTE-004` | Account Detail route is defined.              | 🟡 Defined     |
+| `FE-ACCOUNT-ROUTE-005` | Edit Account route is defined separately.     | 🟡 Defined     |
 
 ---
 
 ## 11.2 Requirements
 
-| ID                   | Criteria                                      | Status |
-| -------------------- | --------------------------------------------- | ------ |
+| ID                   | Criteria                                      | Status         |
+| -------------------- | --------------------------------------------- | -------------- |
 | `FE-ACCOUNT-REQ-001` | Protected route implemented.                  | 🟢 Implemented |
 | `FE-ACCOUNT-REQ-002` | Account list rendered.                        | 🟢 Implemented |
 | `FE-ACCOUNT-REQ-003` | Create navigation implemented.                | 🟢 Implemented |
-| `FE-ACCOUNT-REQ-004` | View navigation is defined separately.        | 🟡 Defined |
-| `FE-ACCOUNT-REQ-005` | Edit navigation is distinct from View.        | 🟡 Defined |
+| `FE-ACCOUNT-REQ-004` | View navigation is defined separately.        | 🟡 Defined     |
+| `FE-ACCOUNT-REQ-005` | Edit navigation is distinct from View.        | 🟡 Defined     |
 | `FE-ACCOUNT-REQ-006` | Deactivation implemented.                     | 🟢 Implemented |
 | `FE-ACCOUNT-REQ-007` | Activation implemented.                       | 🟢 Implemented |
 | `FE-ACCOUNT-REQ-008` | Restoration implemented.                      | 🟢 Implemented |
@@ -1075,64 +1089,65 @@ Color may supplement the label but must not carry the meaning alone.
 
 ## 11.3 API
 
-| ID                   | Criteria                                         | Status |
-| -------------------- | ------------------------------------------------ | ------ |
-| `FE-ACCOUNT-API-001` | List uses `GET /admin/accounts`.                 | 🟢 Implemented |
-| `FE-ACCOUNT-API-002` | Bearer credentials use `Authorization`.          | 🟢 Implemented |
-| `FE-ACCOUNT-API-003` | Tokens are not sent in URLs or bodies.           | 🟢 Implemented |
-| `FE-ACCOUNT-API-004` | Default page is `1`.                             | 🟢 Implemented |
-| `FE-ACCOUNT-API-005` | Default page size is `20`.                       | 🟢 Implemented |
-| `FE-ACCOUNT-API-006` | Page size never exceeds `100`.                   | 🟢 Implemented |
-| `FE-ACCOUNT-API-007` | Status filter maps to API values.                | 🟢 Implemented |
-| `FE-ACCOUNT-API-008` | Deleted accounts are excluded by default.        | 🟢 Implemented |
-| `FE-ACCOUNT-API-009` | `account:view` is enforced by backend.           | 🟢 Implemented |
-| `FE-ACCOUNT-API-010` | `account:view_deleted` is enforced by backend.   | 🟢 Implemented |
-| `FE-ACCOUNT-API-011` | Client authorization claims are ignored.         | 🟢 Implemented |
-| `FE-ACCOUNT-API-012` | Missing permissions result in `403`.             | 🟢 Implemented |
-| `FE-ACCOUNT-API-013` | Server response is authoritative.                | 🟢 Implemented |
+| ID                   | Criteria                                       | Status         |
+| -------------------- | ---------------------------------------------- | -------------- |
+| `FE-ACCOUNT-API-001` | List uses `GET /admin/accounts`.               | 🟢 Implemented |
+| `FE-ACCOUNT-API-002` | Bearer credentials use `Authorization`.        | 🟢 Implemented |
+| `FE-ACCOUNT-API-003` | Tokens are not sent in URLs or bodies.         | 🟢 Implemented |
+| `FE-ACCOUNT-API-004` | Default page is `1`.                           | 🟢 Implemented |
+| `FE-ACCOUNT-API-005` | Default page size is `20`.                     | 🟢 Implemented |
+| `FE-ACCOUNT-API-006` | Page size never exceeds `100`.                 | 🟢 Implemented |
+| `FE-ACCOUNT-API-007` | Status filter maps to API values.              | 🟢 Implemented |
+| `FE-ACCOUNT-API-008` | Deleted accounts are excluded by default.      | 🟢 Implemented |
+| `FE-ACCOUNT-API-009` | `account:view` is enforced by backend.         | 🟢 Implemented |
+| `FE-ACCOUNT-API-010` | `account:view_deleted` is enforced by backend. | 🟢 Implemented |
+| `FE-ACCOUNT-API-011` | Client authorization claims are ignored.       | 🟢 Implemented |
+| `FE-ACCOUNT-API-012` | Missing permissions result in `403`.           | 🟢 Implemented |
+| `FE-ACCOUNT-API-013` | Server response is authoritative.              | 🟢 Implemented |
 
 ---
 
 ## 11.4 Actions
 
-| ID                      | Criteria                                      | Status |
-| ----------------------- | --------------------------------------------- | ------ |
-| `FE-ACCOUNT-ACTION-001` | View navigation is defined separately.        | 🟡 Defined |
-| `FE-ACCOUNT-ACTION-003` | Edit navigation is distinct from View.        | 🟡 Defined |
-| `FE-ACCOUNT-ACTION-007` | Deactivate implemented.                       | 🟢 Implemented |
-| `FE-ACCOUNT-ACTION-011` | Last-active-administrator conflict handled.   | 🟢 Implemented |
-| `FE-ACCOUNT-ACTION-012` | Activate implemented.                         | 🟢 Implemented |
-| `FE-ACCOUNT-ACTION-016` | Restore implemented.                          | 🟢 Implemented |
-| `FE-ACCOUNT-ACTION-020` | Restored account renders as inactive.         | 🟢 Implemented |
-| `FE-ACCOUNT-ACTION-022` | Soft Delete is not exposed by default.        | 🟢 Implemented |
-| `FE-ACCOUNT-ACTION-024` | Hard Delete is not exposed.                   | 🟢 Implemented |
-| `FE-ACCOUNT-ACTION-025` | Duplicate submissions prevented.              | 🟢 Implemented |
-| `FE-ACCOUNT-ACTION-026` | Optimistic lifecycle updates are not used.    | 🟢 Implemented |
-| `FE-ACCOUNT-ACTION-027` | Successful mutation refreshes list.           | 🟢 Implemented |
+| ID                      | Criteria                                    | Status         |
+| ----------------------- | ------------------------------------------- | -------------- |
+| `FE-ACCOUNT-ACTION-001` | View navigation is defined separately.      | 🟡 Defined     |
+| `FE-ACCOUNT-ACTION-002` | View is limited to non-deleted accounts.    | 🟡 Defined     |
+| `FE-ACCOUNT-ACTION-003` | Edit navigation is distinct from View.      | 🟡 Defined     |
+| `FE-ACCOUNT-ACTION-007` | Deactivate implemented.                     | 🟢 Implemented |
+| `FE-ACCOUNT-ACTION-011` | Last-active-administrator conflict handled. | 🟢 Implemented |
+| `FE-ACCOUNT-ACTION-012` | Activate implemented.                       | 🟢 Implemented |
+| `FE-ACCOUNT-ACTION-016` | Restore implemented.                        | 🟢 Implemented |
+| `FE-ACCOUNT-ACTION-020` | Restored account renders as inactive.       | 🟢 Implemented |
+| `FE-ACCOUNT-ACTION-021` | Soft Delete is not exposed by default.      | 🟢 Implemented |
+| `FE-ACCOUNT-ACTION-024` | Hard Delete is not exposed.                 | 🟢 Implemented |
+| `FE-ACCOUNT-ACTION-025` | Duplicate submissions prevented.            | 🟢 Implemented |
+| `FE-ACCOUNT-ACTION-026` | Optimistic lifecycle updates are not used.  | 🟢 Implemented |
+| `FE-ACCOUNT-ACTION-027` | Successful mutation refreshes list.         | 🟢 Implemented |
 
 ---
 
 ## 11.5 UI States
 
-| ID                     | Criteria                                   | Status |
-| ---------------------- | ------------------------------------------ | ------ |
-| `FE-ACCOUNT-STATE-001` | Initial loading state implemented.         | 🟢 Implemented |
-| `FE-ACCOUNT-STATE-002` | Refresh loading state implemented.         | 🟢 Implemented |
-| `FE-ACCOUNT-STATE-003` | Filter loading state implemented.          | 🟢 Implemented |
-| `FE-ACCOUNT-STATE-004` | Mutation pending state implemented.        | 🟢 Implemented |
-| `FE-ACCOUNT-STATE-005` | Empty state implemented.                   | 🟢 Implemented |
-| `FE-ACCOUNT-STATE-006` | Filtered empty state implemented.          | 🟢 Implemented |
-| `FE-ACCOUNT-STATE-007` | Deleted-account empty state implemented.   | 🟢 Implemented |
-| `FE-ACCOUNT-STATE-008` | General error state implemented.           | 🟢 Implemented |
-| `FE-ACCOUNT-STATE-009` | Authorization error implemented.           | 🟢 Implemented |
-| `FE-ACCOUNT-STATE-010` | Authentication expiry handled.             | 🟢 Implemented |
+| ID                     | Criteria                                 | Status         |
+| ---------------------- | ---------------------------------------- | -------------- |
+| `FE-ACCOUNT-STATE-001` | Initial loading state implemented.       | 🟢 Implemented |
+| `FE-ACCOUNT-STATE-002` | Refresh loading state implemented.       | 🟢 Implemented |
+| `FE-ACCOUNT-STATE-003` | Filter loading state implemented.        | 🟢 Implemented |
+| `FE-ACCOUNT-STATE-004` | Mutation pending state implemented.      | 🟢 Implemented |
+| `FE-ACCOUNT-STATE-005` | Empty state implemented.                 | 🟢 Implemented |
+| `FE-ACCOUNT-STATE-006` | Filtered empty state implemented.        | 🟢 Implemented |
+| `FE-ACCOUNT-STATE-007` | Deleted-account empty state implemented. | 🟢 Implemented |
+| `FE-ACCOUNT-STATE-008` | General error state implemented.         | 🟢 Implemented |
+| `FE-ACCOUNT-STATE-009` | Authorization error implemented.         | 🟢 Implemented |
+| `FE-ACCOUNT-STATE-010` | Authentication expiry handled.           | 🟢 Implemented |
 
 ---
 
 ## 11.6 Security
 
-| ID                   | Criteria                                           | Status |
-| -------------------- | -------------------------------------------------- | ------ |
+| ID                   | Criteria                                           | Status         |
+| -------------------- | -------------------------------------------------- | -------------- |
 | `FE-ACCOUNT-SEC-001` | Route requires authentication.                     | 🟢 Implemented |
 | `FE-ACCOUNT-SEC-002` | Backend Authentication is authoritative.           | 🟢 Implemented |
 | `FE-ACCOUNT-SEC-003` | Backend Authorization is authoritative.            | 🟢 Implemented |
@@ -1152,25 +1167,25 @@ Color may supplement the label but must not carry the meaning alone.
 
 ## 11.7 Accessibility
 
-| ID                    | Criteria                               | Status |
-| --------------------- | -------------------------------------- | ------ |
+| ID                    | Criteria                               | Status         |
+| --------------------- | -------------------------------------- | -------------- |
 | `FE-ACCOUNT-A11Y-001` | Semantic page structure implemented.   | 🟢 Implemented |
 | `FE-ACCOUNT-A11Y-002` | Primary `h1` implemented.              | 🟢 Implemented |
 | `FE-ACCOUNT-A11Y-003` | Native table implemented.              | 🟢 Implemented |
 | `FE-ACCOUNT-A11Y-004` | Semantic table headers implemented.    | 🟢 Implemented |
 | `FE-ACCOUNT-A11Y-005` | Accessible table naming implemented.   | 🟢 Implemented |
 | `FE-ACCOUNT-A11Y-006` | Navigation uses actual links.          | 🟢 Implemented |
-| `FE-ACCOUNT-A11Y-007` | Actions use actual buttons.            | 🟢 Implemented |
+| `FE-ACCOUNT-A11Y-007` | Lifecycle actions use actual buttons.  | 🟢 Implemented |
 | `FE-ACCOUNT-A11Y-008` | Visible focus implemented.             | 🟢 Implemented |
 | `FE-ACCOUNT-A11Y-009` | Focus is not obscured.                 | 🟢 Implemented |
-| `FE-ACCOUNT-A11Y-010` | Filter labels implemented.              | 🟢 Implemented |
+| `FE-ACCOUNT-A11Y-010` | Filter labels implemented.             | 🟢 Implemented |
 | `FE-ACCOUNT-A11Y-011` | Row action names are descriptive.      | 🟢 Implemented |
 | `FE-ACCOUNT-A11Y-012` | Status does not rely on color.         | 🟢 Implemented |
-| `FE-ACCOUNT-A11Y-013` | Async status is accessible.             | 🟢 Implemented |
-| `FE-ACCOUNT-A11Y-014` | Pagination is keyboard accessible.      | 🟢 Implemented |
-| `FE-ACCOUNT-A11Y-015` | Keyboard order is predictable.          | 🟢 Implemented |
-| `FE-ACCOUNT-A11Y-016` | Dialog focus is managed correctly.      | 🟢 Implemented |
-| `FE-ACCOUNT-A11Y-017` | Responsive accessibility is preserved.  | 🟢 Implemented |
+| `FE-ACCOUNT-A11Y-013` | Async status is accessible.            | 🟢 Implemented |
+| `FE-ACCOUNT-A11Y-014` | Pagination is keyboard accessible.     | 🟢 Implemented |
+| `FE-ACCOUNT-A11Y-015` | Keyboard order is predictable.         | 🟢 Implemented |
+| `FE-ACCOUNT-A11Y-016` | Dialog focus is managed correctly.     | 🟢 Implemented |
+| `FE-ACCOUNT-A11Y-017` | Responsive accessibility is preserved. | 🟢 Implemented |
 
 ---
 
@@ -1178,22 +1193,22 @@ Color may supplement the label but must not carry the meaning alone.
 
 ## Requirements → Design → Implementation → Test
 
-| Requirement            | Frontend Design                           | Backend Contract            | Test                               |
-| ---------------------- | ----------------------------------------- | --------------------------- | ---------------------------------- |
-| `ADM-AUTH-001`         | `FE-ACCOUNT-ROUTE-001`                    | Authentication domain       | `FE-ACCOUNT-TEST-INT-001`          |
-| `ADM-AUTH-004`         | `FE-ACCOUNT-TABLE-001` to `006`           | `AC_UC_02`, `AC_API_02`     | `FE-ACCOUNT-TEST-INT-004`          |
-| `ADM-AUTH-004`         | `FE-ACCOUNT-ACTION-001`                   | `AC_UC_03`, `AC_API_03`     | `FE-ACCOUNT-TEST-E2E-006`          |
-| `ADM-AUTH-003`         | `FE-ACCOUNT-ACTION-001`                   | `AC_UC_01`, `AC_API_01`     | `FE-ACCOUNT-TEST-E2E-005`          |
-| `ADM-AUTH-005`         | `FE-ACCOUNT-ACTION-003`                   | `AC_UC_04`, `AC_API_04`     | `FE-ACCOUNT-TEST-E2E-007`          |
-| `ADM-AUTH-006`         | `FE-ACCOUNT-ACTION-007`                   | `AC_UC_05`, `AC_API_05`     | `FE-ACCOUNT-TEST-E2E-008`          |
-| `ADM-AUTH-007`         | `FE-ACCOUNT-ACTION-011`                   | `LAST_ACTIVE_ADMINISTRATOR` | `FE-ACCOUNT-TEST-E2E-011`          |
-| `AC_UC_06`             | `FE-ACCOUNT-ACTION-012`                   | `AC_API_06`                 | `FE-ACCOUNT-TEST-E2E-009`          |
-| `AC_UC_08`             | `FE-ACCOUNT-ACTION-016`                   | `AC_API_08`                 | `FE-ACCOUNT-TEST-E2E-010`          |
-| `account:view`         | `FE-ACCOUNT-API-009`                      | Authorization domain        | `FE-ACCOUNT-TEST-INT-017`          |
-| `account:view_deleted` | `FE-ACCOUNT-API-010`                      | Authorization domain        | Deleted-account authorization test |
-| Authentication `401`   | `FE-ACCOUNT-API-031`                      | Authentication domain       | `FE-ACCOUNT-TEST-INT-016`          |
-| Authorization `403`    | `FE-ACCOUNT-API-032`                      | Authorization domain        | `FE-ACCOUNT-TEST-INT-017`          |
-| Admin Shell            | `FE-ACCOUNT-ROUTE-001`, `FE-ACCOUNT-UI-*` | `admin_shell.md`            | `FE-ACCOUNT-TEST-E2E-001`          |
+| Requirement            | Frontend Design                           | Backend Contract            | Test                      |
+| ---------------------- | ----------------------------------------- | --------------------------- | ------------------------- |
+| `ADM-AUTH-001`         | `FE-ACCOUNT-ROUTE-001`                    | Authentication domain       | `FE-ACCOUNT-TEST-INT-001` |
+| `ADM-AUTH-004`         | `FE-ACCOUNT-TABLE-001` to `006`           | `AC_UC_02`, `AC_API_02`     | `FE-ACCOUNT-TEST-INT-004` |
+| `ADM-AUTH-004`         | `FE-ACCOUNT-ACTION-001`                   | `AC_UC_03`, `AC_API_03`     | `FE-ACCOUNT-TEST-E2E-006` |
+| `ADM-AUTH-003`         | `FE-ACCOUNT-UI-003`                       | `AC_UC_01`, `AC_API_01`     | `FE-ACCOUNT-TEST-E2E-005` |
+| `ADM-AUTH-005`         | `FE-ACCOUNT-ACTION-003`                   | `AC_UC_04`, `AC_API_04`     | `FE-ACCOUNT-TEST-E2E-007` |
+| `ADM-AUTH-006`         | `FE-ACCOUNT-ACTION-007`                   | `AC_UC_05`, `AC_API_05`     | `FE-ACCOUNT-TEST-E2E-008` |
+| `ADM-AUTH-007`         | `FE-ACCOUNT-ACTION-011`                   | `LAST_ACTIVE_ADMINISTRATOR` | `FE-ACCOUNT-TEST-E2E-011` |
+| `AC_UC_06`             | `FE-ACCOUNT-ACTION-012`                   | `AC_API_06`                 | `FE-ACCOUNT-TEST-E2E-009` |
+| `AC_UC_08`             | `FE-ACCOUNT-ACTION-016`                   | `AC_API_08`                 | `FE-ACCOUNT-TEST-E2E-010` |
+| `account:view`         | `FE-ACCOUNT-API-009`                      | Authorization domain        | `FE-ACCOUNT-TEST-INT-023` |
+| `account:view_deleted` | `FE-ACCOUNT-API-010`                      | Authorization domain        | `FE-ACCOUNT-TEST-INT-024` |
+| Authentication `401`   | `FE-ACCOUNT-API-031`                      | Authentication domain       | `FE-ACCOUNT-TEST-INT-016` |
+| Authorization `403`    | `FE-ACCOUNT-API-032`                      | Authorization domain        | `FE-ACCOUNT-TEST-INT-017` |
+| Admin Shell            | `FE-ACCOUNT-ROUTE-001`, `FE-ACCOUNT-UI-*` | `admin_shell.md`            | `FE-ACCOUNT-TEST-E2E-001` |
 
 ## Domain References
 
