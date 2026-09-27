@@ -285,7 +285,10 @@ describe("protected-request authentication recovery", () => {
       .mock.calls.filter(([url]) => url === "/auth/refresh");
 
     expect(refreshCalls).toHaveLength(1);
-    expect(authService.getSnapshot().authStatus).toBe("unauthenticated");
+    expect(authService.getSnapshot().authStatus).toBe("authenticated");
+    expect(authService.getAuthorizationHeader()).toBe(
+      `Bearer ${refreshedAccessToken}`,
+    );
   });
 
   it("does not recursively refresh /auth/refresh", async () => {

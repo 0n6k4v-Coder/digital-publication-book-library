@@ -5,7 +5,7 @@ import { AccountRoutePlaceholderPage } from "./pages/accounts/AccountRoutePlaceh
 import { AccountsPage } from "./pages/accounts/AccountsPage";
 import { LoginPage } from "./pages/login/LoginPage";
 import { authService } from "./services/auth";
-import { navigate, usePathname } from "./services/navigation";
+import { navigate, usePathname, type AppRoute } from "./services/navigation";
 
 interface RouteTransitionProps {
   message: string;
@@ -48,7 +48,7 @@ export default function App() {
     void authService.bootstrap();
   }, []);
 
-  let redirectTarget: string | null = null;
+  let redirectTarget: AppRoute | null = null;
 
   if (authStatus === "authenticated") {
     if (pathname === "/login") {
