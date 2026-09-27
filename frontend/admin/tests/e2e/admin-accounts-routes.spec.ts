@@ -161,7 +161,12 @@ test.describe("admin accounts routes", () => {
       }),
     ).toBeVisible();
 
-    await expect(page.getByText(/^admin@example\.com$/)).toBeVisible();
+    const emailDefinition = page
+      .getByRole("definition")
+      .filter({ hasText: /^admin@example\.com$/ });
+
+    await expect(emailDefinition).toHaveCount(1);
+    await expect(emailDefinition).toBeVisible();
 
     await expect(page.getByRole("link", { name: "Edit" })).toHaveAttribute(
       "href",
