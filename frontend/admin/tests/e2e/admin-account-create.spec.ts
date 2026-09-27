@@ -118,7 +118,14 @@ async function openCreatePage(page: Page): Promise<void> {
   await getAccountsNavigation(page).click();
   await expect(page).toHaveURL(/\/admin\/accounts$/);
 
-  await page
+  const accountsPageHeader = page.getByRole("banner").filter({
+    has: page.getByRole("heading", {
+      name: "Administrator Accounts",
+      level: 1,
+    }),
+  });
+
+  await accountsPageHeader
     .getByRole("link", {
       name: "Create Account",
       exact: true,
