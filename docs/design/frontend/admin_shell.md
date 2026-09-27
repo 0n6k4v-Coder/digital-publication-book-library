@@ -429,123 +429,123 @@ The Admin Shell must follow the Authentication and Authorization domain contract
 
 ## Authentication Behavior
 
-| ID                 | Criteria                                                                       | Status         | Reason                                           |
-| ------------------ | ------------------------------------------------------------------------------ | -------------- | ------------------------------------------------ |
-| `FE_SHELL_AUTH_01` | Authenticated state renders the Admin Shell                                    | 🟢 Implemented | Existing shell implementation                    |
-| `FE_SHELL_AUTH_02` | Authenticated users accessing `/login` are redirected to `/admin`              | 🟢 Implemented | Existing route behavior                          |
-| `FE_SHELL_AUTH_03` | `unknown` authentication state does not redirect protected routes to `/login`  | 🟡 In Progress | Requires authentication bootstrap implementation |
-| `FE_SHELL_AUTH_04` | Successful `/auth/refresh` transitions authentication state to `authenticated` | 🟡 In Progress | Requires refresh bootstrap implementation        |
-| `FE_SHELL_AUTH_05` | Failed `/auth/refresh` transitions authentication state to `unauthenticated`   | 🟡 In Progress | Requires refresh bootstrap implementation        |
-| `FE_SHELL_AUTH_06` | Unauthenticated `/admin` access redirects after bootstrap resolves             | 🟡 In Progress | Requires three-state authentication model        |
-| `FE_SHELL_AUTH_07` | Invalid authentication state is treated as unauthenticated                     | 🟡 In Progress | Depends on bootstrap state model                 |
-| `FE_SHELL_AUTH_08` | Authentication state comes from the Authentication flow                        | 🟢 Implemented | Existing authentication service boundary         |
-| `FE_SHELL_AUTH_09` | Client-supplied account IDs are not used to determine authentication           | 🟢 Implemented | Existing architecture                            |
-| `FE_SHELL_AUTH_10` | Client-supplied roles are not used to determine authentication                 | 🟢 Implemented | Existing architecture                            |
-| `FE_SHELL_AUTH_11` | Client-supplied permissions are not used to determine authentication           | 🟢 Implemented | Existing architecture                            |
-| `FE_SHELL_AUTH_12` | Other client-provided identity values are not used to determine authentication | 🟢 Implemented | Existing architecture                            |
-| `FE_SHELL_AUTH_13` | Backend remains the authentication authority                                   | 🟢 Implemented | Existing architecture                            |
+| ID                 | Criteria                                                                       | Status         | Reason |
+| ------------------ | ------------------------------------------------------------------------------ | -------------- | ------ |
+| `FE_SHELL_AUTH_01` | Authenticated state renders the Admin Shell                                    | 🟢 Implemented |        |
+| `FE_SHELL_AUTH_02` | Authenticated users accessing `/login` are redirected to `/admin`              | 🟢 Implemented |        |
+| `FE_SHELL_AUTH_03` | `unknown` authentication state does not redirect protected routes to `/login`  | 🟢 Implemented |        |
+| `FE_SHELL_AUTH_04` | Successful `/auth/refresh` transitions authentication state to `authenticated` | 🟢 Implemented |        |
+| `FE_SHELL_AUTH_05` | Failed `/auth/refresh` transitions authentication state to `unauthenticated`   | 🟢 Implemented |        |
+| `FE_SHELL_AUTH_06` | Unauthenticated `/admin` access redirects after bootstrap resolves             | 🟢 Implemented |        |
+| `FE_SHELL_AUTH_07` | Invalid authentication state is treated as unauthenticated                     | 🟡 In Progress | The current authentication model explicitly distinguishes `authentication-error` from `unauthenticated`; the criterion wording needs to align with `login.md`. |
+| `FE_SHELL_AUTH_08` | Authentication state comes from the Authentication flow                        | 🟢 Implemented |        |
+| `FE_SHELL_AUTH_09` | Client-supplied account IDs are not used to determine authentication           | 🟢 Implemented |        |
+| `FE_SHELL_AUTH_10` | Client-supplied roles are not used to determine authentication                 | 🟢 Implemented |        |
+| `FE_SHELL_AUTH_11` | Client-supplied permissions are not used to determine authentication           | 🟢 Implemented |        |
+| `FE_SHELL_AUTH_12` | Other client-provided identity values are not used to determine authentication | 🟢 Implemented |        |
+| `FE_SHELL_AUTH_13` | Backend remains the authentication authority                                   | 🟢 Implemented |        |
 
 ## Logout API
 
-| ID                       | Criteria                                                        | Status         | Reason                                 |
-| ------------------------ | --------------------------------------------------------------- | -------------- | -------------------------------------- |
-| `FE_SHELL_LOGOUT_API_01` | Logout uses `POST`                                              | 🟢 Implemented | Existing endpoint                      |
-| `FE_SHELL_LOGOUT_API_02` | Logout uses `/auth/logout`                                      | 🟢 Implemented | Existing endpoint                      |
-| `FE_SHELL_LOGOUT_API_03` | Logout uses `credentials: "include"`                            | 🟡 In Progress | Requires browser-cookie implementation |
-| `FE_SHELL_LOGOUT_API_04` | Logout does not depend on an unexpired bearer access token      | 🟡 In Progress | Backend/frontend contract changed      |
-| `FE_SHELL_LOGOUT_API_05` | Successful logout returns `204 No Content`                      | 🟢 Implemented | Existing backend contract              |
-| `FE_SHELL_LOGOUT_API_06` | Successful logout uses `Cache-Control: no-store`                | 🟢 Implemented | Existing backend implementation        |
-| `FE_SHELL_LOGOUT_API_07` | Successful logout expires `__Host-refresh_token`                | 🟡 In Progress | Requires browser-cookie implementation |
-| `FE_SHELL_LOGOUT_API_08` | Logout is idempotent for missing or invalid refresh credentials | 🟡 In Progress | Requires backend implementation        |
+| ID                       | Criteria                                                        | Status         | Reason |
+| ------------------------ | --------------------------------------------------------------- | -------------- | ------ |
+| `FE_SHELL_LOGOUT_API_01` | Logout uses `POST`                                              | 🟢 Implemented |        |
+| `FE_SHELL_LOGOUT_API_02` | Logout uses `/auth/logout`                                      | 🟢 Implemented |        |
+| `FE_SHELL_LOGOUT_API_03` | Logout uses `credentials: "include"`                            | 🟢 Implemented |        |
+| `FE_SHELL_LOGOUT_API_04` | Logout does not depend on an unexpired bearer access token      | 🟢 Implemented |        |
+| `FE_SHELL_LOGOUT_API_05` | Successful logout returns `204 No Content`                      | 🟢 Implemented |        |
+| `FE_SHELL_LOGOUT_API_06` | Successful logout uses `Cache-Control: no-store`                | 🟢 Implemented |        |
+| `FE_SHELL_LOGOUT_API_07` | Successful logout expires `__Host-refresh_token`                | 🔴 Blocked     | The current backend does not implement the server-managed refresh cookie contract. |
+| `FE_SHELL_LOGOUT_API_08` | Logout is idempotent for missing or invalid refresh credentials | 🔴 Blocked     | The current backend logout contract still requires bearer authentication. |
 
 ## Logout
 
-| ID                   | Criteria                                                        | Status         | Reason                              |
-| -------------------- | --------------------------------------------------------------- | -------------- | ----------------------------------- |
-| `FE_SHELL_LOGOUT_01` | Duplicate logout requests are prevented                         | 🟢 Implemented | Existing Admin Shell implementation |
-| `FE_SHELL_LOGOUT_02` | Logout action is disabled while the request is pending          | 🟢 Implemented | Existing Admin Shell implementation |
-| `FE_SHELL_LOGOUT_03` | Access token is never exposed in the UI                         | 🟢 Implemented | Existing implementation             |
-| `FE_SHELL_LOGOUT_04` | Access token is never logged                                    | 🟢 Implemented | Existing implementation             |
-| `FE_SHELL_LOGOUT_05` | Client authentication state is cleared after successful logout  | 🟢 Implemented | Existing implementation             |
-| `FE_SHELL_LOGOUT_06` | User does not remain on `/admin` after successful logout        | 🟢 Implemented | Existing route behavior             |
-| `FE_SHELL_LOGOUT_07` | Network failure preserves authenticated state and permits retry | 🟢 Implemented | Existing Admin Shell behavior       |
+| ID                   | Criteria                                                        | Status         | Reason |
+| -------------------- | --------------------------------------------------------------- | -------------- | ------ |
+| `FE_SHELL_LOGOUT_01` | Duplicate logout requests are prevented                         | 🟢 Implemented |        |
+| `FE_SHELL_LOGOUT_02` | Logout action is disabled while the request is pending          | 🟢 Implemented |        |
+| `FE_SHELL_LOGOUT_03` | Access token is never exposed in the UI                         | 🟢 Implemented |        |
+| `FE_SHELL_LOGOUT_04` | Access token is never logged                                    | 🟢 Implemented |        |
+| `FE_SHELL_LOGOUT_05` | Client authentication state is cleared after successful logout  | 🟢 Implemented |        |
+| `FE_SHELL_LOGOUT_06` | User does not remain on `/admin` after successful logout        | 🟢 Implemented |        |
+| `FE_SHELL_LOGOUT_07` | Network failure preserves authenticated state and permits retry | 🟢 Implemented |        |
 
 ## Security
 
-| ID                | Criteria                                                               | Status         | Reason                                  |
-| ----------------- | ---------------------------------------------------------------------- | -------------- | --------------------------------------- |
-| `FE_SHELL_SEC_01` | `/admin` is inaccessible after bootstrap resolves to unauthenticated   | 🟡 In Progress | Requires bootstrap state                |
-| `FE_SHELL_SEC_02` | `unknown` authentication state is not treated as unauthenticated       | 🟡 In Progress | Requires bootstrap state                |
-| `FE_SHELL_SEC_03` | Frontend does not implement independent authentication rules           | 🟢 Implemented | Existing architecture                   |
-| `FE_SHELL_SEC_04` | Backend is treated as the authentication authority                     | 🟢 Implemented | Existing architecture                   |
-| `FE_SHELL_SEC_05` | Bearer credentials are used only in the Authorization header           | 🟢 Implemented | Existing protected API design           |
-| `FE_SHELL_SEC_06` | Refresh credentials are never read or persisted in JavaScript storage  | 🟡 In Progress | Requires HttpOnly cookie implementation |
-| `FE_SHELL_SEC_07` | Tokens are never placed in URLs                                        | 🟢 Implemented | Existing implementation                 |
-| `FE_SHELL_SEC_08` | Tokens are never rendered                                              | 🟢 Implemented | Existing implementation                 |
-| `FE_SHELL_SEC_09` | Tokens are never logged                                                | 🟢 Implemented | Existing implementation                 |
-| `FE_SHELL_SEC_10` | Authentication requests use browser credentials when required          | 🟡 In Progress | Requires `credentials: "include"`       |
-| `FE_SHELL_SEC_11` | Authentication endpoints rely on backend Origin/SameSite protections   | 🟡 In Progress | Requires backend implementation         |
-| `FE_SHELL_SEC_12` | Client-side authentication state is not treated as authorization proof | 🟢 Implemented | Existing architecture                   |
+| ID                | Criteria                                                               | Status         | Reason |
+| ----------------- | ---------------------------------------------------------------------- | -------------- | ------ |
+| `FE_SHELL_SEC_01` | `/admin` is inaccessible after bootstrap resolves to unauthenticated   | 🟢 Implemented |        |
+| `FE_SHELL_SEC_02` | `unknown` authentication state is not treated as unauthenticated       | 🟢 Implemented |        |
+| `FE_SHELL_SEC_03` | Frontend does not implement independent authentication rules           | 🟢 Implemented |        |
+| `FE_SHELL_SEC_04` | Backend is treated as the authentication authority                     | 🟢 Implemented |        |
+| `FE_SHELL_SEC_05` | Bearer credentials are used only in the Authorization header           | 🟢 Implemented |        |
+| `FE_SHELL_SEC_06` | Refresh credentials are never read or persisted in JavaScript storage  | 🟢 Implemented |        |
+| `FE_SHELL_SEC_07` | Tokens are never placed in URLs                                        | 🟢 Implemented |        |
+| `FE_SHELL_SEC_08` | Tokens are never rendered                                              | 🟢 Implemented |        |
+| `FE_SHELL_SEC_09` | Tokens are never logged                                                | 🟢 Implemented |        |
+| `FE_SHELL_SEC_10` | Authentication requests use browser credentials when required          | 🟢 Implemented |        |
+| `FE_SHELL_SEC_11` | Authentication endpoints rely on backend Origin/SameSite protections   | 🔴 Blocked     | The current backend does not implement the required browser-cookie authentication protection contract. |
+| `FE_SHELL_SEC_12` | Client-side authentication state is not treated as authorization proof | 🟢 Implemented |        |
 
 ## Testing — Unit
 
-| ID                      | Criteria                                                      | Status         | Reason                               |
-| ----------------------- | ------------------------------------------------------------- | -------------- | ------------------------------------ |
-| `FE_SHELL_TEST_UNIT_01` | Admin Shell rendering is tested                               | 🟢 Implemented | Existing unit test                   |
-| `FE_SHELL_TEST_UNIT_02` | Sidebar rendering is tested                                   | 🟢 Implemented | Existing unit test                   |
-| `FE_SHELL_TEST_UNIT_03` | Logout button state is tested                                 | 🟢 Implemented | Existing unit test                   |
-| `FE_SHELL_TEST_UNIT_04` | Authenticated route guard behavior is tested                  | 🟡 In Progress | Requires bootstrap-aware route tests |
-| `FE_SHELL_TEST_UNIT_05` | Unauthenticated route guard behavior is tested                | 🟡 In Progress | Requires bootstrap-aware route tests |
-| `FE_SHELL_TEST_UNIT_06` | `unknown` authentication state keeps protected routes pending | 🟡 In Progress | Requires bootstrap implementation    |
-| `FE_SHELL_TEST_UNIT_07` | Accounts navigation and active state are tested               | 🟢 Implemented | Existing unit/integration tests      |
-| `FE_SHELL_TEST_UNIT_08` | Logout failure preserves authenticated state                  | 🟢 Implemented | Existing Admin Shell unit test       |
-| `FE_SHELL_TEST_UNIT_09` | Duplicate logout submission is prevented                      | 🟢 Implemented | Existing Admin Shell unit test       |
+| ID                      | Criteria                                                      | Status         | Reason |
+| ----------------------- | ------------------------------------------------------------- | -------------- | ------ |
+| `FE_SHELL_TEST_UNIT_01` | Admin Shell rendering is tested                               | 🟢 Implemented |        |
+| `FE_SHELL_TEST_UNIT_02` | Sidebar rendering is tested                                   | 🟢 Implemented |        |
+| `FE_SHELL_TEST_UNIT_03` | Logout button state is tested                                 | 🟢 Implemented |        |
+| `FE_SHELL_TEST_UNIT_04` | Authenticated route guard behavior is tested                  | 🟡 In Progress | Current coverage is provided by integration/E2E tests rather than a dedicated unit-level route-guard suite. |
+| `FE_SHELL_TEST_UNIT_05` | Unauthenticated route guard behavior is tested                | 🟡 In Progress | Current coverage is provided by integration/E2E tests rather than a dedicated unit-level route-guard suite. |
+| `FE_SHELL_TEST_UNIT_06` | `unknown` authentication state keeps protected routes pending | 🟡 In Progress | Current coverage is provided by integration/E2E tests rather than a dedicated unit-level route-guard suite. |
+| `FE_SHELL_TEST_UNIT_07` | Accounts navigation and active state are tested               | 🟢 Implemented |        |
+| `FE_SHELL_TEST_UNIT_08` | Logout failure preserves authenticated state                  | 🟢 Implemented |        |
+| `FE_SHELL_TEST_UNIT_09` | Duplicate logout submission is prevented                      | 🟢 Implemented |        |
 
 ## Testing — Integration
 
-| ID                     | Criteria                                                                      | Status         | Reason                              |
-| ---------------------- | ----------------------------------------------------------------------------- | -------------- | ----------------------------------- |
-| `FE_SHELL_TEST_INT_01` | Auth bootstrap successfully restores authentication after application startup | 🟡 In Progress | Requires bootstrap implementation   |
-| `FE_SHELL_TEST_INT_02` | Authenticated user can access `/admin` after bootstrap                        | 🟡 In Progress | Requires bootstrap implementation   |
-| `FE_SHELL_TEST_INT_03` | Unauthenticated user is redirected to `/login` after bootstrap                | 🟡 In Progress | Requires bootstrap implementation   |
-| `FE_SHELL_TEST_INT_04` | Authenticated user accessing `/login` is redirected to `/admin`               | 🟢 Implemented | Existing integration test           |
-| `FE_SHELL_TEST_INT_05` | Logout sends `POST /auth/logout` with browser credentials                     | 🟡 In Progress | Requires cookie-based logout        |
-| `FE_SHELL_TEST_INT_06` | Logout does not send a bearer access token                                    | 🟡 In Progress | Existing implementation must change |
-| `FE_SHELL_TEST_INT_07` | Logout success clears authentication state                                    | 🟢 Implemented | Existing integration behavior       |
-| `FE_SHELL_TEST_INT_08` | Logout success navigates to `/login`                                          | 🟢 Implemented | Existing integration behavior       |
-| `FE_SHELL_TEST_INT_09` | Duplicate logout submission is prevented                                      | 🟢 Implemented | Existing integration behavior       |
-| `FE_SHELL_TEST_INT_10` | Access-token `401` can trigger one serialized refresh attempt                 | 🟡 In Progress | Requires refresh implementation     |
-| `FE_SHELL_TEST_INT_11` | Successful refresh replaces the in-memory access token                        | 🟡 In Progress | Requires refresh implementation     |
-| `FE_SHELL_TEST_INT_12` | Refresh failure clears authentication state                                   | 🟡 In Progress | Requires refresh implementation     |
+| ID                     | Criteria                                                                      | Status         | Reason |
+| ---------------------- | ----------------------------------------------------------------------------- | -------------- | ------ |
+| `FE_SHELL_TEST_INT_01` | Auth bootstrap successfully restores authentication after application startup | 🟢 Implemented |        |
+| `FE_SHELL_TEST_INT_02` | Authenticated user can access `/admin` after bootstrap                        | 🟢 Implemented |        |
+| `FE_SHELL_TEST_INT_03` | Unauthenticated user is redirected to `/login` after bootstrap                | 🟢 Implemented |        |
+| `FE_SHELL_TEST_INT_04` | Authenticated user accessing `/login` is redirected to `/admin`               | 🟢 Implemented |        |
+| `FE_SHELL_TEST_INT_05` | Logout sends `POST /auth/logout` with browser credentials                     | 🟢 Implemented |        |
+| `FE_SHELL_TEST_INT_06` | Logout does not send a bearer access token                                    | 🟢 Implemented |        |
+| `FE_SHELL_TEST_INT_07` | Logout success clears authentication state                                    | 🟢 Implemented |        |
+| `FE_SHELL_TEST_INT_08` | Logout success navigates to `/login`                                          | 🟢 Implemented |        |
+| `FE_SHELL_TEST_INT_09` | Duplicate logout submission is prevented                                      | 🟢 Implemented |        |
+| `FE_SHELL_TEST_INT_10` | Access-token `401` can trigger one serialized refresh attempt                 | 🟢 Implemented |        |
+| `FE_SHELL_TEST_INT_11` | Successful refresh replaces the in-memory access token                        | 🟢 Implemented |        |
+| `FE_SHELL_TEST_INT_12` | Refresh failure clears authentication state                                   | 🟢 Implemented |        |
 
 ## Testing — E2E
 
-| ID                     | Criteria                                                                        | Status         | Reason                                    |
-| ---------------------- | ------------------------------------------------------------------------------- | -------------- | ----------------------------------------- |
-| `FE_SHELL_TEST_E2E_01` | Login leads to the Admin Shell                                                  | 🟢 Implemented | Existing E2E coverage                     |
-| `FE_SHELL_TEST_E2E_02` | Full page reload preserves the authenticated Admin session                      | 🟡 In Progress | Requires browser refresh-cookie bootstrap |
-| `FE_SHELL_TEST_E2E_03` | Sidebar appears in the Admin Shell                                              | 🟢 Implemented | Existing E2E coverage                     |
-| `FE_SHELL_TEST_E2E_04` | Accounts navigation is visible                                                  | 🟢 Implemented | Existing E2E coverage                     |
-| `FE_SHELL_TEST_E2E_05` | User navigates to `/admin/accounts`                                             | 🟢 Implemented | Existing E2E coverage                     |
-| `FE_SHELL_TEST_E2E_06` | Account List renders inside the Admin Shell                                     | 🟢 Implemented | Existing E2E coverage                     |
-| `FE_SHELL_TEST_E2E_07` | Accounts navigation appears active                                              | 🟢 Implemented | Existing E2E coverage                     |
-| `FE_SHELL_TEST_E2E_08` | User logs out and `/login` appears                                              | 🟢 Implemented | Existing E2E coverage                     |
-| `FE_SHELL_TEST_E2E_09` | Logout expires the browser refresh credential                                   | 🟡 In Progress | Requires cookie-based logout              |
-| `FE_SHELL_TEST_E2E_10` | Unauthenticated access to `/admin` redirects after bootstrap                    | 🟡 In Progress | Requires bootstrap implementation         |
-| `FE_SHELL_TEST_E2E_11` | Unauthenticated access to `/admin/accounts` redirects after bootstrap           | 🟡 In Progress | Requires bootstrap implementation         |
-| `FE_SHELL_TEST_E2E_12` | Access-token expiration recovers through refresh without an authentication loop | 🟡 In Progress | Requires refresh implementation           |
-| `FE_SHELL_TEST_E2E_13` | Logout does not depend on an unexpired bearer access token                      | 🟡 In Progress | Requires cookie-based logout              |
+| ID                     | Criteria                                                                        | Status         | Reason |
+| ---------------------- | ------------------------------------------------------------------------------- | -------------- | ------ |
+| `FE_SHELL_TEST_E2E_01` | Login leads to the Admin Shell                                                  | 🟢 Implemented |        |
+| `FE_SHELL_TEST_E2E_02` | Full page reload preserves the authenticated Admin session                      | 🟡 In Progress | The dedicated real-auth E2E is opt-in and requires the browser-cookie backend stack. |
+| `FE_SHELL_TEST_E2E_03` | Sidebar appears in the Admin Shell                                              | 🟢 Implemented |        |
+| `FE_SHELL_TEST_E2E_04` | Accounts navigation is visible                                                  | 🟢 Implemented |        |
+| `FE_SHELL_TEST_E2E_05` | User navigates to `/admin/accounts`                                             | 🟢 Implemented |        |
+| `FE_SHELL_TEST_E2E_06` | Account List renders inside the Admin Shell                                     | 🟢 Implemented |        |
+| `FE_SHELL_TEST_E2E_07` | Accounts navigation appears active                                              | 🟢 Implemented |        |
+| `FE_SHELL_TEST_E2E_08` | User logs out and `/login` appears                                              | 🟢 Implemented |        |
+| `FE_SHELL_TEST_E2E_09` | Logout expires the browser refresh credential                                   | 🔴 Blocked     | The dedicated real-auth E2E requires backend cookie support that is not implemented. |
+| `FE_SHELL_TEST_E2E_10` | Unauthenticated access to `/admin` redirects after bootstrap                    | 🟢 Implemented |        |
+| `FE_SHELL_TEST_E2E_11` | Unauthenticated access to `/admin/accounts` redirects after bootstrap           | 🟢 Implemented |        |
+| `FE_SHELL_TEST_E2E_12` | Access-token expiration recovers through refresh without an authentication loop | 🟡 In Progress | Protected-request recovery is covered by integration tests, but there is no dedicated E2E scenario for access-token expiration. |
+| `FE_SHELL_TEST_E2E_13` | Logout does not depend on an unexpired bearer access token                      | 🟡 In Progress | The frontend request is implemented and mocked E2E coverage exists, but real end-to-end verification requires the backend logout contract. |
 
 ## Testing — Manual
 
-| ID                        | Criteria                                  | Status         | Reason                  |
-| ------------------------- | ----------------------------------------- | -------------- | ----------------------- |
-| `FE_SHELL_TEST_MANUAL_01` | Sidebar layout is verified                | 🟡 In Progress | Not yet verified        |
-| `FE_SHELL_TEST_MANUAL_02` | Main Content Area is verified             | 🟡 In Progress | Not yet verified        |
-| `FE_SHELL_TEST_MANUAL_03` | Login → Admin transition is verified      | 🟡 In Progress | Not yet verified        |
-| `FE_SHELL_TEST_MANUAL_04` | Full page reload preserves authentication | 🟡 In Progress | Requires implementation |
-| `FE_SHELL_TEST_MANUAL_05` | Logout behavior is verified               | 🟡 In Progress | Requires implementation |
-| `FE_SHELL_TEST_MANUAL_06` | Redirect behavior is verified             | 🟡 In Progress | Requires implementation |
-| `FE_SHELL_TEST_MANUAL_07` | Keyboard interaction is verified          | 🟡 In Progress | Not yet verified        |
-| `FE_SHELL_TEST_MANUAL_08` | Responsive layout is verified             | 🟡 In Progress | Not yet verified        |
-| `FE_SHELL_TEST_MANUAL_09` | Visible focus states are verified         | 🟡 In Progress | Not yet verified        |
+| ID                        | Criteria                                  | Status         | Reason |
+| ------------------------- | ----------------------------------------- | -------------- | ------ |
+| `FE_SHELL_TEST_MANUAL_01` | Sidebar layout is verified                | 🟡 In Progress | Not yet verified |
+| `FE_SHELL_TEST_MANUAL_02` | Main Content Area is verified             | 🟡 In Progress | Not yet verified |
+| `FE_SHELL_TEST_MANUAL_03` | Login → Admin transition is verified      | 🟡 In Progress | Not yet verified |
+| `FE_SHELL_TEST_MANUAL_04` | Full page reload preserves authentication | 🟡 In Progress | Requires the backend browser-cookie contract |
+| `FE_SHELL_TEST_MANUAL_05` | Logout behavior is verified               | 🟡 In Progress | Not yet verified against the real backend |
+| `FE_SHELL_TEST_MANUAL_06` | Redirect behavior is verified             | 🟡 In Progress | Not yet verified |
+| `FE_SHELL_TEST_MANUAL_07` | Keyboard interaction is verified           | 🟡 In Progress | Not yet verified |
+| `FE_SHELL_TEST_MANUAL_08` | Responsive layout is verified              | 🟡 In Progress | Not yet verified |
+| `FE_SHELL_TEST_MANUAL_09` | Visible focus states are verified           | 🟡 In Progress | Not yet verified |
