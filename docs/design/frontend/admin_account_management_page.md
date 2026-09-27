@@ -1054,8 +1054,8 @@ Color may supplement the label but must not carry the meaning alone.
 | `FE-ACCOUNT-ROUTE-001` | `/admin/accounts` renders inside Admin Shell. | 🟢 Implemented |
 | `FE-ACCOUNT-ROUTE-002` | Unauthenticated access redirects to `/login`. | 🟢 Implemented |
 | `FE-ACCOUNT-ROUTE-003` | Create Account route exists.                  | 🟢 Implemented |
-| `FE-ACCOUNT-ROUTE-004` | Account Detail route is defined.              | 🟡 Defined     |
-| `FE-ACCOUNT-ROUTE-005` | Edit Account route is defined separately.     | 🟡 Defined     |
+| `FE-ACCOUNT-ROUTE-004` | Account Detail route is defined.              | 🟢 Implemented |
+| `FE-ACCOUNT-ROUTE-005` | Edit Account route is defined separately.     | 🟢 Implemented |
 
 ---
 
@@ -1066,8 +1066,8 @@ Color may supplement the label but must not carry the meaning alone.
 | `FE-ACCOUNT-REQ-001` | Protected route implemented.                  | 🟢 Implemented |
 | `FE-ACCOUNT-REQ-002` | Account list rendered.                        | 🟢 Implemented |
 | `FE-ACCOUNT-REQ-003` | Create navigation implemented.                | 🟢 Implemented |
-| `FE-ACCOUNT-REQ-004` | View navigation is defined separately.        | 🟡 Defined     |
-| `FE-ACCOUNT-REQ-005` | Edit navigation is distinct from View.        | 🟡 Defined     |
+| `FE-ACCOUNT-REQ-004` | View navigation is defined separately.        | 🟢 Implemented |
+| `FE-ACCOUNT-REQ-005` | Edit navigation is distinct from View.        | 🟢 Implemented |
 | `FE-ACCOUNT-REQ-006` | Deactivation implemented.                     | 🟢 Implemented |
 | `FE-ACCOUNT-REQ-007` | Activation implemented.                       | 🟢 Implemented |
 | `FE-ACCOUNT-REQ-008` | Restoration implemented.                      | 🟢 Implemented |
@@ -1111,16 +1111,16 @@ Color may supplement the label but must not carry the meaning alone.
 
 | ID                      | Criteria                                    | Status         |
 | ----------------------- | ------------------------------------------- | -------------- |
-| `FE-ACCOUNT-ACTION-001` | View navigation is defined separately.      | 🟡 Defined     |
-| `FE-ACCOUNT-ACTION-002` | View is limited to non-deleted accounts.    | 🟡 Defined     |
-| `FE-ACCOUNT-ACTION-003` | Edit navigation is distinct from View.      | 🟡 Defined     |
+| `FE-ACCOUNT-ACTION-001` | View navigation is defined separately.      | 🟢 Implemented |
+| `FE-ACCOUNT-ACTION-002` | View is limited to non-deleted accounts.    | 🟢 Implemented |
+| `FE-ACCOUNT-ACTION-003` | Edit navigation is distinct from View.      | 🟢 Implemented |
 | `FE-ACCOUNT-ACTION-007` | Deactivate implemented.                     | 🟢 Implemented |
 | `FE-ACCOUNT-ACTION-011` | Last-active-administrator conflict handled. | 🟢 Implemented |
 | `FE-ACCOUNT-ACTION-012` | Activate implemented.                       | 🟢 Implemented |
 | `FE-ACCOUNT-ACTION-016` | Restore implemented.                        | 🟢 Implemented |
 | `FE-ACCOUNT-ACTION-020` | Restored account renders as inactive.       | 🟢 Implemented |
 | `FE-ACCOUNT-ACTION-021` | Soft Delete is not exposed by default.      | 🟢 Implemented |
-| `FE-ACCOUNT-ACTION-024` | Hard Delete is not exposed.                 | 🟢 Implemented |
+| `FE-ACCOUNT-ACTION-024` | Hard Delete is not exposed.                | 🟢 Implemented |
 | `FE-ACCOUNT-ACTION-025` | Duplicate submissions prevented.            | 🟢 Implemented |
 | `FE-ACCOUNT-ACTION-026` | Optimistic lifecycle updates are not used.  | 🟢 Implemented |
 | `FE-ACCOUNT-ACTION-027` | Successful mutation refreshes list.         | 🟢 Implemented |
@@ -1178,14 +1178,14 @@ Color may supplement the label but must not carry the meaning alone.
 | `FE-ACCOUNT-A11Y-007` | Lifecycle actions use actual buttons.  | 🟢 Implemented |
 | `FE-ACCOUNT-A11Y-008` | Visible focus implemented.             | 🟢 Implemented |
 | `FE-ACCOUNT-A11Y-009` | Focus is not obscured.                 | 🟢 Implemented |
-| `FE-ACCOUNT-A11Y-010` | Filter labels implemented.             | 🟢 Implemented |
-| `FE-ACCOUNT-A11Y-011` | Row action names are descriptive.      | 🟢 Implemented |
-| `FE-ACCOUNT-A11Y-012` | Status does not rely on color.         | 🟢 Implemented |
-| `FE-ACCOUNT-A11Y-013` | Async status is accessible.            | 🟢 Implemented |
-| `FE-ACCOUNT-A11Y-014` | Pagination is keyboard accessible.     | 🟢 Implemented |
+| `FE-ACCOUNT-A11Y-010` | Filter labels implemented.              | 🟢 Implemented |
+| `FE-ACCOUNT-A11Y-011` | Row action names are descriptive.       | 🟢 Implemented |
+| `FE-ACCOUNT-A11Y-012` | Status does not rely on color.          | 🟢 Implemented |
+| `FE-ACCOUNT-A11Y-013` | Async status is accessible.             | 🟢 Implemented |
+| `FE-ACCOUNT-A11Y-014` | Pagination is keyboard accessible.      | 🟢 Implemented |
 | `FE-ACCOUNT-A11Y-015` | Keyboard order is predictable.         | 🟢 Implemented |
-| `FE-ACCOUNT-A11Y-016` | Dialog focus is managed correctly.     | 🟢 Implemented |
-| `FE-ACCOUNT-A11Y-017` | Responsive accessibility is preserved. | 🟢 Implemented |
+| `FE-ACCOUNT-A11Y-016` | Dialog focus is managed correctly.      | 🟢 Implemented |
+| `FE-ACCOUNT-A11Y-017` | Responsive accessibility is preserved.  | 🟢 Implemented |
 
 ---
 
