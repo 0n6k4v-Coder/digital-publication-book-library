@@ -44,7 +44,7 @@ function accountResponse(): Response {
 }
 
 beforeEach(() => {
-  window.history.replaceState({}, "", `/admin/accounts/${account.id}/edit`);
+  window.history.replaceState({}, "", `/admin/accounts/${account.id}`);
   authService.clearClientState();
   vi.stubGlobal("fetch", vi.fn());
 });
@@ -88,7 +88,7 @@ describe("Account Detail integration", () => {
     expect(vi.mocked(fetch).mock.calls[0][0]).toBe("/auth/refresh");
   });
 
-  it("renders inside AdminShell and loads the authoritative Account", async () => {
+  it("renders the read-only Account Detail page inside the Admin Shell", async () => {
     vi.mocked(fetch)
       .mockResolvedValueOnce(
         new Response(
@@ -119,7 +119,7 @@ describe("Account Detail integration", () => {
 
     expect(
       await screen.findByRole("heading", {
-        name: "Edit Administrator Account",
+        name: "Administrator Account",
       }),
     ).toBeInTheDocument();
 
@@ -136,10 +136,15 @@ describe("Account Detail integration", () => {
     ).toHaveAttribute("aria-current", "page");
 
     expect(
-      screen.getByRole("button", {
-        name: "Logout",
+      screen.getByRole("link", {
+        name: "Edit",
       }),
-    ).toBeInTheDocument();
+    ).toHaveAttribute(
+      "href",
+      `/admin/accounts/${account.id}/edit?return_to=%2Fadmin%2Faccounts`,
+    );
+
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
 
     const accountCall = vi.mocked(fetch).mock.calls[2];
     const headers = new Headers(accountCall[1]?.headers);
@@ -155,7 +160,7 @@ describe("Account Detail integration", () => {
     expect(document.body).not.toHaveTextContent(refreshToken);
   });
 
-  it("uses the exact default Back destination when no return_to is supplied", async () => {
+  it("does not perform an update or lifecycle mutation from Account Detail", async () => {
     vi.mocked(fetch)
       .mockResolvedValueOnce(
         new Response(
@@ -184,10 +189,17 @@ describe("Account Detail integration", () => {
 
     render(<App />);
 
-    expect(
-      await screen.findByRole("link", {
-        name: "Back to Administrator Accounts",
-      }),
-    ).toHaveAttribute("href", "/admin/accounts");
+    await screen.findByRole("heading", {
+      name: "Administrator Account",
+    });
+
+    const mutationRequests = vi
+      .mocked(fetch)
+      .mock.calls.filter(
+        ([url, init]) =>
+          url === `/admin/accounts/${account.id}` && init?.method !== "GET",
+      );
+
+    expect(mutationRequests).toHaveLength(0);
   });
 });

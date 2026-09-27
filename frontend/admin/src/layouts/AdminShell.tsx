@@ -7,6 +7,14 @@ interface AdminShellProps {
   children?: ReactNode;
 }
 
+function isAccountDetailRoute(pathname: string): boolean {
+  return /^\/admin\/accounts\/[^/]+$/.test(pathname);
+}
+
+function isAccountEditRoute(pathname: string): boolean {
+  return /^\/admin\/accounts\/[^/]+\/edit$/.test(pathname);
+}
+
 export function AdminShell({ onLogout, children }: AdminShellProps) {
   const pathname = usePathname();
 
@@ -22,7 +30,9 @@ export function AdminShell({ onLogout, children }: AdminShellProps) {
   const isAccountsActive =
     pathname === "/admin/accounts" ||
     pathname === "/admin/accounts/create" ||
-    /^\/admin\/accounts\/[^/]+\/edit$/.test(pathname);
+    isAccountDetailRoute(pathname) ||
+    isAccountEditRoute(pathname);
+
   const isAdminHomeActive = pathname === "/admin";
 
   useEffect(() => {

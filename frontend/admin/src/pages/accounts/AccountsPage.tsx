@@ -24,6 +24,7 @@ import type {
   AdministratorAccount,
 } from "../../types/account";
 import {
+  buildAccountDetailHref,
   buildAccountListHref,
   buildCreateAccountHref,
   buildEditAccountHref,
@@ -208,8 +209,10 @@ export function AccountsPage() {
 
   const listHref = buildAccountListHref(query);
   const createHref = buildCreateAccountHref(listHref);
+
   const pageCount =
     data === null ? 1 : Math.max(1, Math.ceil(data.total / data.pageSize));
+
   const isInitialLoading = data === null && isLoading;
   const isBusy = isLoading || pendingMutation !== null;
   const hasFilters = query.status !== null || query.includeDeleted;
@@ -361,7 +364,6 @@ export function AccountsPage() {
 
   function renderRowActions(account: AdministratorAccount) {
     const label = getAccountLabel(account);
-    const editHref = buildEditAccountHref(account.id, listHref);
     const isMutationPending = pendingMutation !== null;
 
     if (account.deletedAt !== null) {
@@ -373,10 +375,26 @@ export function AccountsPage() {
           aria-label={`Restore account: ${label}`}
           onClick={() => void executeMutation("restore", account)}
         >
-          Restore
+          {pendingMutation === `restore:${account.id}`
+            ? "Restoring…"
+            : "Restore"}
         </button>
       );
     }
+
+    const viewHref = buildAccountDetailHref(account.id);
+    const editHref = buildEditAccountHref(account.id, listHref);
+
+    const viewLink = (
+      <a
+        className="secondary-button account-row-action"
+        href={viewHref}
+        aria-label={`View account: ${label}`}
+        onClick={(event) => handleInternalLink(event, viewHref)}
+      >
+        View
+      </a>
+    );
 
     const editLink = (
       <a
@@ -392,6 +410,7 @@ export function AccountsPage() {
     if (account.status === "active") {
       return (
         <>
+          {viewLink}
           {editLink}
           <button
             className="secondary-button account-row-action"
@@ -410,6 +429,7 @@ export function AccountsPage() {
 
     return (
       <>
+        {viewLink}
         {editLink}
         <button
           className="secondary-button account-row-action"

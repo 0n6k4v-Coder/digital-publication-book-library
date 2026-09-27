@@ -20,7 +20,21 @@
 
 .account-detail-page__header {
   display: grid;
-  gap: 0.45rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.account-detail-page__header-actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+}
+
+.account-detail-page__edit {
+  inline-size: auto;
+  min-inline-size: 8rem;
+  text-decoration: none;
 }
 
 .account-detail-page__title {
@@ -34,6 +48,7 @@
 }
 
 .account-detail-page__description,
+.account-detail-page__email,
 .account-detail-page__hint,
 .account-detail-page__status,
 .account-detail-page__state {
@@ -41,22 +56,21 @@
   color: var(--text-muted);
 }
 
+.account-detail-page__email {
+  margin-block-start: 0.25rem;
+  font-size: 0.95rem;
+}
+
 .account-detail-page__error {
   margin: 0;
 }
 
-.account-detail-page__status,
-.account-detail-page__notice {
-  padding: 0.8rem 0.95rem;
-  border: 1px solid var(--border);
-  border-radius: 0.85rem;
-  background: var(--surface);
-}
-
 .account-detail-page__notice {
   margin: 0;
+  padding: 0.8rem 0.95rem;
+  border: 1px solid #a8d5ba;
+  border-radius: 0.85rem;
   color: #155724;
-  border-color: #a8d5ba;
   background: #edf8f1;
 }
 
@@ -68,12 +82,24 @@
 .account-detail-card,
 .account-detail-lifecycle {
   display: grid;
-  gap: 1.5rem;
+  gap: 1.25rem;
   padding: 1.25rem;
   border: 1px solid var(--border);
   border-radius: 1rem;
   background: var(--surface);
   box-shadow: 0 0.8rem 2rem rgba(23, 32, 51, 0.04);
+}
+
+.account-detail-section-header {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.account-detail-section-header h2 {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: 1.15rem;
+  line-height: 1.2;
 }
 
 .account-detail-form {
@@ -132,6 +158,10 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   margin: 0;
   border-block-start: 1px solid #e1e5ec;
+}
+
+.account-detail-meta--primary {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .account-detail-meta > div {
@@ -226,7 +256,16 @@
     inline-size: 100%;
   }
 
+  .account-detail-page__header {
+    grid-template-columns: 1fr;
+  }
+
+  .account-detail-page__header-actions {
+    justify-content: stretch;
+  }
+
   .account-detail-page__back,
+  .account-detail-page__edit,
   .account-detail-page__save,
   .account-detail-page__action {
     inline-size: 100%;
@@ -238,7 +277,8 @@
     grid-template-columns: 1fr;
   }
 
-  .account-detail-meta {
+  .account-detail-meta,
+  .account-detail-meta--primary {
     grid-template-columns: 1fr;
   }
 
@@ -256,40 +296,5 @@
   .account-detail-page .primary-button,
   .account-detail-page .secondary-button {
     min-block-size: 3.5rem;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .account-detail-page .primary-button,
-  .account-detail-page .secondary-button,
-  .account-detail-page .field input {
-    transition: none;
-  }
-}
-
-@media (forced-colors: active) {
-  .account-detail-page__status,
-  .account-detail-page__notice,
-  .account-detail-card,
-  .account-detail-lifecycle,
-  .account-detail-meta {
-    border-color: CanvasText;
-    color: CanvasText;
-    background: Canvas;
-    box-shadow: none;
-  }
-
-  .account-detail-status--active,
-  .account-detail-status--inactive,
-  .account-detail-status--deleted {
-    border-color: ButtonText;
-    color: ButtonText;
-    background: Canvas;
-  }
-
-  .account-detail-form .field input {
-    border-color: CanvasText;
-    color: CanvasText;
-    background: Canvas;
   }
 }
