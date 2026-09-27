@@ -60,11 +60,20 @@ describe("AccountDetailPage", () => {
     expect(
       await screen.findByRole("heading", {
         name: "Administrator Account",
+        exact: true,
       }),
     ).toBeInTheDocument();
 
-    expect(screen.getByText("Library Administrator")).toBeInTheDocument();
-    expect(screen.getByText("admin@example.com")).toBeInTheDocument();
+    expect(
+      screen.getByText("Library Administrator", {
+        selector: "dd",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("admin@example.com", {
+        selector: "dd",
+      }),
+    ).toBeInTheDocument();
     expect(screen.getAllByText(activeAccount.id)).toHaveLength(2);
 
     expect(
@@ -114,6 +123,7 @@ describe("AccountDetailPage", () => {
 
     await screen.findByRole("heading", {
       name: "Administrator Account",
+      exact: true,
     });
 
     expect(screen.queryByLabelText(/password/i)).not.toBeInTheDocument();

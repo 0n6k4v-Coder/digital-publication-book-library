@@ -158,6 +158,7 @@ test.describe("admin accounts routes", () => {
     await expect(
       page.getByRole("heading", {
         name: "Administrator Account",
+        exact: true,
       }),
     ).toBeVisible();
 
