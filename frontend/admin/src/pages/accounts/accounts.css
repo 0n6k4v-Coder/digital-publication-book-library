@@ -116,6 +116,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+  align-items: center;
 }
 
 .account-row-action {
@@ -124,6 +125,7 @@
   min-block-size: 2.75rem;
   padding-inline: 0.75rem;
   text-decoration: none;
+  white-space: nowrap;
 }
 
 .account-status--deleted {

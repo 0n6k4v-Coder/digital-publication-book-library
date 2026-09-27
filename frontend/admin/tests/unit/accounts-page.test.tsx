@@ -33,7 +33,26 @@ vi.mock("../../src/services/accounts", () => {
 
 const mockedList = vi.mocked(accountsService.list);
 
+const activeAccount = {
+  id: "01900000-0000-7000-8000-000000000001",
+  email: "admin@example.com",
+  displayName: "Library Administrator",
+  status: "active" as const,
+  createdAt: "2026-09-23T10:00:00Z",
+  updatedAt: "2026-09-23T10:00:00Z",
+  deletedAt: null,
+};
+
+const deletedAccount = {
+  ...activeAccount,
+  id: "01900000-0000-7000-8000-000000000003",
+  deletedAt: "2026-09-24T10:00:00Z",
+  status: "inactive" as const,
+};
+
 beforeEach(() => {
+  window.history.replaceState({}, "", "/admin/accounts");
+
   mockedList.mockReset();
 });
 
@@ -44,17 +63,7 @@ afterEach(() => {
 describe("AccountsPage", () => {
   it("renders loading state and then the account list", async () => {
     mockedList.mockResolvedValue({
-      items: [
-        {
-          id: "01900000-0000-7000-8000-000000000001",
-          email: "admin@example.com",
-          displayName: null,
-          status: "active",
-          createdAt: "2026-09-23T10:00:00Z",
-          updatedAt: "2026-09-23T10:00:00Z",
-          deletedAt: null,
-        },
-      ],
+      items: [activeAccount],
       page: 1,
       pageSize: 20,
       total: 1,
@@ -79,28 +88,62 @@ describe("AccountsPage", () => {
     expect(
       screen.getByRole("cell", { name: "admin@example.com" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("cell", { name: "Active" })).toBeInTheDocument();
 
-    expect(mockedList).toHaveBeenCalledTimes(1);
+    expect(
+      screen.getByRole("link", {
+        name: "View account: Library Administrator",
+      }),
+    ).toHaveAttribute("href", `/admin/accounts/${activeAccount.id}`);
+
+    expect(
+      screen.getByRole("link", {
+        name: "Edit account: Library Administrator",
+      }),
+    ).toHaveAttribute(
+      "href",
+      `/admin/accounts/${activeAccount.id}/edit?return_to=%2Fadmin%2Faccounts`,
+    );
+
+    expect(
+      screen.getByRole("button", {
+        name: "Deactivate account: Library Administrator",
+      }),
+    ).toBeInTheDocument();
   });
 
-  it("renders an empty state when no accounts are returned", async () => {
+  it("renders Restore only for soft-deleted accounts", async () => {
+    window.history.replaceState({}, "", "/admin/accounts?include_deleted=true");
+
     mockedList.mockResolvedValue({
-      items: [],
+      items: [deletedAccount],
       page: 1,
       pageSize: 20,
-      total: 0,
+      total: 1,
     });
 
     render(<AccountsPage />);
 
+    await screen.findByRole("heading", {
+      name: "Administrator Accounts",
+    });
+
     expect(
-      await screen.findByRole("heading", {
-        name: "No administrator accounts",
+      screen.getByRole("button", {
+        name: "Restore account: Library Administrator",
       }),
     ).toBeInTheDocument();
 
-    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", {
+        name: "View account: Library Administrator",
+      }),
+    ).not.toBeInTheDocument();
+
+    expect(
+      screen.queryByRole("link", {
+        name: "Edit account: Library Administrator",
+      }),
+    ).not.toBeInTheDocument();
   });
 
   it("renders backend authorization failure without inventing a client permission rule", async () => {

@@ -1,6 +1,7 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { AdminShell } from "./layouts/AdminShell";
 import { AccountDetailPage } from "./pages/accounts/AccountDetailPage";
+import { AccountEditPage } from "./pages/accounts/AccountEditPage";
 import { AccountRoutePlaceholderPage } from "./pages/accounts/AccountRoutePlaceholderPage";
 import { AccountsPage } from "./pages/accounts/AccountsPage";
 import { LoginPage } from "./pages/login/LoginPage";
@@ -21,6 +22,10 @@ function RouteTransition({ message }: RouteTransitionProps) {
   );
 }
 
+function isAccountDetailRoute(pathname: string): boolean {
+  return /^\/admin\/accounts\/[^/]+$/.test(pathname);
+}
+
 function isAccountEditRoute(pathname: string): boolean {
   return /^\/admin\/accounts\/[^/]+\/edit$/.test(pathname);
 }
@@ -30,6 +35,7 @@ function isAdminRoute(pathname: string): boolean {
     pathname === "/admin" ||
     pathname === "/admin/accounts" ||
     pathname === "/admin/accounts/create" ||
+    isAccountDetailRoute(pathname) ||
     isAccountEditRoute(pathname)
   );
 }
@@ -81,6 +87,11 @@ export default function App() {
       return;
     }
 
+    if (isAccountDetailRoute(pathname)) {
+      document.title = "Account | Admin Application";
+      return;
+    }
+
     if (isAccountEditRoute(pathname)) {
       document.title = "Edit Account | Admin Application";
       return;
@@ -123,7 +134,15 @@ export default function App() {
   if (pathname === "/admin/accounts/create") {
     return (
       <AdminShell onLogout={authService.logout}>
-        <AccountRoutePlaceholderPage mode="create" />
+        <AccountRoutePlaceholderPage />
+      </AdminShell>
+    );
+  }
+
+  if (isAccountDetailRoute(pathname)) {
+    return (
+      <AdminShell onLogout={authService.logout}>
+        <AccountDetailPage />
       </AdminShell>
     );
   }
@@ -131,7 +150,7 @@ export default function App() {
   if (isAccountEditRoute(pathname)) {
     return (
       <AdminShell onLogout={authService.logout}>
-        <AccountDetailPage />
+        <AccountEditPage />
       </AdminShell>
     );
   }

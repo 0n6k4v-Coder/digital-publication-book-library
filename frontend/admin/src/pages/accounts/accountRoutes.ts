@@ -17,12 +17,19 @@ export function buildCreateAccountHref(returnTo: string): string {
   return `${CREATE_ACCOUNT_PATH}?${params.toString()}`;
 }
 
+export function buildAccountDetailHref(accountId: string): string {
+  return `${ACCOUNT_LIST_PATH}/${encodeURIComponent(accountId)}`;
+}
+
 export function buildEditAccountHref(
   accountId: string,
   returnTo: string,
 ): string {
   const params = new URLSearchParams({ return_to: returnTo });
-  return `${ACCOUNT_LIST_PATH}/${encodeURIComponent(accountId)}/edit?${params.toString()}`;
+
+  return `${ACCOUNT_LIST_PATH}/${encodeURIComponent(
+    accountId,
+  )}/edit?${params.toString()}`;
 }
 
 export function resolveAccountReturnTo(search: string): string {

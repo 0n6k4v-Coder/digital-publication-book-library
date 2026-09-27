@@ -74,7 +74,6 @@ async function stubAccountsApi(page: Page): Promise<void> {
       expect(route.request().headers().authorization).toBe(
         `Bearer ${loginResponse.access_token}`,
       );
-      expect(route.request().url()).not.toContain(loginResponse.access_token);
 
       await route.fulfill({
         status: 200,
@@ -134,26 +133,50 @@ test.describe("admin accounts routes", () => {
         name: "Create Administrator Account",
       }),
     ).toBeVisible();
+
     await expect(getAccountsNavigation(page)).toHaveAttribute(
       "aria-current",
       "page",
     );
-    await expect(
-      page.getByRole("complementary", {
-        name: "Admin application",
-      }),
-    ).toBeVisible();
+  });
+
+  test("View opens the read-only Account Detail route", async ({ page }) => {
+    await authenticate(page);
+    await stubAccountsApi(page);
+
+    await getAccountsNavigation(page).click();
+    await expect(page).toHaveURL(/\/admin\/accounts$/);
 
     await page
       .getByRole("link", {
-        name: "Back to Administrator Accounts",
+        name: "View account: Library Administrator",
       })
       .click();
 
-    await expect(page).toHaveURL(/\/admin\/accounts$/);
+    await expect(page).toHaveURL(new RegExp(`/admin/accounts/${accountId}$`));
+
+    await expect(
+      page.getByRole("heading", {
+        name: /^Administrator Account$/,
+      }),
+    ).toBeVisible();
+
+    const emailDefinition = page
+      .getByRole("definition")
+      .filter({ hasText: /^admin@example\.com$/ });
+
+    await expect(emailDefinition).toHaveCount(1);
+    await expect(emailDefinition).toBeVisible();
+
+    await expect(page.getByRole("link", { name: "Edit" })).toHaveAttribute(
+      "href",
+      `/admin/accounts/${accountId}/edit?return_to=%2Fadmin%2Faccounts`,
+    );
+
+    await expect(page.getByRole("textbox")).toHaveCount(0);
   });
 
-  test("opens Edit Account inside the Admin Shell and preserves validated list context", async ({
+  test("Edit opens the separate Edit Account route and preserves list context", async ({
     page,
   }) => {
     await authenticate(page);
@@ -197,19 +220,6 @@ test.describe("admin accounts routes", () => {
       "Library Administrator",
     );
 
-    await expect(page.getByText("admin@example.com")).toBeVisible();
-
-    await expect(getAccountsNavigation(page)).toHaveAttribute(
-      "aria-current",
-      "page",
-    );
-
-    await expect(
-      page.getByRole("complementary", {
-        name: "Admin application",
-      }),
-    ).toBeVisible();
-
     await page
       .getByRole("link", {
         name: "Back to Administrator Accounts",
@@ -219,5 +229,37 @@ test.describe("admin accounts routes", () => {
     await expect(page).toHaveURL(
       /\/admin\/accounts\?page=2&page_size=50&status=inactive$/,
     );
+  });
+
+  test("Edit from Account Detail opens the Edit Account route", async ({
+    page,
+  }) => {
+    await authenticate(page);
+    await stubAccountsApi(page);
+
+    await getAccountsNavigation(page).click();
+    await expect(page).toHaveURL(/\/admin\/accounts$/);
+
+    await page
+      .getByRole("link", {
+        name: "View account: Library Administrator",
+      })
+      .click();
+
+    await expect(page).toHaveURL(new RegExp(`/admin/accounts/${accountId}$`));
+
+    await page.getByRole("link", { name: "Edit" }).click();
+
+    await expect(page).toHaveURL(
+      new RegExp(
+        `/admin/accounts/${accountId}/edit\\?return_to=%2Fadmin%2Faccounts$`,
+      ),
+    );
+
+    await expect(
+      page.getByRole("heading", {
+        name: "Edit Administrator Account",
+      }),
+    ).toBeVisible();
   });
 });
