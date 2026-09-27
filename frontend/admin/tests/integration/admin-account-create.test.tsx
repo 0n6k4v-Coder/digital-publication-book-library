@@ -134,8 +134,7 @@ describe("Account Create integration", () => {
 
     expect(
       screen.getByRole("link", {
-        name: "Accounts",
-        exact: true,
+        name: /^Accounts$/,
       }),
     ).toHaveAttribute("aria-current", "page");
 

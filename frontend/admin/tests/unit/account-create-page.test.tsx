@@ -96,7 +96,7 @@ describe("AccountCreatePage", () => {
 
     const form = screen.getByRole("form", {
       name: "Account credentials",
-    });
+    }) as HTMLFormElement;
 
     const email = screen.getByLabelText("Email");
     const password = screen.getByLabelText("Password");

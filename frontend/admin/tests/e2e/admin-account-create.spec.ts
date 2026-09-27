@@ -44,7 +44,7 @@ async function authenticate(page: Page): Promise<void> {
   });
 
   await page.getByLabel("Email").fill("admin@example.com");
-  await page.getByLabel("Password").fill(password);
+  await page.getByRole("textbox", { name: "Password" }).fill(password);
   await page.getByRole("button", { name: "Sign In" }).click();
 
   await expect(page).toHaveURL(/\/admin$/);
@@ -262,8 +262,15 @@ test.describe("admin account create", () => {
       })
       .click();
 
-    await expect(email).toBeInvalid();
-    await expect(passwordInput).toBeInvalid();
+    const emailIsInvalid = await email.evaluate(
+      (element) => !(element as HTMLInputElement).checkValidity(),
+    );
+    const passwordIsInvalid = await passwordInput.evaluate(
+      (element) => !(element as HTMLInputElement).checkValidity(),
+    );
+
+    expect(emailIsInvalid).toBe(true);
+    expect(passwordIsInvalid).toBe(true);
 
     expect(postCount).toBe(0);
 
@@ -506,7 +513,7 @@ test.describe("admin account create", () => {
     await authenticate(page);
 
     let postCount = 0;
-    let releaseCreate: (() => void) | null = null;
+    let releaseCreate!: () => void;
 
     await installAccountsRoutes(page, async (route) => {
       postCount += 1;
@@ -554,7 +561,7 @@ test.describe("admin account create", () => {
 
     await expect.poll(() => postCount).toBe(1);
 
-    releaseCreate?.();
+    releaseCreate();
 
     await expect(page).toHaveURL(new RegExp(`/admin/accounts/${accountId}$`));
   });

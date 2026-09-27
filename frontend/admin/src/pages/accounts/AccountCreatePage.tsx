@@ -205,6 +205,7 @@ export function AccountCreatePage() {
 
         <form
           className="account-create-form"
+          aria-labelledby={formTitleId}
           onSubmit={(event) => void handleSubmit(event)}
           aria-busy={isSubmitting}
         >
