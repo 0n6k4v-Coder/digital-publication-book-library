@@ -32,6 +32,11 @@ interface ProblemDetails {
   code: string | null;
 }
 
+interface AccountCreateInput {
+  email: string;
+  password: string;
+}
+
 interface AccountUpdatePatch {
   display_name: string | null;
 }
@@ -344,6 +349,22 @@ export const accountsService = {
     }
 
     return parseAccountListResponse(body);
+  },
+
+  async create(input: AccountCreateInput): Promise<AdministratorAccount> {
+    const headers = new Headers();
+    headers.set("Content-Type", "application/json");
+
+    const response = await request("/admin/accounts", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        email: input.email,
+        password: input.password,
+      }),
+    });
+
+    return parseAccountResponseBody(response);
   },
 
   async get(
