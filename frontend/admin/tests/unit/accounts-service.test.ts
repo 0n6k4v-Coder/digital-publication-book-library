@@ -5,12 +5,19 @@ import { authService } from "../../src/services/auth";
 
 vi.mock("../../src/services/auth", () => ({
   authService: {
-    fetchWithAuthentication: vi.fn(),
-    clearClientState: vi.fn(),
+    fetchWithAuthentication: vi.fn(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const headers = new Headers(init?.headers);
+        headers.set("Authorization", "Bearer opaque-access-token");
+
+        return fetch(input, {
+          ...init,
+          headers,
+        });
+      },
+    ),
   },
 }));
-
-const accessTokenAuthorization = "Bearer opaque-access-token";
 
 const accountResponse = {
   items: [
@@ -31,26 +38,25 @@ const accountResponse = {
   total: 101,
 };
 
+const singleAccountResponse = {
+  id: "01900000-0000-7000-8000-000000000001",
+  email: "admin@example.com",
+  display_name: "Library Administrator",
+  status: "active",
+  created_at: "2026-09-23T10:00:00Z",
+  updated_at: "2026-09-23T10:00:00Z",
+  deleted_at: null,
+  password: "must-never-be-consumed",
+  password_hash: "must-never-be-consumed",
+};
+
 beforeEach(() => {
   vi.stubGlobal("fetch", vi.fn());
-
-  vi.mocked(authService.fetchWithAuthentication).mockImplementation(
-    async (input, init = {}) => {
-      const headers = new Headers(init.headers);
-      headers.set("Authorization", accessTokenAuthorization);
-
-      return fetch(input, {
-        ...init,
-        headers,
-      });
-    },
-  );
-
-  vi.mocked(authService.clearClientState).mockClear();
+  vi.mocked(authService.fetchWithAuthentication).mockClear();
 });
 
 describe("accountsService", () => {
-  it("sends the documented GET query and authorization header", async () => {
+  it("sends the documented GET query through authenticated fetch", async () => {
     vi.mocked(fetch).mockResolvedValueOnce(
       new Response(JSON.stringify(accountResponse), {
         status: 200,
@@ -66,6 +72,10 @@ describe("accountsService", () => {
     });
 
     expect(fetch).toHaveBeenCalledTimes(1);
+    expect(
+      vi.mocked(authService.fetchWithAuthentication),
+    ).toHaveBeenCalledTimes(1);
+
     const [url, init] = vi.mocked(fetch).mock.calls[0];
 
     expect(url).toBe(
@@ -73,15 +83,11 @@ describe("accountsService", () => {
     );
     expect(init?.method).toBe("GET");
     expect(new Headers(init?.headers).get("authorization")).toBe(
-      accessTokenAuthorization,
+      "Bearer opaque-access-token",
     );
     expect(init?.body).toBeUndefined();
     expect(init?.cache).toBe("no-store");
     expect(String(url)).not.toContain("opaque-access-token");
-    expect(data.items[0]).toMatchObject({
-      email: "admin@example.com",
-      displayName: null,
-    });
     expect(data.items[0]).not.toHaveProperty("password");
     expect(data.items[0]).not.toHaveProperty("password_hash");
   });
@@ -109,7 +115,130 @@ describe("accountsService", () => {
     );
   });
 
-  it("clears auth state on 401 and preserves it on 403", async () => {
+  it("loads one authoritative Account with no-store and no password fields", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify(singleAccountResponse), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    const account = await accountsService.get(
+      "01900000-0000-7000-8000-000000000001",
+    );
+
+    const [url, init] = vi.mocked(fetch).mock.calls[0];
+
+    expect(url).toBe("/admin/accounts/01900000-0000-7000-8000-000000000001");
+    expect(init?.method).toBe("GET");
+    expect(init?.cache).toBe("no-store");
+    expect(new Headers(init?.headers).get("authorization")).toBe(
+      "Bearer opaque-access-token",
+    );
+    expect(account.displayName).toBe("Library Administrator");
+    expect(account).not.toHaveProperty("password");
+    expect(account).not.toHaveProperty("password_hash");
+  });
+
+  it("uses merge-patch for display-name updates and returns server-authoritative state", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          ...singleAccountResponse,
+          display_name: "Server Canonical Name",
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        },
+      ),
+    );
+
+    const account = await accountsService.update(
+      "01900000-0000-7000-8000-000000000001",
+      {
+        display_name: "Client Submitted Name",
+      },
+    );
+
+    const [url, init] = vi.mocked(fetch).mock.calls[0];
+    const headers = new Headers(init?.headers);
+
+    expect(url).toBe("/admin/accounts/01900000-0000-7000-8000-000000000001");
+    expect(init?.method).toBe("PATCH");
+    expect(init?.cache).toBe("no-store");
+    expect(headers.get("authorization")).toBe("Bearer opaque-access-token");
+    expect(headers.get("content-type")).toBe("application/merge-patch+json");
+    expect(init?.body).toBe(
+      JSON.stringify({
+        display_name: "Client Submitted Name",
+      }),
+    );
+    expect(account?.displayName).toBe("Server Canonical Name");
+    expect(String(url)).not.toContain("opaque-access-token");
+    expect(String(init?.body)).not.toContain("opaque-access-token");
+    expect(String(init?.body)).not.toContain("password");
+  });
+
+  it("allows null display_name in the merge patch", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          ...singleAccountResponse,
+          display_name: null,
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        },
+      ),
+    );
+
+    await accountsService.update("01900000-0000-7000-8000-000000000001", {
+      display_name: null,
+    });
+
+    const [, init] = vi.mocked(fetch).mock.calls[0];
+
+    expect(init?.body).toBe(
+      JSON.stringify({
+        display_name: null,
+      }),
+    );
+  });
+
+  it("returns the authoritative lifecycle Account returned by the server", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          ...singleAccountResponse,
+          status: "inactive",
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        },
+      ),
+    );
+
+    const account = await accountsService.mutate(
+      "deactivate",
+      "01900000-0000-7000-8000-000000000001",
+    );
+
+    expect(account?.status).toBe("inactive");
+
+    const [url, init] = vi.mocked(fetch).mock.calls[0];
+
+    expect(url).toBe(
+      "/admin/accounts/01900000-0000-7000-8000-000000000001/deactivate",
+    );
+    expect(init?.method).toBe("POST");
+    expect(init?.body).toBeUndefined();
+    expect(String(url)).not.toContain("opaque-access-token");
+  });
+
+  it("maps 401 and 403 responses without owning authentication state", async () => {
     vi.mocked(fetch)
       .mockResolvedValueOnce(
         new Response(
@@ -140,22 +269,24 @@ describe("accountsService", () => {
         ),
       );
 
-    await expect(accountsService.list()).rejects.toMatchObject({
+    await expect(
+      accountsService.get("01900000-0000-7000-8000-000000000001"),
+    ).rejects.toMatchObject({
       code: "UNAUTHORIZED",
       status: 401,
       problemCode: "UNAUTHORIZED",
     });
-    expect(authService.clearClientState).toHaveBeenCalledTimes(1);
 
-    await expect(accountsService.list()).rejects.toMatchObject({
+    await expect(
+      accountsService.get("01900000-0000-7000-8000-000000000001"),
+    ).rejects.toMatchObject({
       code: "FORBIDDEN",
       status: 403,
       problemCode: "ACCOUNT_VIEW_FORBIDDEN",
     });
-    expect(authService.clearClientState).toHaveBeenCalledTimes(1);
   });
 
-  it("maps Problem Details conflicts without exposing server detail", async () => {
+  it("maps LAST_ACTIVE_ADMINISTRATOR without exposing server detail", async () => {
     vi.mocked(fetch).mockResolvedValueOnce(
       new Response(
         JSON.stringify({
@@ -183,26 +314,5 @@ describe("accountsService", () => {
       problemCode: "LAST_ACTIVE_ADMINISTRATOR",
     });
     expect(String(error)).not.toContain("internal database detail");
-  });
-
-  it("uses POST mutations without token bodies or tokenized URLs", async () => {
-    vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status: 204 }));
-
-    await accountsService.mutate(
-      "restore",
-      "01900000-0000-7000-8000-000000000001",
-    );
-
-    const [url, init] = vi.mocked(fetch).mock.calls[0];
-    expect(url).toBe(
-      "/admin/accounts/01900000-0000-7000-8000-000000000001/restore",
-    );
-    expect(init?.method).toBe("POST");
-    expect(new Headers(init?.headers).get("authorization")).toBe(
-      accessTokenAuthorization,
-    );
-    expect(init?.body).toBeUndefined();
-    expect(init?.cache).toBe("no-store");
-    expect(String(url)).not.toContain("opaque-access-token");
   });
 });

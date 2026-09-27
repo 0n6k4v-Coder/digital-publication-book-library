@@ -1,0 +1,295 @@
+.account-detail-page {
+  inline-size: min(100%, 56rem);
+  margin-inline: auto;
+  display: grid;
+  gap: 1.25rem;
+}
+
+.account-detail-page a:focus-visible,
+.account-detail-page button:focus-visible,
+.account-detail-page input:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+
+.account-detail-page__back {
+  inline-size: fit-content;
+  min-inline-size: 12rem;
+  text-decoration: none;
+}
+
+.account-detail-page__header {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.account-detail-page__title {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: clamp(1.7rem, 1.3rem + 1vw, 2.3rem);
+  font-weight: 780;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  text-wrap: balance;
+}
+
+.account-detail-page__description,
+.account-detail-page__hint,
+.account-detail-page__status,
+.account-detail-page__state {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.account-detail-page__error {
+  margin: 0;
+}
+
+.account-detail-page__status,
+.account-detail-page__notice {
+  padding: 0.8rem 0.95rem;
+  border: 1px solid var(--border);
+  border-radius: 0.85rem;
+  background: var(--surface);
+}
+
+.account-detail-page__notice {
+  margin: 0;
+  color: #155724;
+  border-color: #a8d5ba;
+  background: #edf8f1;
+}
+
+.account-detail-page__hint {
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.account-detail-card,
+.account-detail-lifecycle {
+  display: grid;
+  gap: 1.5rem;
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: var(--surface);
+  box-shadow: 0 0.8rem 2rem rgba(23, 32, 51, 0.04);
+}
+
+.account-detail-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.account-detail-form .field {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.account-detail-form .field label {
+  color: var(--text-default);
+  font-size: 0.95rem;
+  font-weight: 680;
+}
+
+.account-detail-form .field input {
+  inline-size: 100%;
+  min-block-size: 3.25rem;
+  padding: 0.8rem 0.95rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-control);
+  color: var(--text-strong);
+  background: var(--surface);
+}
+
+.account-detail-form .field input:hover:not(:disabled) {
+  border-color: #8f9bad;
+}
+
+.account-detail-form .field input:focus-visible {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 0.2rem var(--primary-soft);
+}
+
+.account-detail-form .field input:disabled {
+  opacity: 0.7;
+}
+
+.account-detail-form__actions {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.account-detail-page__save,
+.account-detail-page__action {
+  inline-size: auto;
+  min-inline-size: 10rem;
+  text-decoration: none;
+}
+
+.account-detail-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+  border-block-start: 1px solid #e1e5ec;
+}
+
+.account-detail-meta > div {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.95rem 0;
+  border-block-end: 1px solid #e1e5ec;
+}
+
+.account-detail-meta > div:nth-child(odd) {
+  padding-inline-end: 1rem;
+}
+
+.account-detail-meta > div:nth-child(even) {
+  padding-inline-start: 1rem;
+}
+
+.account-detail-meta dt {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 780;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.account-detail-meta dd {
+  margin: 0;
+  color: var(--text-default);
+  overflow-wrap: anywhere;
+}
+
+.account-detail-meta__id {
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+  font-size: 0.9rem;
+}
+
+.account-detail-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: 2rem;
+  inline-size: fit-content;
+  padding-inline: 0.7rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 760;
+}
+
+.account-detail-status--active {
+  border-color: #a8d5ba;
+  color: #155724;
+  background: #edf8f1;
+}
+
+.account-detail-status--inactive {
+  border-color: #d6c38b;
+  color: #634f12;
+  background: #fff9e5;
+}
+
+.account-detail-status--deleted {
+  border-color: #b5bfd0;
+  color: #46546b;
+  background: #f1f4f8;
+}
+
+.account-detail-lifecycle__header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: start;
+}
+
+.account-detail-lifecycle__header h2 {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: 1.15rem;
+  line-height: 1.2;
+}
+
+.account-detail-lifecycle__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+@media (max-width: 767px) {
+  .account-detail-page {
+    inline-size: 100%;
+  }
+
+  .account-detail-page__back,
+  .account-detail-page__save,
+  .account-detail-page__action {
+    inline-size: 100%;
+  }
+
+  .account-detail-form__actions,
+  .account-detail-lifecycle__actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .account-detail-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .account-detail-meta > div:nth-child(odd),
+  .account-detail-meta > div:nth-child(even) {
+    padding-inline: 0;
+  }
+
+  .account-detail-lifecycle__header {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (pointer: coarse) {
+  .account-detail-page .primary-button,
+  .account-detail-page .secondary-button {
+    min-block-size: 3.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .account-detail-page .primary-button,
+  .account-detail-page .secondary-button,
+  .account-detail-page .field input {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .account-detail-page__status,
+  .account-detail-page__notice,
+  .account-detail-card,
+  .account-detail-lifecycle,
+  .account-detail-meta {
+    border-color: CanvasText;
+    color: CanvasText;
+    background: Canvas;
+    box-shadow: none;
+  }
+
+  .account-detail-status--active,
+  .account-detail-status--inactive,
+  .account-detail-status--deleted {
+    border-color: ButtonText;
+    color: ButtonText;
+    background: Canvas;
+  }
+
+  .account-detail-form .field input {
+    border-color: CanvasText;
+    color: CanvasText;
+    background: Canvas;
+  }
+}
