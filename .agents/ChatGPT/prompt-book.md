@@ -248,7 +248,7 @@ Are they correct or not?
 
 Keep your answer short, honest, and direct. Is this correct?
 - If yes, do nothing.
-- If not, give me a full block of the better version.
+- If not, give me a full block of the correct version.
 ```
 
 ---
