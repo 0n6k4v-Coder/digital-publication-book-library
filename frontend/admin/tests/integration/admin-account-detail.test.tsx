@@ -22,8 +22,6 @@ function loginResponse(): Response {
       access_token: accessToken,
       token_type: "Bearer",
       expires_in: 3600,
-      refresh_token: refreshToken,
-      refresh_expires_in: 2592000,
     }),
     {
       status: 200,
@@ -58,6 +56,22 @@ afterEach(() => {
 
 describe("Account Detail integration", () => {
   it("redirects an unauthenticated detail request to login", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          status: 401,
+          code: "INVALID_REFRESH_TOKEN",
+        }),
+        {
+          status: 401,
+          headers: {
+            "Cache-Control": "no-store",
+            "Content-Type": "application/problem+json",
+          },
+        },
+      ),
+    );
+
     render(<App />);
 
     await waitFor(() => {
@@ -70,13 +84,31 @@ describe("Account Detail integration", () => {
       }),
     ).toBeInTheDocument();
 
-    expect(vi.mocked(fetch)).not.toHaveBeenCalled();
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(fetch).mock.calls[0][0]).toBe("/auth/refresh");
   });
 
   it("renders inside AdminShell and loads the authoritative Account", async () => {
     vi.mocked(fetch)
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            status: 401,
+            code: "INVALID_REFRESH_TOKEN",
+          }),
+          {
+            status: 401,
+            headers: {
+              "Cache-Control": "no-store",
+              "Content-Type": "application/problem+json",
+            },
+          },
+        ),
+      )
       .mockResolvedValueOnce(loginResponse())
       .mockResolvedValueOnce(accountResponse());
+
+    await authService.retryBootstrap();
 
     await authService.login({
       email: "admin@example.com",
@@ -100,7 +132,6 @@ describe("Account Detail integration", () => {
     expect(
       screen.getByRole("link", {
         name: "Accounts",
-        exact: true,
       }),
     ).toHaveAttribute("aria-current", "page");
 
@@ -110,7 +141,7 @@ describe("Account Detail integration", () => {
       }),
     ).toBeInTheDocument();
 
-    const accountCall = vi.mocked(fetch).mock.calls[1];
+    const accountCall = vi.mocked(fetch).mock.calls[2];
     const headers = new Headers(accountCall[1]?.headers);
 
     expect(accountCall[0]).toBe(`/admin/accounts/${account.id}`);
@@ -126,8 +157,25 @@ describe("Account Detail integration", () => {
 
   it("uses the exact default Back destination when no return_to is supplied", async () => {
     vi.mocked(fetch)
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            status: 401,
+            code: "INVALID_REFRESH_TOKEN",
+          }),
+          {
+            status: 401,
+            headers: {
+              "Cache-Control": "no-store",
+              "Content-Type": "application/problem+json",
+            },
+          },
+        ),
+      )
       .mockResolvedValueOnce(loginResponse())
       .mockResolvedValueOnce(accountResponse());
+
+    await authService.retryBootstrap();
 
     await authService.login({
       email: "admin@example.com",

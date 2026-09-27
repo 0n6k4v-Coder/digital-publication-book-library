@@ -93,7 +93,11 @@ describe("AccountDetailPage", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("admin@example.com")).toBeInTheDocument();
     expect(screen.getByText(activeAccount.id)).toBeInTheDocument();
-    expect(screen.getByText("Active")).toBeInTheDocument();
+    expect(
+      screen.getByText("Active", {
+        selector: ".account-detail-status",
+      }),
+    ).toBeInTheDocument();
 
     expect(screen.queryByLabelText(/password/i)).not.toBeInTheDocument();
 

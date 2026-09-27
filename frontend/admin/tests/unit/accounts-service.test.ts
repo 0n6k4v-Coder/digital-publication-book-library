@@ -5,8 +5,17 @@ import { authService } from "../../src/services/auth";
 
 vi.mock("../../src/services/auth", () => ({
   authService: {
-    getAuthorizationHeader: vi.fn(() => "Bearer opaque-access-token"),
-    clearClientState: vi.fn(),
+    fetchWithAuthentication: vi.fn(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const headers = new Headers(init?.headers);
+        headers.set("Authorization", "Bearer opaque-access-token");
+
+        return fetch(input, {
+          ...init,
+          headers,
+        });
+      },
+    ),
   },
 }));
 
@@ -43,14 +52,11 @@ const singleAccountResponse = {
 
 beforeEach(() => {
   vi.stubGlobal("fetch", vi.fn());
-  vi.mocked(authService.getAuthorizationHeader).mockReturnValue(
-    "Bearer opaque-access-token",
-  );
-  vi.mocked(authService.clearClientState).mockClear();
+  vi.mocked(authService.fetchWithAuthentication).mockClear();
 });
 
 describe("accountsService", () => {
-  it("sends the documented GET query and authorization header", async () => {
+  it("sends the documented GET query through authenticated fetch", async () => {
     vi.mocked(fetch).mockResolvedValueOnce(
       new Response(JSON.stringify(accountResponse), {
         status: 200,
@@ -66,6 +72,10 @@ describe("accountsService", () => {
     });
 
     expect(fetch).toHaveBeenCalledTimes(1);
+    expect(
+      vi.mocked(authService.fetchWithAuthentication),
+    ).toHaveBeenCalledTimes(1);
+
     const [url, init] = vi.mocked(fetch).mock.calls[0];
 
     expect(url).toBe(
@@ -228,7 +238,7 @@ describe("accountsService", () => {
     expect(String(url)).not.toContain("opaque-access-token");
   });
 
-  it("clears auth state on 401 and preserves it on 403", async () => {
+  it("maps 401 and 403 responses without owning authentication state", async () => {
     vi.mocked(fetch)
       .mockResolvedValueOnce(
         new Response(
@@ -267,8 +277,6 @@ describe("accountsService", () => {
       problemCode: "UNAUTHORIZED",
     });
 
-    expect(authService.clearClientState).toHaveBeenCalledTimes(1);
-
     await expect(
       accountsService.get("01900000-0000-7000-8000-000000000001"),
     ).rejects.toMatchObject({
@@ -276,8 +284,6 @@ describe("accountsService", () => {
       status: 403,
       problemCode: "ACCOUNT_VIEW_FORBIDDEN",
     });
-
-    expect(authService.clearClientState).toHaveBeenCalledTimes(1);
   });
 
   it("maps LAST_ACTIVE_ADMINISTRATOR without exposing server detail", async () => {

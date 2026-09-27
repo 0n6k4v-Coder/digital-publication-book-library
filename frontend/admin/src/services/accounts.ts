@@ -1,4 +1,4 @@
-import { authService } from "./auth";
+import { AuthenticationError, authService } from "./auth";
 import type {
   AccountListQuery,
   AccountStatusFilter,
@@ -239,7 +239,6 @@ async function toAccountsError(response: Response): Promise<AccountsError> {
   const { code: problemCode } = await readProblemDetails(response);
 
   if (response.status === 401) {
-    authService.clearClientState();
     return new AccountsError("UNAUTHORIZED", 401, problemCode);
   }
 
@@ -270,31 +269,49 @@ async function toAccountsError(response: Response): Promise<AccountsError> {
   return new AccountsError("UNKNOWN", response.status, problemCode);
 }
 
+function toAccountsAuthenticationError(
+  error: AuthenticationError,
+): AccountsError {
+  if (error.status === 401) {
+    return new AccountsError("UNAUTHORIZED", 401);
+  }
+
+  if (error.status === 0) {
+    return new AccountsError("NETWORK", 0);
+  }
+
+  if (error.status >= 500) {
+    return new AccountsError("SERVER", error.status);
+  }
+
+  return new AccountsError("UNKNOWN", error.status);
+}
+
 async function request(
   pathname: string,
   init: RequestInit = {},
 ): Promise<Response> {
-  const authorization = authService.getAuthorizationHeader();
-
-  if (authorization === null) {
-    throw new AccountsError("UNAUTHORIZED", 401);
-  }
-
   const headers = new Headers(init.headers);
   headers.set("Accept", "application/json, application/problem+json");
-  headers.set("Authorization", authorization);
 
   let response: Response;
 
   try {
-    response = await fetch(buildApiUrl(pathname), {
-      ...init,
-      headers,
-      cache: "no-store",
-    });
+    response = await authService.fetchWithAuthentication(
+      buildApiUrl(pathname),
+      {
+        ...init,
+        headers,
+        cache: "no-store",
+      },
+    );
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {
       throw error;
+    }
+
+    if (error instanceof AuthenticationError) {
+      throw toAccountsAuthenticationError(error);
     }
 
     throw new AccountsError("NETWORK", 0);
@@ -318,7 +335,15 @@ export const accountsService = {
       signal: options.signal,
     });
 
-    return parseAccountListResponse(await response.json());
+    let body: unknown;
+
+    try {
+      body = await response.json();
+    } catch {
+      throw new AccountsError("INVALID_RESPONSE", response.status);
+    }
+
+    return parseAccountListResponse(body);
   },
 
   async get(

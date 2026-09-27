@@ -7,10 +7,16 @@ import { LoginPage } from "./pages/login/LoginPage";
 import { authService } from "./services/auth";
 import { navigate, usePathname } from "./services/navigation";
 
-function RouteTransition() {
+interface RouteTransitionProps {
+  message: string;
+}
+
+function RouteTransition({ message }: RouteTransitionProps) {
   return (
     <main className="route-transition" aria-live="polite">
-      Redirecting…
+      <p role="status" aria-live="polite">
+        {message}
+      </p>
     </main>
   );
 }
@@ -31,21 +37,32 @@ function isAdminRoute(pathname: string): boolean {
 export default function App() {
   const pathname = usePathname();
 
-  const isAuthenticated = useSyncExternalStore(
+  const authSnapshot = useSyncExternalStore(
     authService.subscribe,
     authService.getSnapshot,
   );
 
-  const redirectTarget =
-    pathname === "/login" && isAuthenticated
-      ? "/admin"
-      : isAdminRoute(pathname) && !isAuthenticated
-        ? "/login"
-        : pathname !== "/login" && !isAdminRoute(pathname)
-          ? isAuthenticated
-            ? "/admin"
-            : "/login"
-          : null;
+  const { authStatus } = authSnapshot;
+
+  useEffect(() => {
+    void authService.bootstrap();
+  }, []);
+
+  let redirectTarget: string | null = null;
+
+  if (authStatus === "authenticated") {
+    if (pathname === "/login") {
+      redirectTarget = "/admin";
+    } else if (!isAdminRoute(pathname)) {
+      redirectTarget = "/admin";
+    }
+  } else if (authStatus === "unauthenticated") {
+    if (pathname !== "/login") {
+      redirectTarget = "/login";
+    }
+  } else if (authStatus === "authentication-error" && pathname !== "/login") {
+    redirectTarget = "/login";
+  }
 
   useEffect(() => {
     if (redirectTarget !== null) {
@@ -78,11 +95,21 @@ export default function App() {
   }, [pathname]);
 
   if (redirectTarget !== null) {
-    return <RouteTransition />;
+    return <RouteTransition message="Redirecting…" />;
+  }
+
+  if (authStatus === "unknown") {
+    return <RouteTransition message="Checking authentication…" />;
   }
 
   if (pathname === "/login") {
-    return <LoginPage onLogin={authService.login} />;
+    return (
+      <LoginPage
+        onLogin={authService.login}
+        bootstrapError={authStatus === "authentication-error"}
+        onRetryBootstrap={authService.retryBootstrap}
+      />
+    );
   }
 
   if (pathname === "/admin/accounts") {
@@ -113,5 +140,5 @@ export default function App() {
     return <AdminShell onLogout={authService.logout} />;
   }
 
-  return <RouteTransition />;
+  return <RouteTransition message="Redirecting…" />;
 }
