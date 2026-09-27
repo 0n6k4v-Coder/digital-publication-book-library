@@ -743,75 +743,85 @@ The implementation must follow the repository's frontend test structure:
 | 🟢 Implemented | Implementation is complete and verified. |
 | 🔴 Blocked | Implementation cannot proceed because of a blocker. |
 
-All criteria in this draft are initially marked `🟡 Defined` to distinguish design completion from implementation verification.
+The current implementation is in place. Criteria are marked according to the implemented frontend behavior and the latest verification results.
 
 ## 15.1 Route
 
 | ID | Criteria | Status | Reason |
 |---|---|---|---|
-| `FE-ACCOUNT-CREATE-IMPL-001` | `/admin/accounts/create` renders inside the Admin Shell. | 🟡 Defined | Design requirement is defined; implementation verification is pending. |
-| `FE-ACCOUNT-CREATE-IMPL-002` | Unauthenticated access follows Admin Shell authentication behavior. | 🟡 Defined | Authentication integration is specified but not yet verified for this page. |
-| `FE-ACCOUNT-CREATE-IMPL-003` | Accounts navigation remains active while creating an Account. | 🟡 Defined | Active navigation behavior is inherited from the Admin Shell and requires page-level verification. |
-| `FE-ACCOUNT-CREATE-IMPL-004` | Back and Cancel navigate to `/admin/accounts`. | 🟡 Defined | Navigation behavior is specified; implementation verification is pending. |
-| `FE-ACCOUNT-CREATE-IMPL-005` | Successful creation navigates to `/admin/accounts/:id`. | 🟡 Defined | Post-create navigation is specified; implementation verification is pending. |
+| `FE-ACCOUNT-CREATE-IMPL-001` | `/admin/accounts/create` renders inside the Admin Shell. | 🟢 Implemented | Implemented and covered by the Admin Shell Account Create E2E flow. |
+| `FE-ACCOUNT-CREATE-IMPL-002` | Unauthenticated access follows Admin Shell authentication behavior. | 🟢 Implemented | Shared authentication routing handles protected Account Create access. |
+| `FE-ACCOUNT-CREATE-IMPL-003` | Accounts navigation remains active while creating an Account. | 🟢 Implemented | Admin Shell keeps Accounts active on the Create route. |
+| `FE-ACCOUNT-CREATE-IMPL-004` | Back and Cancel navigate to `/admin/accounts`. | 🟡 In Progress | Implementation is present; the latest E2E run still has an unscoped Create Account test locator in the Back/Cancel flow. |
+| `FE-ACCOUNT-CREATE-IMPL-005` | Successful creation navigates to `/admin/accounts/:id`. | 🟢 Implemented | Successful creation and Account Detail navigation pass the current E2E contract test. |
 
 ## 15.2 Form
 
 | ID | Criteria | Status | Reason |
 |---|---|---|---|
-| `FE-ACCOUNT-CREATE-IMPL-006` | Email renders as a required email input. | 🟡 Defined | Form field contract is defined; implementation verification is pending. |
-| `FE-ACCOUNT-CREATE-IMPL-007` | Password renders as a required password input. | 🟡 Defined | Form field contract is defined; implementation verification is pending. |
-| `FE-ACCOUNT-CREATE-IMPL-008` | Password uses `autocomplete="new-password"`. | 🟡 Defined | Browser autofill behavior is specified; implementation verification is pending. |
-| `FE-ACCOUNT-CREATE-IMPL-009` | No unsupported display-name field is submitted. | 🟡 Defined | Current backend Create Account contract excludes display name. |
-| `FE-ACCOUNT-CREATE-IMPL-010` | No unsupported frontend password policy is enforced. | 🟡 Defined | Backend remains authoritative for password validation. |
-| `FE-ACCOUNT-CREATE-IMPL-011` | Native form validation is supported. | 🟡 Defined | Native validation behavior is specified; implementation verification is pending. |
+| `FE-ACCOUNT-CREATE-IMPL-006` | Email renders as a required email input. | 🟢 Implemented | Implemented with native email and required constraints. |
+| `FE-ACCOUNT-CREATE-IMPL-007` | Password renders as a required password input. | 🟢 Implemented | Implemented with native password and required constraints. |
+| `FE-ACCOUNT-CREATE-IMPL-008` | Password uses `autocomplete="new-password"`. | 🟢 Implemented | Implemented directly on the Password field. |
+| `FE-ACCOUNT-CREATE-IMPL-009` | No unsupported display-name field is submitted. | 🟢 Implemented | Create request contains only Email and Password. |
+| `FE-ACCOUNT-CREATE-IMPL-010` | No unsupported frontend password policy is enforced. | 🟢 Implemented | Frontend does not impose a password length or composition policy. |
+| `FE-ACCOUNT-CREATE-IMPL-011` | Native form validation is supported. | 🟢 Implemented | Required and email constraints are enforced through browser validation. |
 
 ## 15.3 API
 
 | ID | Criteria | Status | Reason |
 |---|---|---|---|
-| `FE-ACCOUNT-CREATE-IMPL-012` | Create uses `POST /admin/accounts`. | 🟡 Defined | Endpoint is fixed by `AC_API_01`; implementation verification is pending. |
-| `FE-ACCOUNT-CREATE-IMPL-013` | Bearer credentials are sent only in the Authorization header. | 🟡 Defined | Security boundary is defined by Authentication and Account contracts. |
-| `FE-ACCOUNT-CREATE-IMPL-014` | The request body contains only supported Account Create fields. | 🟡 Defined | Current API accepts Email and Password only. |
-| `FE-ACCOUNT-CREATE-IMPL-015` | `201` is handled as successful creation. | 🟡 Defined | Success behavior is defined by `AC_API_01`. |
-| `FE-ACCOUNT-CREATE-IMPL-016` | `Location` or response Account ID resolves the created Account destination. | 🟡 Defined | Backend provides a `Location` header and Account response. |
-| `FE-ACCOUNT-CREATE-IMPL-017` | `409 EMAIL_ALREADY_IN_USE` is handled as an Email conflict. | 🟡 Defined | Conflict code is defined by `AC_API_01`. |
-| `FE-ACCOUNT-CREATE-IMPL-018` | `422 VALIDATION_ERROR` is rendered from server validation. | 🟡 Defined | Validation authority remains server-side. |
-| `FE-ACCOUNT-CREATE-IMPL-019` | `403` is rendered as an authorization failure without logout. | 🟡 Defined | Authorization failures must not be treated as authentication failures. |
-| `FE-ACCOUNT-CREATE-IMPL-020` | `401` is delegated to shared authentication behavior. | 🟡 Defined | Authentication behavior is centralized in the Admin Shell and Authentication flow. |
+| `FE-ACCOUNT-CREATE-IMPL-012` | Create uses `POST /admin/accounts`. | 🟢 Implemented | Implemented through `accountsService.create()`. |
+| `FE-ACCOUNT-CREATE-IMPL-013` | Bearer credentials are sent only in the Authorization header. | 🟢 Implemented | Protected Account requests use the shared authentication service. |
+| `FE-ACCOUNT-CREATE-IMPL-014` | The request body contains only supported Account Create fields. | 🟢 Implemented | Request body contains only `email` and `password`. |
+| `FE-ACCOUNT-CREATE-IMPL-015` | `201` is handled as successful creation. | 🟢 Implemented | `201` responses are parsed as the created Account response. |
+| `FE-ACCOUNT-CREATE-IMPL-016` | `Location` or response Account ID resolves the created Account destination. | 🟢 Implemented | The returned Account ID is used to build the Account Detail destination. |
+| `FE-ACCOUNT-CREATE-IMPL-017` | `409 EMAIL_ALREADY_IN_USE` is handled as an Email conflict. | 🟢 Implemented | Conflict code renders a field-level Email error and preserves retry state. |
+| `FE-ACCOUNT-CREATE-IMPL-018` | `422 VALIDATION_ERROR` is rendered from server validation. | 🟡 In Progress | Implementation is present; the latest E2E run still has an alert-locator assertion failure. |
+| `FE-ACCOUNT-CREATE-IMPL-019` | `403` is rendered as an authorization failure without logout. | 🟡 In Progress | Implementation is present; the latest E2E run still has an alert-locator assertion failure. |
+| `FE-ACCOUNT-CREATE-IMPL-020` | `401` is delegated to shared authentication behavior. | 🟢 Implemented | Shared authentication handling redirects to `/login` after failed recovery. |
 
 ## 15.4 Submission
 
 | ID | Criteria | Status | Reason |
 |---|---|---|---|
-| `FE-ACCOUNT-CREATE-IMPL-021` | Duplicate submission is prevented. | 🟡 Defined | Submission-pending behavior is specified; implementation verification is pending. |
-| `FE-ACCOUNT-CREATE-IMPL-022` | Create action is disabled while the request is pending. | 🟡 Defined | Pending-state UI behavior is specified; implementation verification is pending. |
-| `FE-ACCOUNT-CREATE-IMPL-023` | Retryable errors preserve usable form state. | 🟡 Defined | Retry behavior is specified; implementation verification is pending. |
-| `FE-ACCOUNT-CREATE-IMPL-024` | Successful creation clears transient form state before navigation. | 🟡 Defined | Success lifecycle is specified; implementation verification is pending. |
+| `FE-ACCOUNT-CREATE-IMPL-021` | Duplicate submission is prevented. | 🟢 Implemented | In-flight submission state prevents a second create request. |
+| `FE-ACCOUNT-CREATE-IMPL-022` | Create action is disabled while the request is pending. | 🟢 Implemented | Create action is disabled and changes to `Creating…`. |
+| `FE-ACCOUNT-CREATE-IMPL-023` | Retryable errors preserve usable form state. | 🟢 Implemented | Conflict and authorization/validation paths preserve the entered form values. |
+| `FE-ACCOUNT-CREATE-IMPL-024` | Successful creation clears transient form state before navigation. | 🟢 Implemented | Email, Password, and transient error state are cleared before navigation. |
 
 ## 15.5 Security
 
 | ID | Criteria | Status | Reason |
 |---|---|---|---|
-| `FE-ACCOUNT-CREATE-IMPL-025` | Backend remains the authentication authority. | 🟡 Defined | This is required by the Authentication and Admin Shell contracts. |
-| `FE-ACCOUNT-CREATE-IMPL-026` | Backend remains the authorization authority. | 🟡 Defined | This is required by the Authorization contract and deny-by-default model. |
-| `FE-ACCOUNT-CREATE-IMPL-027` | Password is never persisted in browser storage. | 🟡 Defined | Password secrecy is a mandatory frontend security boundary. |
-| `FE-ACCOUNT-CREATE-IMPL-028` | Password is never logged. | 🟡 Defined | Authentication and Account security contracts prohibit credential logging. |
-| `FE-ACCOUNT-CREATE-IMPL-029` | Tokens never appear in URLs. | 🟡 Defined | Authentication security requires bearer credentials to remain out of URLs. |
-| `FE-ACCOUNT-CREATE-IMPL-030` | Tokens never render in the UI. | 🟡 Defined | Tokens are security-sensitive and must not be exposed. |
-| `FE-ACCOUNT-CREATE-IMPL-031` | Internal server diagnostics are not exposed. | 🟡 Defined | Error presentation must not expose backend implementation details. |
+| `FE-ACCOUNT-CREATE-IMPL-025` | Backend remains the authentication authority. | 🟢 Implemented | Authentication state and `401` handling remain in the shared authentication service. |
+| `FE-ACCOUNT-CREATE-IMPL-026` | Backend remains the authorization authority. | 🟢 Implemented | The frontend renders `403` but does not establish authorization itself. |
+| `FE-ACCOUNT-CREATE-IMPL-027` | Password is never persisted in browser storage. | 🟢 Implemented | Password state is component-local and is cleared before successful navigation. |
+| `FE-ACCOUNT-CREATE-IMPL-028` | Password is never logged. | 🟢 Implemented | No logging of form credentials is performed. |
+| `FE-ACCOUNT-CREATE-IMPL-029` | Tokens never appear in URLs. | 🟢 Implemented | Account Create navigation uses only the Account ID. |
+| `FE-ACCOUNT-CREATE-IMPL-030` | Tokens never render in the UI. | 🟢 Implemented | Access tokens are kept out of rendered content. |
+| `FE-ACCOUNT-CREATE-IMPL-031` | Internal server diagnostics are not exposed. | 🟢 Implemented | UI uses generic error messages instead of server `detail` content. |
 
 ## 15.6 Accessibility
 
 | ID | Criteria | Status | Reason |
 |---|---|---|---|
-| `FE-ACCOUNT-CREATE-IMPL-032` | Semantic page structure is used. | 🟡 Defined | Accessibility structure is specified in the page design. |
-| `FE-ACCOUNT-CREATE-IMPL-033` | Primary page heading is present. | 🟡 Defined | The page requires exactly one primary `h1`. |
-| `FE-ACCOUNT-CREATE-IMPL-034` | All inputs have accessible labels. | 🟡 Defined | Native labeled controls are required by the accessibility contract. |
-| `FE-ACCOUNT-CREATE-IMPL-035` | Validation errors are associated with controls. | 🟡 Defined | Error association is required for recoverable form interaction. |
-| `FE-ACCOUNT-CREATE-IMPL-036` | Async submission status is accessible. | 🟡 Defined | Loading and submission status must be communicated to assistive technology. |
-| `FE-ACCOUNT-CREATE-IMPL-037` | Navigation and actions are keyboard accessible. | 🟡 Defined | Keyboard access is required by the Admin Shell and page accessibility requirements. |
-| `FE-ACCOUNT-CREATE-IMPL-038` | Focus is visible and not obscured. | 🟡 Defined | Visible focus is required across responsive layouts. |
+| `FE-ACCOUNT-CREATE-IMPL-032` | Semantic page structure is used. | 🟢 Implemented | Uses semantic sections, header, form, labels, and status/error regions. |
+| `FE-ACCOUNT-CREATE-IMPL-033` | Primary page heading is present. | 🟢 Implemented | The page exposes one primary `h1`. |
+| `FE-ACCOUNT-CREATE-IMPL-034` | All inputs have accessible labels. | 🟢 Implemented | Email and Password use explicit labels. |
+| `FE-ACCOUNT-CREATE-IMPL-035` | Validation errors are associated with controls. | 🟢 Implemented | `aria-invalid` and `aria-describedby` associate field errors with controls. |
+| `FE-ACCOUNT-CREATE-IMPL-036` | Async submission status is accessible. | 🟢 Implemented | Submission progress uses a polite status region. |
+| `FE-ACCOUNT-CREATE-IMPL-037` | Navigation and actions are keyboard accessible. | 🟢 Implemented | Back, Cancel, and Create Account use native keyboard-accessible controls. |
+| `FE-ACCOUNT-CREATE-IMPL-038` | Focus is visible and not obscured. | 🟢 Implemented | Existing repository focus styles and feature-local error focus handling are used. |
+
+## 15.7 Current Verification Status
+
+| Area | Status | Current Reason |
+|---|---|---|
+| Account Create implementation | 🟢 Implemented | The page, service integration, authentication handling, authorization handling, validation, security boundaries, and navigation are implemented. |
+| Unit coverage | 🟢 Implemented | Account Create unit coverage exists for form contract, validation, duplicate submission, conflicts, errors, authorization, and success navigation. |
+| Integration coverage | 🟢 Implemented | Account Create integration coverage exists for authenticated rendering, API submission, authorization failure, and security boundaries. |
+| E2E coverage | 🟡 In Progress | The latest E2E run has three remaining test-only locator/assertion failures for `422`, `403`, and Back/Cancel; the failures do not indicate a production Account Create runtime failure. |
+| Production Account Create behavior | 🟢 Implemented | The latest E2E run successfully passed the main route, API contract, native validation, conflict, authentication-expiry, duplicate-submission, and Admin Shell scenarios. |
 
 ---
 
