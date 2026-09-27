@@ -59,6 +59,15 @@ function getAccountsNavigation(page: Page) {
     });
 }
 
+function getAccountsPageHeader(page: Page) {
+  return page.locator("header").filter({
+    has: page.getByRole("heading", {
+      name: "Administrator Accounts",
+      level: 1,
+    }),
+  });
+}
+
 async function installAccountsRoutes(
   page: Page,
   handleCreate: (route: Route) => Promise<void>,
@@ -118,14 +127,7 @@ async function openCreatePage(page: Page): Promise<void> {
   await getAccountsNavigation(page).click();
   await expect(page).toHaveURL(/\/admin\/accounts$/);
 
-  const accountsPageHeader = page.locator("header").filter({
-    has: page.getByRole("heading", {
-      name: "Administrator Accounts",
-      level: 1,
-    }),
-  });
-
-  await accountsPageHeader
+  await getAccountsPageHeader(page)
     .getByRole("link", {
       name: "Create Account",
       exact: true,
@@ -384,9 +386,14 @@ test.describe("admin account create", () => {
       })
       .click();
 
-    await expect(page.getByRole("alert")).toHaveText(
-      "The server rejected the account details. Review the fields and try again.",
-    );
+    await expect(
+      page
+        .getByRole("alert")
+        .getByText(
+          "The server rejected the account details. Review the fields and try again.",
+          { exact: true },
+        ),
+    ).toBeVisible();
 
     await expect(
       page.getByText("internal validation implementation detail", {
@@ -435,9 +442,14 @@ test.describe("admin account create", () => {
       })
       .click();
 
-    await expect(page.getByRole("alert")).toHaveText(
-      "You do not have permission to create administrator accounts.",
-    );
+    await expect(
+      page
+        .getByRole("alert")
+        .getByText(
+          "You do not have permission to create administrator accounts.",
+          { exact: true },
+        ),
+    ).toBeVisible();
 
     await expect(page).toHaveURL(/\/admin\/accounts\/create$/);
     await expect(getAccountsNavigation(page)).toHaveAttribute(
@@ -598,7 +610,7 @@ test.describe("admin account create", () => {
 
     await expect(page).toHaveURL(/\/admin\/accounts$/);
 
-    await page
+    await getAccountsPageHeader(page)
       .getByRole("link", {
         name: "Create Account",
         exact: true,
