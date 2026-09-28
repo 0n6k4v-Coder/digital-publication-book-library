@@ -1548,14 +1548,17 @@ The Account Delete page must:
 
 ## Implementation Status Boundary
 
-The current frontend branch contains Account Management, Account Detail, and Account Edit implementations, but it does not currently contain the dedicated Account Delete page implementation.
+The current frontend branch contains implemented Account Management, Account Detail, Account Edit, and dedicated Account Delete page implementations.
 
-This document therefore defines the Account Delete page as the frontend source of truth for:
+The dedicated Account Delete route is:
 
-```text
 /admin/accounts/:id/delete
-```
+
+The Account Delete page owns the following destructive operations:
+
+- Delete Account confirmation followed by `DELETE /admin/accounts/{id}`
+- Permanently Delete confirmation followed by `DELETE /admin/accounts/{id}/purge`
 
 Implementation status remains tracked separately in Section 18.
 
-The repository sitemap must be updated to represent the Delete route before the route is considered repository-complete.
+The repository sitemap still requires alignment for the Delete route before the route is considered repository-complete.
