@@ -133,26 +133,31 @@ test.describe("Admin Account Delete", () => {
 
     const softTrigger = page.getByRole("button", {
       name: "Soft-delete account",
+      exact: true,
     });
 
     await softTrigger.focus();
     await softTrigger.click();
 
-    await expect(page.getByRole("alertdialog")).toBeVisible();
+    const confirmationDialog = page.getByRole("alertdialog");
+
+    await expect(confirmationDialog).toBeVisible();
 
     await expect(
-      page.getByRole("button", {
+      confirmationDialog.getByRole("button", {
         name: "Cancel",
+        exact: true,
       }),
     ).toBeFocused();
 
-    await page
+    await confirmationDialog
       .getByRole("button", {
         name: "Cancel",
+        exact: true,
       })
       .click();
 
-    await expect(page.getByRole("alertdialog")).toBeHidden();
+    await expect(confirmationDialog).toBeHidden();
 
     await expect(softTrigger).toBeFocused();
   });
@@ -196,12 +201,18 @@ test.describe("Admin Account Delete", () => {
     await page
       .getByRole("button", {
         name: "Soft-delete account",
+        exact: true,
       })
       .click();
 
-    await page
+    const confirmationDialog = page.getByRole("alertdialog");
+
+    await expect(confirmationDialog).toBeVisible();
+
+    await confirmationDialog
       .getByRole("button", {
         name: "Delete Account",
+        exact: true,
       })
       .click();
 
@@ -239,12 +250,18 @@ test.describe("Admin Account Delete", () => {
     await page
       .getByRole("button", {
         name: "Permanently delete account",
+        exact: true,
       })
       .click();
 
-    await page
+    const confirmationDialog = page.getByRole("alertdialog");
+
+    await expect(confirmationDialog).toBeVisible();
+
+    await confirmationDialog
       .getByRole("button", {
         name: "Permanently Delete",
+        exact: true,
       })
       .click();
 
@@ -286,18 +303,26 @@ test.describe("Admin Account Delete", () => {
     await page
       .getByRole("button", {
         name: "Soft-delete account",
+        exact: true,
       })
       .click();
 
-    await page
+    const confirmationDialog = page.getByRole("alertdialog");
+
+    await expect(confirmationDialog).toBeVisible();
+
+    await confirmationDialog
       .getByRole("button", {
         name: "Delete Account",
+        exact: true,
       })
       .click();
 
-    await expect(page.getByRole("alert")).toContainText(
-      "The last active administrator cannot be deleted.",
-    );
+    await expect(
+      confirmationDialog.getByRole("alert", {
+        exact: true,
+      }),
+    ).toContainText("The last active administrator cannot be deleted.");
 
     await expect(
       page.getByRole("heading", {
@@ -316,14 +341,19 @@ test.describe("Admin Account Delete", () => {
 
     const trigger = page.getByRole("button", {
       name: "Soft-delete account",
+      exact: true,
     });
 
     await trigger.focus();
     await trigger.click();
 
+    const confirmationDialog = page.getByRole("alertdialog");
+
+    await expect(confirmationDialog).toBeVisible();
+
     await page.keyboard.press("Escape");
 
-    await expect(page.getByRole("alertdialog")).toBeHidden();
+    await expect(confirmationDialog).toBeHidden();
 
     await expect(trigger).toBeFocused();
   });
@@ -356,12 +386,18 @@ test.describe("Admin Account Delete", () => {
     await page
       .getByRole("button", {
         name: "Soft-delete account",
+        exact: true,
       })
       .click();
 
-    await page
+    const confirmationDialog = page.getByRole("alertdialog");
+
+    await expect(confirmationDialog).toBeVisible();
+
+    await confirmationDialog
       .getByRole("button", {
         name: "Delete Account",
+        exact: true,
       })
       .click();
 
@@ -382,32 +418,39 @@ test.describe("Admin Account Delete", () => {
     await expect(
       page.getByRole("button", {
         name: "Soft-delete account",
+        exact: true,
       }),
     ).toBeVisible();
 
     await expect(
       page.getByRole("button", {
         name: "Permanently delete account",
+        exact: true,
       }),
     ).toBeVisible();
 
     await page
       .getByRole("button", {
         name: "Soft-delete account",
+        exact: true,
       })
       .click();
 
-    await expect(page.getByRole("alertdialog")).toBeVisible();
+    const confirmationDialog = page.getByRole("alertdialog");
+
+    await expect(confirmationDialog).toBeVisible();
 
     await expect(
-      page.getByRole("button", {
+      confirmationDialog.getByRole("button", {
         name: "Cancel",
+        exact: true,
       }),
     ).toBeVisible();
 
     await expect(
-      page.getByRole("button", {
+      confirmationDialog.getByRole("button", {
         name: "Delete Account",
+        exact: true,
       }),
     ).toBeVisible();
   });
