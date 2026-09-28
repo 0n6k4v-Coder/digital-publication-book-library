@@ -239,6 +239,10 @@ function AccountDeleteConfirmationDialog({
         return;
       }
 
+      if (dialog === null) {
+        return;
+      }
+
       const focusable = getFocusableElements(dialog);
 
       if (focusable.length === 0) {
@@ -766,7 +770,6 @@ export function AccountDeletePage() {
           <span className="form-alert__icon" aria-hidden="true">
             !
           </span>
-
           <p className="form-alert__message">{mutationError.message}</p>
         </div>
       ) : null}
@@ -778,7 +781,6 @@ export function AccountDeletePage() {
         >
           <div>
             <p className="eyebrow">Destructive actions</p>
-
             <h2 id={actionsTitleId}>Choose the deletion operation</h2>
           </div>
 

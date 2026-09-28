@@ -28,8 +28,8 @@ beforeEach(() => {
   vi.restoreAllMocks();
 
   vi.spyOn(accountsService, "get").mockResolvedValue(account);
-  vi.spyOn(accountsService, "softDelete").mockResolvedValue();
-  vi.spyOn(accountsService, "hardDelete").mockResolvedValue();
+  vi.spyOn(accountsService, "softDelete").mockResolvedValue(undefined);
+  vi.spyOn(accountsService, "hardDelete").mockResolvedValue(undefined);
 });
 
 describe("AccountDeletePage", () => {

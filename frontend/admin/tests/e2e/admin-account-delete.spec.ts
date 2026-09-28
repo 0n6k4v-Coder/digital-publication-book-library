@@ -54,11 +54,13 @@ async function authenticate(
 
   await page.getByLabel("Email").fill("admin@example.com");
 
-  await page.getByLabel("Password").fill("example-secure-password");
+  await page
+    .getByRole("textbox", { name: "Password" })
+    .fill("example-secure-password");
 
   await page
     .getByRole("button", {
-      name: "Sign in",
+      name: "Sign In",
     })
     .click();
 }
