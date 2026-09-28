@@ -327,6 +327,7 @@ test.describe("Admin Account Delete", () => {
     await expect(
       page.getByRole("heading", {
         name: "Delete Administrator Account",
+        exact: true,
       }),
     ).toBeVisible();
   });
