@@ -1318,69 +1318,69 @@ Manual
 
 ## 18.1 Route and Navigation
 
-| ID                           | Criteria                                                                                          | Status     | Reason                                                                               |
-| ---------------------------- | ------------------------------------------------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------ |
-| `FE-ACCOUNT-DELETE-IMPL-001` | `/admin/accounts/:id/delete` is defined and routed.                                               | 🟡 Defined | The current frontend branch does not contain the Account Delete page implementation. |
-| `FE-ACCOUNT-DELETE-IMPL-002` | Delete route renders inside the Admin Shell.                                                      | 🟡 Defined |                                                                                      |
-| `FE-ACCOUNT-DELETE-IMPL-003` | Unauthenticated access follows shared authentication behavior.                                    | 🟡 Defined |                                                                                      |
-| `FE-ACCOUNT-DELETE-IMPL-004` | `return_to` is same-origin `/admin/accounts` and uses only supported query parameters and values. | 🟡 Defined |                                                                                      |
-| `FE-ACCOUNT-DELETE-IMPL-005` | Delete route is represented in the repository sitemap.                                            | 🟡 Defined |                                                                                      |
+| ID                           | Criteria                                                                                          | Status         | Reason                                                                                  |
+| ---------------------------- | ------------------------------------------------------------------------------------------------- | -------------- | --------------------------------------------------------------------------------------- |
+| `FE-ACCOUNT-DELETE-IMPL-001` | `/admin/accounts/:id/delete` is defined and routed.                                               | 🟢 Implemented | `App.tsx` routes the Delete page and `AccountDeletePage.tsx` implements the route.     |
+| `FE-ACCOUNT-DELETE-IMPL-002` | Delete route renders inside the Admin Shell.                                                      | 🟢 Implemented | The route renders through the existing `AdminShell`.                                    |
+| `FE-ACCOUNT-DELETE-IMPL-003` | Unauthenticated access follows shared authentication behavior.                                    | 🟢 Implemented | Authentication and protected-route behavior are delegated to the shared auth flow.      |
+| `FE-ACCOUNT-DELETE-IMPL-004` | `return_to` is same-origin `/admin/accounts` and uses only supported query parameters and values. | 🟢 Implemented | `resolveAccountReturnTo()` validates origin, pathname, credentials, hash, and queries. |
+| `FE-ACCOUNT-DELETE-IMPL-005` | Delete route is represented in the repository sitemap.                                            | 🟡 Defined     | The frontend route exists, but the repository sitemap does not yet define this route. |
 
 ## 18.2 Soft Delete
 
-| ID                           | Criteria                                                      | Status     | Reason |
-| ---------------------------- | ------------------------------------------------------------- | ---------- | ------ |
-| `FE-ACCOUNT-DELETE-IMPL-006` | Soft deletion uses `DELETE /admin/accounts/{id}`.             | 🟡 Defined |        |
-| `FE-ACCOUNT-DELETE-IMPL-007` | Soft deletion requires `account:delete` server authorization. | 🟡 Defined |        |
-| `FE-ACCOUNT-DELETE-IMPL-008` | Soft deletion requires explicit confirmation.                 | 🟡 Defined |        |
-| `FE-ACCOUNT-DELETE-IMPL-009` | Soft-delete `204` is treated as success.                      | 🟡 Defined |        |
-| `FE-ACCOUNT-DELETE-IMPL-010` | `ACCOUNT_ALREADY_DELETED` is handled explicitly.              | 🟡 Defined |        |
-| `FE-ACCOUNT-DELETE-IMPL-011` | `LAST_ACTIVE_ADMINISTRATOR` is handled explicitly.            | 🟡 Defined |        |
-| `FE-ACCOUNT-DELETE-IMPL-012` | Duplicate soft-delete submissions are prevented.              | 🟡 Defined |        |
+| ID                           | Criteria                                                      | Status         | Reason |
+| ---------------------------- | ------------------------------------------------------------- | -------------- | ------ |
+| `FE-ACCOUNT-DELETE-IMPL-006` | Soft deletion uses `DELETE /admin/accounts/{id}`.             | 🟢 Implemented |        |
+| `FE-ACCOUNT-DELETE-IMPL-007` | Soft deletion requires `account:delete` server authorization. | 🟢 Implemented |        |
+| `FE-ACCOUNT-DELETE-IMPL-008` | Soft deletion requires explicit confirmation.                 | 🟢 Implemented |        |
+| `FE-ACCOUNT-DELETE-IMPL-009` | Soft-delete `204` is treated as success.                      | 🟢 Implemented |        |
+| `FE-ACCOUNT-DELETE-IMPL-010` | `ACCOUNT_ALREADY_DELETED` is handled explicitly.              | 🟢 Implemented |        |
+| `FE-ACCOUNT-DELETE-IMPL-011` | `LAST_ACTIVE_ADMINISTRATOR` is handled explicitly.            | 🟢 Implemented |        |
+| `FE-ACCOUNT-DELETE-IMPL-012` | Duplicate soft-delete submissions are prevented.              | 🟢 Implemented |        |
 
 ## 18.3 Hard Delete
 
-| ID                           | Criteria                                                     | Status     | Reason |
-| ---------------------------- | ------------------------------------------------------------ | ---------- | ------ |
-| `FE-ACCOUNT-DELETE-IMPL-013` | Hard deletion uses `DELETE /admin/accounts/{id}/purge`.      | 🟡 Defined |        |
-| `FE-ACCOUNT-DELETE-IMPL-014` | Hard deletion requires `account:purge` server authorization. | 🟡 Defined |        |
-| `FE-ACCOUNT-DELETE-IMPL-015` | Hard deletion requires explicit confirmation.                | 🟡 Defined |        |
-| `FE-ACCOUNT-DELETE-IMPL-016` | Hard-delete `204` is treated as success.                     | 🟡 Defined |        |
-| `FE-ACCOUNT-DELETE-IMPL-017` | Soft-deleted targets can be permanently deleted.             | 🟡 Defined |        |
-| `FE-ACCOUNT-DELETE-IMPL-018` | `LAST_ACTIVE_ADMINISTRATOR` is handled explicitly.           | 🟡 Defined |        |
-| `FE-ACCOUNT-DELETE-IMPL-019` | Duplicate hard-delete submissions are prevented.             | 🟡 Defined |        |
+| ID                           | Criteria                                                     | Status         | Reason |
+| ---------------------------- | ------------------------------------------------------------ | -------------- | ------ |
+| `FE-ACCOUNT-DELETE-IMPL-013` | Hard deletion uses `DELETE /admin/accounts/{id}/purge`.      | 🟢 Implemented |        |
+| `FE-ACCOUNT-DELETE-IMPL-014` | Hard deletion requires `account:purge` server authorization. | 🟢 Implemented |        |
+| `FE-ACCOUNT-DELETE-IMPL-015` | Hard deletion requires explicit confirmation.                | 🟢 Implemented |        |
+| `FE-ACCOUNT-DELETE-IMPL-016` | Hard-delete `204` is treated as success.                     | 🟢 Implemented |        |
+| `FE-ACCOUNT-DELETE-IMPL-017` | Soft-deleted targets can be permanently deleted.             | 🟢 Implemented |        |
+| `FE-ACCOUNT-DELETE-IMPL-018` | `LAST_ACTIVE_ADMINISTRATOR` is handled explicitly.           | 🟢 Implemented |        |
+| `FE-ACCOUNT-DELETE-IMPL-019` | Duplicate hard-delete submissions are prevented.             | 🟢 Implemented |        |
 
 ## 18.4 Confirmation and Accessibility
 
-| ID                           | Criteria                                                                   | Status     | Reason |
-| ---------------------------- | -------------------------------------------------------------------------- | ---------- | ------ |
-| `FE-ACCOUNT-DELETE-IMPL-020` | Confirmation uses an accessible modal pattern.                             | 🟡 Defined |        |
-| `FE-ACCOUNT-DELETE-IMPL-021` | Least-destructive initial focus is implemented.                            | 🟡 Defined |        |
-| `FE-ACCOUNT-DELETE-IMPL-022` | Escape cancels confirmation without mutation.                              | 🟡 Defined |        |
-| `FE-ACCOUNT-DELETE-IMPL-023` | Focus restoration is implemented.                                          | 🟡 Defined |        |
-| `FE-ACCOUNT-DELETE-IMPL-024` | Pending, success, and error states use accessible status semantics.        | 🟡 Defined |        |
-| `FE-ACCOUNT-DELETE-IMPL-025` | Destructive controls satisfy applicable WCAG 2.2 target-size requirements. | 🟡 Defined |        |
+| ID                           | Criteria                                                                   | Status         | Reason |
+| ---------------------------- | -------------------------------------------------------------------------- | -------------- | ------ |
+| `FE-ACCOUNT-DELETE-IMPL-020` | Confirmation uses an accessible modal pattern.                             | 🟢 Implemented |        |
+| `FE-ACCOUNT-DELETE-IMPL-021` | Least-destructive initial focus is implemented.                            | 🟢 Implemented |        |
+| `FE-ACCOUNT-DELETE-IMPL-022` | Escape cancels confirmation without mutation.                              | 🟢 Implemented |        |
+| `FE-ACCOUNT-DELETE-IMPL-023` | Focus restoration is implemented.                                          | 🟢 Implemented |        |
+| `FE-ACCOUNT-DELETE-IMPL-024` | Pending, success, and error states use accessible status semantics.        | 🟢 Implemented |        |
+| `FE-ACCOUNT-DELETE-IMPL-025` | Destructive controls satisfy applicable WCAG 2.2 target-size requirements. | 🟢 Implemented |        |
 
 ## 18.5 Security
 
-| ID                           | Criteria                                              | Status     | Reason |
-| ---------------------------- | ----------------------------------------------------- | ---------- | ------ |
-| `FE-ACCOUNT-DELETE-IMPL-026` | Backend authentication remains authoritative.         | 🟡 Defined |        |
-| `FE-ACCOUNT-DELETE-IMPL-027` | Backend authorization remains authoritative.          | 🟡 Defined |        |
-| `FE-ACCOUNT-DELETE-IMPL-028` | Tokens do not appear in URLs.                         | 🟡 Defined |        |
-| `FE-ACCOUNT-DELETE-IMPL-029` | Account data is not stored in browser persistence.    | 🟡 Defined |        |
-| `FE-ACCOUNT-DELETE-IMPL-030` | Deletion is never triggered by GET navigation.        | 🟡 Defined |        |
-| `FE-ACCOUNT-DELETE-IMPL-031` | Destructive operations require explicit confirmation. | 🟡 Defined |        |
+| ID                           | Criteria                                              | Status         | Reason |
+| ---------------------------- | ----------------------------------------------------- | -------------- | ------ |
+| `FE-ACCOUNT-DELETE-IMPL-026` | Backend authentication remains authoritative.         | 🟢 Implemented |        |
+| `FE-ACCOUNT-DELETE-IMPL-027` | Backend authorization remains authoritative.          | 🟢 Implemented |        |
+| `FE-ACCOUNT-DELETE-IMPL-028` | Tokens do not appear in URLs.                         | 🟢 Implemented |        |
+| `FE-ACCOUNT-DELETE-IMPL-029` | Account data is not stored in browser persistence.    | 🟢 Implemented |        |
+| `FE-ACCOUNT-DELETE-IMPL-030` | Deletion is never triggered by GET navigation.        | 🟢 Implemented |        |
+| `FE-ACCOUNT-DELETE-IMPL-031` | Destructive operations require explicit confirmation. | 🟢 Implemented |        |
 
 ## 18.6 Testing
 
-| ID                           | Criteria                                                           | Status     | Reason |
-| ---------------------------- | ------------------------------------------------------------------ | ---------- | ------ |
-| `FE-ACCOUNT-DELETE-IMPL-032` | Unit coverage exists for deletion state and error handling.        | 🟡 Defined |        |
-| `FE-ACCOUNT-DELETE-IMPL-033` | Integration coverage exists for both deletion APIs.                | 🟡 Defined |        |
-| `FE-ACCOUNT-DELETE-IMPL-034` | E2E coverage exists for soft and hard deletion.                    | 🟡 Defined |        |
-| `FE-ACCOUNT-DELETE-IMPL-035` | Accessibility coverage exists for confirmation and focus behavior. | 🟡 Defined |        |
-| `FE-ACCOUNT-DELETE-IMPL-036` | Responsive coverage exists for supported viewport ranges.          | 🟡 Defined |        |
+| ID                           | Criteria                                                           | Status         | Reason |
+| ---------------------------- | ------------------------------------------------------------------ | -------------- | ------ |
+| `FE-ACCOUNT-DELETE-IMPL-032` | Unit coverage exists for deletion state and error handling.        | 🟢 Implemented |        |
+| `FE-ACCOUNT-DELETE-IMPL-033` | Integration coverage exists for both deletion APIs.                | 🟢 Implemented |        |
+| `FE-ACCOUNT-DELETE-IMPL-034` | E2E coverage exists for soft and hard deletion.                    | 🟢 Implemented |        |
+| `FE-ACCOUNT-DELETE-IMPL-035` | Accessibility coverage exists for confirmation and focus behavior. | 🟢 Implemented |        |
+| `FE-ACCOUNT-DELETE-IMPL-036` | Responsive coverage exists for supported viewport ranges.          | 🟢 Implemented |        |
 
 ---
 
