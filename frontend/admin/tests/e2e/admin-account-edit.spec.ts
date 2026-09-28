@@ -281,12 +281,9 @@ test.describe("admin account edit", () => {
       })
       .click();
 
-    await expect(
-      page.getByRole("textbox", {
-        name: "New email",
-        description: /That email address is already in use\./,
-      }),
-    ).toBeVisible();
+    await expect(email.locator("xpath=..").getByRole("alert")).toHaveText(
+      "That email address is already in use.",
+    );
 
     await expect(email).toHaveAttribute("aria-invalid", "true");
   });
@@ -307,15 +304,13 @@ test.describe("admin account edit", () => {
       })
       .click();
 
-    const emailSection = page.locator("section").filter({
-      has: page.getByRole("heading", {
-        name: "Administrator email address",
-      }),
+    const emailRegion = page.getByRole("region", {
+      name: "Administrator email address",
     });
 
     await expect(
-      emailSection.getByText("new-admin@example.com", {
-        exact: true,
+      emailRegion.getByRole("definition", {
+        name: "new-admin@example.com",
       }),
     ).toBeVisible();
 
