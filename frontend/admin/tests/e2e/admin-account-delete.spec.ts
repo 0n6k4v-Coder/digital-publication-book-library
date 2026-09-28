@@ -351,10 +351,7 @@ test.describe("Admin Account Delete", () => {
       });
     });
 
-    await navigateToDeletePage(
-      page,
-      "https://evil.example/admin/accounts",
-    );
+    await navigateToDeletePage(page, "https://evil.example/admin/accounts");
 
     await page
       .getByRole("button", {
