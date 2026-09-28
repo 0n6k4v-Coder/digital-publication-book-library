@@ -329,6 +329,12 @@ async function request(
   return response;
 }
 
+function ensureNoContent(response: Response): void {
+  if (response.status !== 204) {
+    throw new AccountsError("INVALID_RESPONSE", response.status);
+  }
+}
+
 export const accountsService = {
   async list(
     query: AccountListQuery = DEFAULT_ACCOUNT_LIST_QUERY,
@@ -416,5 +422,27 @@ export const accountsService = {
     });
 
     return parseOptionalAccountResponse(response);
+  },
+
+  async softDelete(accountId: string): Promise<void> {
+    const response = await request(
+      `/admin/accounts/${encodeURIComponent(accountId)}`,
+      {
+        method: "DELETE",
+      },
+    );
+
+    ensureNoContent(response);
+  },
+
+  async hardDelete(accountId: string): Promise<void> {
+    const response = await request(
+      `/admin/accounts/${encodeURIComponent(accountId)}/purge`,
+      {
+        method: "DELETE",
+      },
+    );
+
+    ensureNoContent(response);
   },
 };
