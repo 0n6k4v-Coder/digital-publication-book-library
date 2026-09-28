@@ -1196,8 +1196,8 @@ Manual
 | `FE-ACCOUNT-DETAIL-IMPL-003` | Accounts navigation remains active while viewing the detail page.               | 🟢 Implemented |
 | `FE-ACCOUNT-DETAIL-IMPL-004` | Back navigation returns to `/admin/accounts`.                                   | 🟢 Implemented |
 | `FE-ACCOUNT-DETAIL-IMPL-005` | Edit action navigates to `/admin/accounts/:id/edit`.                            | 🟢 Implemented |
-| `FE-ACCOUNT-DETAIL-IMPL-006` | Delete Account action navigates to `/admin/accounts/:id/delete`.                | 🟡 Defined     |
-| `FE-ACCOUNT-DETAIL-IMPL-007` | Originating Account List query state is preserved across child-page navigation. | 🟡 Defined     |
+| `FE-ACCOUNT-DETAIL-IMPL-006` | Delete Account action navigates to `/admin/accounts/:id/delete`.                | 🟢 Implemented |
+| `FE-ACCOUNT-DETAIL-IMPL-007` | Originating Account List query state is preserved across child-page navigation. | 🟢 Implemented |
 
 ---
 
@@ -1229,9 +1229,9 @@ Manual
 
 | ID                           | Criteria                                                                  | Status         |
 | ---------------------------- | ------------------------------------------------------------------------- | -------------- |
-| `FE-ACCOUNT-DETAIL-IMPL-018` | Delete Account navigation is provided from the Detail page.               | 🟡 Defined     |
-| `FE-ACCOUNT-DETAIL-IMPL-019` | Delete Account navigation targets `/admin/accounts/:id/delete`.           | 🟡 Defined     |
-| `FE-ACCOUNT-DETAIL-IMPL-020` | Delete Account navigation preserves originating Account List query state. | 🟡 Defined     |
+| `FE-ACCOUNT-DETAIL-IMPL-018` | Delete Account navigation is provided from the Detail page.               | 🟢 Implemented |
+| `FE-ACCOUNT-DETAIL-IMPL-019` | Delete Account navigation targets `/admin/accounts/:id/delete`.           | 🟢 Implemented |
+| `FE-ACCOUNT-DETAIL-IMPL-020` | Delete Account navigation preserves originating Account List query state. | 🟢 Implemented |
 | `FE-ACCOUNT-DETAIL-IMPL-021` | Detail page does not execute `DELETE /admin/accounts/{id}`.               | 🟢 Implemented |
 | `FE-ACCOUNT-DETAIL-IMPL-022` | Detail page does not execute `DELETE /admin/accounts/{id}/purge`.         | 🟢 Implemented |
 | `FE-ACCOUNT-DETAIL-IMPL-023` | Delete confirmation is owned by the dedicated Account Delete page.        | 🟢 Implemented |
@@ -1262,7 +1262,7 @@ Manual
 | `FE-ACCOUNT-DETAIL-IMPL-034` | Tokens never render in the UI.                                                      | 🟢 Implemented |
 | `FE-ACCOUNT-DETAIL-IMPL-035` | Tokens never appear in logs.                                                        | 🟢 Implemented |
 | `FE-ACCOUNT-DETAIL-IMPL-036` | Passwords and password hashes never render.                                         | 🟢 Implemented |
-| `FE-ACCOUNT-DETAIL-IMPL-037` | Delete Account visibility is not an authorization boundary.                         | 🟡 Defined     |
+| `FE-ACCOUNT-DETAIL-IMPL-037` | Delete Account visibility is not an authorization boundary.                         | 🟢 Implemented |
 
 ---
 
@@ -1277,8 +1277,8 @@ Manual
 | `FE-ACCOUNT-DETAIL-IMPL-042` | Focus is visible and not obscured.                                                                     | 🟢 Implemented |
 | `FE-ACCOUNT-DETAIL-IMPL-043` | Async status is accessible.                                                                            | 🟢 Implemented |
 | `FE-ACCOUNT-DETAIL-IMPL-044` | Account lifecycle status does not rely only on color.                                                  | 🟢 Implemented |
-| `FE-ACCOUNT-DETAIL-IMPL-045` | Delete Account navigation uses a native accessible link.                                               | 🟡 Defined     |
-| `FE-ACCOUNT-DETAIL-IMPL-046` | Delete Account target size satisfies the applicable accessibility requirement or documented exception. | 🟡 Defined     |
+| `FE-ACCOUNT-DETAIL-IMPL-045` | Delete Account navigation uses a native accessible link.                                               | 🟢 Implemented |
+| `FE-ACCOUNT-DETAIL-IMPL-046` | Delete Account target size satisfies the applicable accessibility requirement or documented exception. | 🟢 Implemented |
 
 ---
 
