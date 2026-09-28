@@ -407,6 +407,45 @@ export const accountsService = {
     return parseOptionalAccountResponse(response);
   },
 
+  async changeEmail(
+    accountId: string,
+    email: string,
+  ): Promise<AdministratorAccount> {
+    const headers = new Headers();
+    headers.set("Content-Type", "application/json");
+
+    const response = await request(
+      `/admin/accounts/${encodeURIComponent(accountId)}/email`,
+      {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify({
+          email,
+        }),
+      },
+    );
+
+    return parseAccountResponseBody(response);
+  },
+
+  async changePassword(accountId: string, password: string): Promise<void> {
+    const headers = new Headers();
+    headers.set("Content-Type", "application/json");
+
+    const response = await request(
+      `/admin/accounts/${encodeURIComponent(accountId)}/password`,
+      {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify({
+          password,
+        }),
+      },
+    );
+
+    ensureNoContent(response);
+  },
+
   async mutate(
     action: AccountMutation,
     accountId: string,
