@@ -1,15 +1,12 @@
 import { useEffect, useId, useRef, useState } from "react";
 import type { FormEvent, MouseEvent } from "react";
-import { ConfirmDialog } from "../../components/ConfirmDialog";
-import {
-  AccountsError,
-  accountsService,
-  type AccountMutation,
-} from "../../services/accounts";
+import { AccountsError, accountsService } from "../../services/accounts";
 import { navigateTo, usePathname } from "../../services/navigation";
 import type { AdministratorAccount } from "../../types/account";
 import { resolveAccountReturnTo } from "./accountRoutes";
 import "./account-detail.css";
+
+const PASSWORD_MIN_LENGTH = 15;
 
 type Notice =
   | {
@@ -49,10 +46,6 @@ function getStatusLabel(account: AdministratorAccount): string {
   return account.status === "active" ? "Active" : "Inactive";
 }
 
-function getAccountLabel(account: AdministratorAccount): string {
-  return account.displayName ?? account.email;
-}
-
 function formatDate(value: string): string {
   const date = new Date(value);
 
@@ -66,16 +59,24 @@ function formatDate(value: string): string {
   }).format(date);
 }
 
+function normalizeError(error: unknown): AccountsError {
+  return error instanceof AccountsError
+    ? error
+    : new AccountsError("UNKNOWN", 0);
+}
+
 function getLoadErrorMessage(error: AccountsError): string {
   if (error.problemCode === "INVALID_ACCOUNT_ID") {
     return "The account identifier is invalid.";
   }
 
+  if (error.problemCode === "ACCOUNT_NOT_FOUND" || error.code === "NOT_FOUND") {
+    return "This administrator account is no longer available.";
+  }
+
   switch (error.code) {
     case "FORBIDDEN":
       return "You do not have permission to view this administrator account.";
-    case "NOT_FOUND":
-      return "The requested administrator account could not be found.";
     case "NETWORK":
       return "The account could not be loaded. Check your connection and try again.";
     case "SERVER":
@@ -91,63 +92,16 @@ function getLoadErrorMessage(error: AccountsError): string {
   }
 }
 
-function getMutationErrorMessage(
-  action: AccountMutation,
-  error: AccountsError,
-): string {
-  if (error.problemCode === "LAST_ACTIVE_ADMINISTRATOR") {
-    return "The last active administrator cannot be deactivated.";
-  }
-
-  switch (error.problemCode) {
-    case "ACCOUNT_ALREADY_INACTIVE":
-      return "That account is already inactive. The account has been refreshed.";
-    case "ACCOUNT_ALREADY_ACTIVE":
-      return "That account is already active. The account has been refreshed.";
-    case "ACCOUNT_SOFT_DELETED":
-      return "That account is deleted and cannot be activated. The account has been refreshed.";
-    case "ACCOUNT_NOT_DELETED":
-      return "That account is no longer deleted. The account has been refreshed.";
-    case "ACCOUNT_NOT_FOUND":
-      return "That account could not be found. The account has been refreshed.";
-    case "VALIDATION_ERROR":
-      return `The server rejected the ${action} request. Please try again.`;
-    default:
-      break;
-  }
-
-  switch (error.code) {
-    case "FORBIDDEN":
-      return "You do not have permission to change this administrator account.";
-    case "NOT_FOUND":
-      return "That account could not be found. The account has been refreshed.";
-    case "CONFLICT":
-      return "The account changed before this action completed. The account has been refreshed.";
-    case "VALIDATION":
-      return `The server rejected the ${action} request. Please try again.`;
-    case "NETWORK":
-      return "We could not reach the account service. The account was not changed.";
-    case "SERVER":
-      return "The account change could not be completed because the server failed.";
-    case "UNAUTHORIZED":
-      return "Your session is no longer valid.";
-    default:
-      return "The account change could not be completed. Please try again.";
-  }
-}
-
-function getUpdateErrorMessage(error: AccountsError): string {
+function getDisplayNameErrorMessage(error: AccountsError): string {
   switch (error.code) {
     case "FORBIDDEN":
       return "You do not have permission to update this administrator account.";
     case "NOT_FOUND":
-      return "That account could not be found. The account will be refreshed.";
+      return "This administrator account is no longer available.";
     case "UNSUPPORTED_MEDIA_TYPE":
       return "The account service rejected the update format.";
     case "VALIDATION":
-      return "The server rejected the display name. Review the value and try again.";
-    case "CONFLICT":
-      return "The account changed before this update completed. The account will be refreshed.";
+      return "The display name is invalid. Review the value and try again.";
     case "NETWORK":
       return "We could not reach the account service. The account was not changed.";
     case "SERVER":
@@ -159,19 +113,90 @@ function getUpdateErrorMessage(error: AccountsError): string {
   }
 }
 
-function getMutationSuccessMessage(action: AccountMutation): string {
-  switch (action) {
-    case "deactivate":
-      return "Account deactivated.";
-    case "activate":
-      return "Account activated.";
-    case "restore":
-      return "Account restored.";
+function getEmailErrorMessage(error: AccountsError): string {
+  if (error.problemCode === "EMAIL_ALREADY_IN_USE") {
+    return "That email address is already in use.";
+  }
+
+  switch (error.code) {
+    case "FORBIDDEN":
+      return "You do not have permission to change this administrator account's email address.";
+    case "NOT_FOUND":
+      return "This administrator account is no longer available.";
+    case "VALIDATION":
+      return "The email address is not valid.";
+    case "NETWORK":
+      return "We could not reach the account service. The email address was not changed.";
+    case "SERVER":
+      return "The email change could not be completed because the server failed.";
+    case "UNAUTHORIZED":
+      return "Your session is no longer valid.";
+    default:
+      return "The email change could not be completed. Please try again.";
   }
 }
 
-function isRefreshWorthyError(error: AccountsError): boolean {
-  return error.code === "NOT_FOUND" || error.code === "CONFLICT";
+function getPasswordErrorMessage(error: AccountsError): string {
+  if (error.problemCode === "PASSWORD_POLICY_VIOLATION") {
+    return "The new password does not meet the password policy.";
+  }
+
+  switch (error.code) {
+    case "FORBIDDEN":
+      return "You do not have permission to change this administrator account's password.";
+    case "NOT_FOUND":
+      return "This administrator account is no longer available.";
+    case "VALIDATION":
+      return "The password change was rejected. Review the password and try again.";
+    case "NETWORK":
+      return "We could not reach the account service. The password was not changed.";
+    case "SERVER":
+      return "The password change could not be completed because the server failed.";
+    case "UNAUTHORIZED":
+      return "Your session is no longer valid.";
+    default:
+      return "The password change could not be completed. Please try again.";
+  }
+}
+
+function renderNotice(notice: Notice | null) {
+  if (notice === null) {
+    return null;
+  }
+
+  if (notice.kind === "success") {
+    return (
+      <p
+        className="account-detail-page__notice"
+        role="status"
+        aria-live="polite"
+      >
+        {notice.message}
+      </p>
+    );
+  }
+
+  return (
+    <div className="form-alert" role="alert">
+      <span className="form-alert__icon" aria-hidden="true">
+        !
+      </span>
+      <p className="form-alert__message">{notice.message}</p>
+    </div>
+  );
+}
+
+function renderStatus(account: AdministratorAccount) {
+  const label = getStatusLabel(account);
+  const className = label.toLowerCase();
+
+  return (
+    <span
+      className={`account-detail-status account-detail-status--${className}`}
+    >
+      {label}
+    </span>
+  );
 }
 
 export function AccountEditPage() {
@@ -181,20 +206,46 @@ export function AccountEditPage() {
 
   const [account, setAccount] = useState<AdministratorAccount | null>(null);
   const [displayName, setDisplayName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [pendingMutation, setPendingMutation] =
-    useState<AccountMutation | null>(null);
-  const [reloadToken, setReloadToken] = useState(0);
+  const [isDisplayNameSaving, setIsDisplayNameSaving] = useState(false);
+  const [isEmailSaving, setIsEmailSaving] = useState(false);
+  const [isPasswordSaving, setIsPasswordSaving] = useState(false);
+
   const [loadError, setLoadError] = useState<AccountsError | null>(null);
-  const [notice, setNotice] = useState<Notice | null>(null);
-  const [confirmDeactivate, setConfirmDeactivate] = useState(false);
+
+  const [displayNameError, setDisplayNameError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+
+  const [displayNameNotice, setDisplayNameNotice] = useState<Notice | null>(
+    null,
+  );
+  const [emailNotice, setEmailNotice] = useState<Notice | null>(null);
+  const [passwordNotice, setPasswordNotice] = useState<Notice | null>(null);
 
   const loadErrorRef = useRef<HTMLDivElement>(null);
-  const confirmTriggerRef = useRef<HTMLButtonElement>(null);
+  const displayNameInputRef = useRef<HTMLInputElement>(null);
+  const emailInputRef = useRef<HTMLInputElement>(null);
+  const passwordInputRef = useRef<HTMLInputElement>(null);
 
   const displayNameInputId = useId();
   const displayNameHelpId = useId();
+  const displayNameErrorId = useId();
+
+  const emailInputId = useId();
+  const emailHelpId = useId();
+  const emailErrorId = useId();
+
+  const passwordInputId = useId();
+  const passwordHelpId = useId();
+  const passwordErrorId = useId();
+
+  const accountInformationHeadingId = useId();
+  const emailHeadingId = useId();
+  const passwordHeadingId = useId();
 
   useEffect(() => {
     if (accountId === null) {
@@ -208,12 +259,29 @@ export function AccountEditPage() {
 
     setIsLoading(true);
     setLoadError(null);
-    setNotice(null);
+    setDisplayName("");
+    setEmail("");
+    setPassword("");
+    setDisplayNameError(null);
+    setEmailError(null);
+    setPasswordError(null);
+    setDisplayNameNotice(null);
+    setEmailNotice(null);
+    setPasswordNotice(null);
 
     accountsService
       .get(accountId, { signal: controller.signal })
       .then((response) => {
         if (controller.signal.aborted) {
+          return;
+        }
+
+        if (response.deletedAt !== null) {
+          setAccount(null);
+          setLoadError(
+            new AccountsError("NOT_FOUND", 404, "ACCOUNT_NOT_FOUND"),
+          );
+          setIsLoading(false);
           return;
         }
 
@@ -226,14 +294,11 @@ export function AccountEditPage() {
           return;
         }
 
-        if (error instanceof AccountsError && error.code === "UNAUTHORIZED") {
+        const normalizedError = normalizeError(error);
+
+        if (normalizedError.code === "UNAUTHORIZED") {
           return;
         }
-
-        const normalizedError =
-          error instanceof AccountsError
-            ? error
-            : new AccountsError("UNKNOWN", 0);
 
         setAccount(null);
         setLoadError(normalizedError);
@@ -241,7 +306,7 @@ export function AccountEditPage() {
       });
 
     return () => controller.abort();
-  }, [accountId, reloadToken]);
+  }, [accountId]);
 
   useEffect(() => {
     if (loadError !== null) {
@@ -249,11 +314,16 @@ export function AccountEditPage() {
     }
   }, [loadError]);
 
-  const isDirty =
+  const isMutationPending =
+    isDisplayNameSaving || isEmailSaving || isPasswordSaving;
+
+  const isBusy = isLoading || isMutationPending;
+
+  const isDisplayNameDirty =
     account !== null &&
     normalizeDisplayName(displayName) !== account.displayName;
 
-  const isBusy = isLoading || isSaving || pendingMutation !== null;
+  const isEmailDirty = account !== null && email !== account.email;
 
   function handleBack(event: MouseEvent<HTMLAnchorElement>): void {
     if (
@@ -271,166 +341,216 @@ export function AccountEditPage() {
     navigateTo(returnTo);
   }
 
-  async function handleSubmit(
+  function markUnavailable(error: AccountsError): void {
+    setAccount(null);
+    setLoadError(error);
+    setDisplayNameError(null);
+    setEmailError(null);
+    setPasswordError(null);
+  }
+
+  async function handleDisplayNameSubmit(
     event: FormEvent<HTMLFormElement>,
   ): Promise<void> {
     event.preventDefault();
 
-    if (account === null || isSaving || pendingMutation !== null) {
+    if (account === null || isMutationPending || !isDisplayNameDirty) {
       return;
     }
 
-    const patch = {
-      display_name: normalizeDisplayName(displayName),
-    };
-
-    setIsSaving(true);
-    setNotice(null);
+    setIsDisplayNameSaving(true);
+    setDisplayNameError(null);
+    setDisplayNameNotice(null);
 
     try {
-      const updated = await accountsService.update(account.id, patch);
+      const updated = await accountsService.update(account.id, {
+        display_name: normalizeDisplayName(displayName),
+      });
+
       const authoritative = updated ?? (await accountsService.get(account.id));
+
+      if (authoritative.deletedAt !== null) {
+        markUnavailable(
+          new AccountsError("NOT_FOUND", 404, "ACCOUNT_NOT_FOUND"),
+        );
+        return;
+      }
 
       setAccount(authoritative);
       setDisplayName(authoritative.displayName ?? "");
-      setNotice({
+      setDisplayNameNotice({
         kind: "success",
         message: "Account changes saved.",
       });
     } catch (error: unknown) {
-      if (error instanceof AccountsError && error.code === "UNAUTHORIZED") {
+      const normalizedError = normalizeError(error);
+
+      if (normalizedError.code === "UNAUTHORIZED") {
         return;
       }
 
-      const normalizedError =
-        error instanceof AccountsError
-          ? error
-          : new AccountsError("UNKNOWN", 0);
-
-      if (isRefreshWorthyError(normalizedError)) {
-        setReloadToken((value) => value + 1);
+      if (normalizedError.code === "NOT_FOUND") {
+        markUnavailable(normalizedError);
+        return;
       }
 
-      setNotice({
+      setDisplayNameError(
+        normalizedError.code === "VALIDATION"
+          ? getDisplayNameErrorMessage(normalizedError)
+          : null,
+      );
+      setDisplayNameNotice({
         kind: "error",
-        message: getUpdateErrorMessage(normalizedError),
+        message: getDisplayNameErrorMessage(normalizedError),
       });
+
+      if (normalizedError.code === "VALIDATION") {
+        displayNameInputRef.current?.focus();
+      }
     } finally {
-      setIsSaving(false);
+      setIsDisplayNameSaving(false);
     }
   }
 
-  async function executeLifecycleMutation(
-    action: AccountMutation,
+  async function handleEmailSubmit(
+    event: FormEvent<HTMLFormElement>,
   ): Promise<void> {
-    if (
-      account === null ||
-      isSaving ||
-      pendingMutation !== null ||
-      action === "deactivate"
-    ) {
+    event.preventDefault();
+
+    if (account === null || isMutationPending) {
       return;
     }
 
-    setPendingMutation(action);
-    setNotice(null);
-
-    try {
-      const updated = await accountsService.mutate(action, account.id);
-      const authoritative = updated ?? (await accountsService.get(account.id));
-
-      setAccount(authoritative);
-      setDisplayName(authoritative.displayName ?? "");
-      setNotice({
-        kind: "success",
-        message: getMutationSuccessMessage(action),
-      });
-    } catch (error: unknown) {
-      if (error instanceof AccountsError && error.code === "UNAUTHORIZED") {
-        return;
-      }
-
-      const normalizedError =
-        error instanceof AccountsError
-          ? error
-          : new AccountsError("UNKNOWN", 0);
-
-      if (isRefreshWorthyError(normalizedError)) {
-        setReloadToken((value) => value + 1);
-      }
-
-      setNotice({
-        kind: "error",
-        message: getMutationErrorMessage(action, normalizedError),
-      });
-    } finally {
-      setPendingMutation(null);
-    }
-  }
-
-  async function executeDeactivate(): Promise<void> {
-    if (
-      account === null ||
-      isSaving ||
-      pendingMutation !== null ||
-      account.deletedAt !== null ||
-      account.status !== "active"
-    ) {
+    if (email.length === 0) {
+      setEmailError("Enter a new email address.");
+      setEmailNotice(null);
+      emailInputRef.current?.focus();
       return;
     }
 
-    setPendingMutation("deactivate");
-    setNotice(null);
+    setIsEmailSaving(true);
+    setEmailError(null);
+    setEmailNotice(null);
 
     try {
-      const updated = await accountsService.mutate("deactivate", account.id);
-      const authoritative = updated ?? (await accountsService.get(account.id));
+      const authoritative = await accountsService.changeEmail(
+        account.id,
+        email,
+      );
 
-      setAccount(authoritative);
-      setDisplayName(authoritative.displayName ?? "");
-      setNotice({
-        kind: "success",
-        message: getMutationSuccessMessage("deactivate"),
-      });
-    } catch (error: unknown) {
-      if (error instanceof AccountsError && error.code === "UNAUTHORIZED") {
+      if (authoritative.deletedAt !== null) {
+        markUnavailable(
+          new AccountsError("NOT_FOUND", 404, "ACCOUNT_NOT_FOUND"),
+        );
         return;
       }
 
-      const normalizedError =
-        error instanceof AccountsError
-          ? error
-          : new AccountsError("UNKNOWN", 0);
+      setAccount(authoritative);
+      setEmail("");
+      setEmailNotice({
+        kind: "success",
+        message: "Email address changed.",
+      });
+    } catch (error: unknown) {
+      const normalizedError = normalizeError(error);
 
-      if (isRefreshWorthyError(normalizedError)) {
-        setReloadToken((value) => value + 1);
+      if (normalizedError.code === "UNAUTHORIZED") {
+        return;
       }
 
-      setNotice({
+      if (normalizedError.code === "NOT_FOUND") {
+        markUnavailable(normalizedError);
+        return;
+      }
+
+      const message = getEmailErrorMessage(normalizedError);
+
+      setEmailError(
+        normalizedError.code === "CONFLICT" ||
+          normalizedError.code === "VALIDATION"
+          ? message
+          : null,
+      );
+      setEmailNotice({
         kind: "error",
-        message: getMutationErrorMessage("deactivate", normalizedError),
+        message,
       });
+
+      if (
+        normalizedError.code === "CONFLICT" ||
+        normalizedError.code === "VALIDATION"
+      ) {
+        emailInputRef.current?.focus();
+      }
     } finally {
-      setPendingMutation(null);
-      setConfirmDeactivate(false);
+      setIsEmailSaving(false);
     }
   }
 
-  function renderStatus(accountValue: AdministratorAccount) {
-    const label = getStatusLabel(accountValue);
-    const className = label.toLowerCase();
+  async function handlePasswordSubmit(
+    event: FormEvent<HTMLFormElement>,
+  ): Promise<void> {
+    event.preventDefault();
 
-    return (
-      <span
-        className={`account-detail-status account-detail-status--${className}`}
-      >
-        {label}
-      </span>
-    );
+    if (account === null || isMutationPending) {
+      return;
+    }
+
+    if (password.length < PASSWORD_MIN_LENGTH) {
+      setPasswordError(
+        `New password must be at least ${PASSWORD_MIN_LENGTH} characters.`,
+      );
+      setPasswordNotice(null);
+      passwordInputRef.current?.focus();
+      return;
+    }
+
+    setIsPasswordSaving(true);
+    setPasswordError(null);
+    setPasswordNotice(null);
+
+    try {
+      await accountsService.changePassword(account.id, password);
+
+      setPassword("");
+      setPasswordNotice({
+        kind: "success",
+        message: "Password changed successfully.",
+      });
+    } catch (error: unknown) {
+      const normalizedError = normalizeError(error);
+
+      if (normalizedError.code === "UNAUTHORIZED") {
+        return;
+      }
+
+      if (normalizedError.code === "NOT_FOUND") {
+        markUnavailable(normalizedError);
+        return;
+      }
+
+      const message = getPasswordErrorMessage(normalizedError);
+
+      setPasswordError(normalizedError.code === "VALIDATION" ? message : null);
+      setPasswordNotice({
+        kind: "error",
+        message,
+      });
+
+      if (normalizedError.code === "VALIDATION") {
+        passwordInputRef.current?.focus();
+      }
+    } finally {
+      setIsPasswordSaving(false);
+    }
   }
 
   return (
-    <section className="account-detail-page" aria-busy={isBusy}>
+    <section
+      className="account-detail-page"
+      aria-busy={isBusy}
+      aria-labelledby="account-edit-title"
+    >
       <a
         className="secondary-button account-detail-page__back"
         href={returnTo}
@@ -442,13 +562,21 @@ export function AccountEditPage() {
       <header className="account-detail-page__header">
         <div>
           <p className="eyebrow">Administration</p>
-          <h1 className="account-detail-page__title">
+          <h1 id="account-edit-title" className="account-detail-page__title">
             Edit Administrator Account
           </h1>
-          <p className="account-detail-page__description">
-            Update the administrator account display name and manage its
-            lifecycle status.
-          </p>
+
+          {account !== null ? (
+            <>
+              <p className="account-detail-page__description">
+                {account.displayName ?? account.email}
+              </p>
+              <p className="account-detail-page__email">{account.email}</p>
+              <p className="account-detail-page__state">
+                Status: {renderStatus(account)}
+              </p>
+            </>
+          ) : null}
         </div>
       </header>
 
@@ -485,39 +613,78 @@ export function AccountEditPage() {
 
       {account !== null ? (
         <>
-          <div className="account-detail-card">
+          <section
+            className="account-detail-card"
+            aria-labelledby={accountInformationHeadingId}
+          >
+            <div className="account-detail-section-header">
+              <p className="eyebrow">Account Information</p>
+              <h2 id={accountInformationHeadingId}>Administrator account</h2>
+            </div>
+
             <form
               className="account-detail-form"
-              onSubmit={(event) => void handleSubmit(event)}
-              aria-busy={isSaving}
+              noValidate
+              onSubmit={(event) => void handleDisplayNameSubmit(event)}
+              aria-busy={isDisplayNameSaving}
             >
               <div className="field">
                 <label htmlFor={displayNameInputId}>Display name</label>
                 <input
+                  ref={displayNameInputRef}
                   id={displayNameInputId}
                   name="display_name"
                   type="text"
                   autoComplete="nickname"
                   value={displayName}
-                  aria-describedby={displayNameHelpId}
+                  aria-describedby={
+                    displayNameError === null
+                      ? displayNameHelpId
+                      : `${displayNameHelpId} ${displayNameErrorId}`
+                  }
+                  aria-invalid={displayNameError !== null}
                   disabled={isBusy}
-                  onChange={(event) => setDisplayName(event.target.value)}
+                  onChange={(event) => {
+                    setDisplayName(event.target.value);
+                    setDisplayNameError(null);
+                    setDisplayNameNotice(null);
+                  }}
                 />
                 <p id={displayNameHelpId} className="account-detail-page__hint">
-                  Enter up to the server's supported display-name length. Leave
-                  this field empty to clear the display name.
+                  Leave this field empty to clear the display name.
                 </p>
+                {displayNameError !== null ? (
+                  <p
+                    id={displayNameErrorId}
+                    className="account-detail-page__hint account-detail-page__hint--error"
+                    role="alert"
+                  >
+                    {displayNameError}
+                  </p>
+                ) : null}
               </div>
 
               <div className="account-detail-form__actions">
                 <button
                   className="primary-button account-detail-page__save"
                   type="submit"
-                  disabled={!isDirty || isBusy}
+                  disabled={!isDisplayNameDirty || isBusy}
                 >
-                  {isSaving ? "Saving…" : "Save changes"}
+                  {isDisplayNameSaving ? "Saving…" : "Save changes"}
                 </button>
               </div>
+
+              {isDisplayNameSaving ? (
+                <p
+                  className="account-detail-page__status"
+                  role="status"
+                  aria-live="polite"
+                >
+                  Saving account changes…
+                </p>
+              ) : null}
+
+              {renderNotice(displayNameNotice)}
             </form>
 
             <dl className="account-detail-meta">
@@ -546,139 +713,177 @@ export function AccountEditPage() {
               </div>
 
               <div>
-                <dt>Updated</dt>
+                <dt>Last updated</dt>
                 <dd>
                   <time dateTime={account.updatedAt}>
                     {formatDate(account.updatedAt)}
                   </time>
                 </dd>
               </div>
-
-              <div>
-                <dt>Deleted</dt>
-                <dd>
-                  {account.deletedAt === null ? (
-                    "Not deleted"
-                  ) : (
-                    <time dateTime={account.deletedAt}>
-                      {formatDate(account.deletedAt)}
-                    </time>
-                  )}
-                </dd>
-              </div>
             </dl>
-          </div>
-
-          <section
-            className="account-detail-lifecycle"
-            aria-labelledby="account-lifecycle-heading"
-          >
-            <div className="account-detail-lifecycle__header">
-              <div>
-                <p className="eyebrow">Lifecycle</p>
-                <h2 id="account-lifecycle-heading">Account status</h2>
-              </div>
-
-              <p className="account-detail-lifecycle__state">
-                Current state: <strong>{getStatusLabel(account)}</strong>
-              </p>
-            </div>
-
-            <div className="account-detail-lifecycle__actions">
-              {account.deletedAt !== null ? (
-                <button
-                  className="secondary-button account-detail-page__action"
-                  type="button"
-                  disabled={isBusy}
-                  onClick={() => void executeLifecycleMutation("restore")}
-                >
-                  {pendingMutation === "restore"
-                    ? "Restoring…"
-                    : "Restore account"}
-                </button>
-              ) : account.status === "active" ? (
-                <button
-                  ref={confirmTriggerRef}
-                  className="secondary-button account-detail-page__action"
-                  type="button"
-                  disabled={isBusy}
-                  onClick={() => setConfirmDeactivate(true)}
-                >
-                  {pendingMutation === "deactivate"
-                    ? "Deactivating…"
-                    : "Deactivate account"}
-                </button>
-              ) : (
-                <button
-                  className="secondary-button account-detail-page__action"
-                  type="button"
-                  disabled={isBusy}
-                  onClick={() => void executeLifecycleMutation("activate")}
-                >
-                  {pendingMutation === "activate"
-                    ? "Activating…"
-                    : "Activate account"}
-                </button>
-              )}
-            </div>
           </section>
 
-          {isSaving ? (
-            <p
-              className="account-detail-page__status"
-              role="status"
-              aria-live="polite"
-            >
-              Saving account changes…
-            </p>
-          ) : null}
+          <section
+            className="account-detail-card"
+            aria-labelledby={emailHeadingId}
+          >
+            <div className="account-detail-section-header">
+              <p className="eyebrow">Change Email</p>
+              <h2 id={emailHeadingId}>Administrator email address</h2>
+            </div>
 
-          {pendingMutation !== null ? (
-            <p
-              className="account-detail-page__status"
-              role="status"
-              aria-live="polite"
-            >
-              {pendingMutation === "deactivate"
-                ? "Deactivating account…"
-                : pendingMutation === "activate"
-                  ? "Activating account…"
-                  : "Restoring account…"}
-            </p>
-          ) : null}
-
-          {notice !== null ? (
-            notice.kind === "success" ? (
-              <p
-                className="account-detail-page__notice"
-                role="status"
-                aria-live="polite"
-              >
-                {notice.message}
-              </p>
-            ) : (
-              <div className="form-alert" role="alert">
-                <span className="form-alert__icon" aria-hidden="true">
-                  !
-                </span>
-                <p className="form-alert__message">{notice.message}</p>
+            <dl className="account-detail-meta account-detail-meta--primary">
+              <div>
+                <dt>Current email</dt>
+                <dd>{account.email}</dd>
               </div>
-            )
-          ) : null}
+            </dl>
 
-          <ConfirmDialog
-            open={confirmDeactivate}
-            title="Deactivate administrator account?"
-            description={`This will make ${getAccountLabel(
-              account,
-            )} inactive. The server will confirm the final account state.`}
-            confirmLabel="Deactivate"
-            pendingLabel="Deactivating…"
-            isPending={pendingMutation === "deactivate"}
-            returnFocusRef={confirmTriggerRef}
-            onCancel={() => setConfirmDeactivate(false)}
-            onConfirm={() => void executeDeactivate()}
-          />
+            <form
+              className="account-detail-form"
+              noValidate
+              onSubmit={(event) => void handleEmailSubmit(event)}
+              aria-busy={isEmailSaving}
+            >
+              <div className="field">
+                <label htmlFor={emailInputId}>New email</label>
+                <input
+                  ref={emailInputRef}
+                  id={emailInputId}
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  aria-describedby={
+                    emailError === null
+                      ? emailHelpId
+                      : `${emailHelpId} ${emailErrorId}`
+                  }
+                  aria-invalid={emailError !== null}
+                  disabled={isBusy}
+                  onChange={(event) => {
+                    setEmail(event.target.value);
+                    setEmailError(null);
+                    setEmailNotice(null);
+                  }}
+                />
+                <p id={emailHelpId} className="account-detail-page__hint">
+                  The server validates the final email syntax and uniqueness.
+                </p>
+                {emailError !== null ? (
+                  <p
+                    id={emailErrorId}
+                    className="account-detail-page__hint account-detail-page__hint--error"
+                    role="alert"
+                  >
+                    {emailError}
+                  </p>
+                ) : null}
+              </div>
+
+              <div className="account-detail-form__actions">
+                <button
+                  className="primary-button account-detail-page__save"
+                  type="submit"
+                  disabled={!isEmailDirty || isBusy}
+                >
+                  {isEmailSaving ? "Changing email…" : "Change email"}
+                </button>
+              </div>
+
+              {isEmailSaving ? (
+                <p
+                  className="account-detail-page__status"
+                  role="status"
+                  aria-live="polite"
+                >
+                  Changing email address…
+                </p>
+              ) : null}
+
+              {renderNotice(emailNotice)}
+            </form>
+          </section>
+
+          <section
+            className="account-detail-card"
+            aria-labelledby={passwordHeadingId}
+          >
+            <div className="account-detail-section-header">
+              <p className="eyebrow">Change Password</p>
+              <h2 id={passwordHeadingId}>Administrator password</h2>
+            </div>
+
+            <form
+              className="account-detail-form"
+              noValidate
+              onSubmit={(event) => void handlePasswordSubmit(event)}
+              aria-busy={isPasswordSaving}
+            >
+              <div className="field">
+                <label htmlFor={passwordInputId}>New password</label>
+                <input
+                  ref={passwordInputRef}
+                  id={passwordInputId}
+                  name="password"
+                  type="password"
+                  autoComplete="new-password"
+                  minLength={PASSWORD_MIN_LENGTH}
+                  required
+                  value={password}
+                  aria-describedby={
+                    passwordError === null
+                      ? passwordHelpId
+                      : `${passwordHelpId} ${passwordErrorId}`
+                  }
+                  aria-invalid={passwordError !== null}
+                  disabled={isBusy}
+                  onChange={(event) => {
+                    setPassword(event.target.value);
+                    setPasswordError(null);
+                    setPasswordNotice(null);
+                  }}
+                />
+                <p id={passwordHelpId} className="account-detail-page__hint">
+                  Minimum length: {PASSWORD_MIN_LENGTH} characters. No
+                  uppercase, lowercase, number, or symbol combination is
+                  required by the frontend.
+                </p>
+                {passwordError !== null ? (
+                  <p
+                    id={passwordErrorId}
+                    className="account-detail-page__hint account-detail-page__hint--error"
+                    role="alert"
+                  >
+                    {passwordError}
+                  </p>
+                ) : null}
+              </div>
+
+              <div className="account-detail-form__actions">
+                <button
+                  className="primary-button account-detail-page__save"
+                  type="submit"
+                  disabled={password.length < PASSWORD_MIN_LENGTH || isBusy}
+                >
+                  {isPasswordSaving ? "Changing password…" : "Change password"}
+                </button>
+              </div>
+
+              {isPasswordSaving ? (
+                <p
+                  className="account-detail-page__status"
+                  role="status"
+                  aria-live="polite"
+                >
+                  Changing password…
+                </p>
+              ) : null}
+
+              {renderNotice(passwordNotice)}
+            </form>
+          </section>
         </>
       ) : null}
     </section>

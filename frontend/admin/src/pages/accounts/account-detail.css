@@ -79,6 +79,11 @@
   line-height: 1.45;
 }
 
+.account-detail-page__hint--error {
+  color: var(--danger-dark);
+  font-weight: 650;
+}
+
 .account-detail-card,
 .account-detail-lifecycle {
   display: grid;
