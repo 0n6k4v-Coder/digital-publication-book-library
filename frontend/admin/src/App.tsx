@@ -1,6 +1,7 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { AdminShell } from "./layouts/AdminShell";
 import { AccountCreatePage } from "./pages/accounts/AccountCreatePage";
+import { AccountDeletePage } from "./pages/accounts/AccountDeletePage";
 import { AccountDetailPage } from "./pages/accounts/AccountDetailPage";
 import { AccountEditPage } from "./pages/accounts/AccountEditPage";
 import { AccountsPage } from "./pages/accounts/AccountsPage";
@@ -30,24 +31,27 @@ function isAccountEditRoute(pathname: string): boolean {
   return /^\/admin\/accounts\/[^/]+\/edit$/.test(pathname);
 }
 
+function isAccountDeleteRoute(pathname: string): boolean {
+  return /^\/admin\/accounts\/[^/]+\/delete$/.test(pathname);
+}
+
 function isAdminRoute(pathname: string): boolean {
   return (
     pathname === "/admin" ||
     pathname === "/admin/accounts" ||
     pathname === "/admin/accounts/create" ||
     isAccountDetailRoute(pathname) ||
-    isAccountEditRoute(pathname)
+    isAccountEditRoute(pathname) ||
+    isAccountDeleteRoute(pathname)
   );
 }
 
 export default function App() {
   const pathname = usePathname();
-
   const authSnapshot = useSyncExternalStore(
     authService.subscribe,
     authService.getSnapshot,
   );
-
   const { authStatus } = authSnapshot;
 
   useEffect(() => {
@@ -94,6 +98,11 @@ export default function App() {
 
     if (isAccountEditRoute(pathname)) {
       document.title = "Edit Account | Admin Application";
+      return;
+    }
+
+    if (isAccountDeleteRoute(pathname)) {
+      document.title = "Delete Account | Admin Application";
       return;
     }
 
@@ -151,6 +160,14 @@ export default function App() {
     return (
       <AdminShell onLogout={authService.logout}>
         <AccountEditPage />
+      </AdminShell>
+    );
+  }
+
+  if (isAccountDeleteRoute(pathname)) {
+    return (
+      <AdminShell onLogout={authService.logout}>
+        <AccountDeletePage />
       </AdminShell>
     );
   }

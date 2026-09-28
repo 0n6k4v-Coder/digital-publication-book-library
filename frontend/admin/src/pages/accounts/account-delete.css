@@ -1,0 +1,313 @@
+.account-delete-page {
+  inline-size: min(100%, 64rem);
+  margin-inline: auto;
+  display: grid;
+  gap: 1.5rem;
+}
+
+.account-delete-page__back {
+  inline-size: auto;
+  justify-self: start;
+  text-decoration: none;
+}
+
+.account-delete-page__header {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.account-delete-page__header h1,
+.account-delete-page__summary h2,
+.account-delete-page__actions h2,
+.account-delete-page__unavailable h2 {
+  margin: 0;
+  color: var(--text-strong);
+  line-height: 1.15;
+  text-wrap: balance;
+}
+
+.account-delete-page__header h1 {
+  font-size: clamp(1.8rem, 1.45rem + 1vw, 2.5rem);
+  font-weight: 780;
+  letter-spacing: -0.03em;
+}
+
+.account-delete-page__header > p:last-child {
+  max-inline-size: 52rem;
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.account-delete-page__status,
+.account-delete-page__success {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.account-delete-page__success {
+  padding: 0.9rem 1rem;
+  border: 1px solid #a8d5ba;
+  border-inline-start: 0.3rem solid #248a4b;
+  border-radius: 0.9rem;
+  color: #155724;
+  background: #edf8f1;
+}
+
+.account-delete-page__summary,
+.account-delete-page__actions,
+.account-delete-page__unavailable {
+  padding: clamp(1.2rem, 3vw, 1.75rem);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: var(--surface);
+  box-shadow: 0 0.8rem 2rem rgba(23, 32, 51, 0.05);
+}
+
+.account-delete-page__summary-header {
+  display: grid;
+  gap: 0.35rem;
+  margin-block-end: 1.25rem;
+}
+
+.account-delete-summary {
+  display: grid;
+  gap: 0;
+  margin: 0;
+}
+
+.account-delete-summary > div {
+  display: grid;
+  grid-template-columns: minmax(8rem, 13rem) minmax(0, 1fr);
+  gap: 1rem;
+  padding-block: 0.85rem;
+  border-block-start: 1px solid #e1e5ec;
+}
+
+.account-delete-summary > div:first-child {
+  border-block-start: 0;
+  padding-block-start: 0;
+}
+
+.account-delete-summary dt {
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.account-delete-summary dd {
+  min-inline-size: 0;
+  margin: 0;
+  color: var(--text-default);
+  overflow-wrap: anywhere;
+}
+
+.account-delete-page__unavailable p {
+  margin: 0.6rem 0 1rem;
+  color: var(--text-muted);
+}
+
+.account-delete-page__actions {
+  display: grid;
+  gap: 1rem;
+}
+
+.account-delete-page__action-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.account-delete-page__action {
+  inline-size: 100%;
+  min-block-size: 3.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-control);
+  color: var(--text-default);
+  background: var(--surface);
+  font-weight: 760;
+}
+
+.account-delete-page__action:hover:not(:disabled) {
+  background: var(--surface-muted);
+}
+
+.account-delete-page__action--danger {
+  border-color: var(--danger);
+  color: #ffffff;
+  background: var(--danger);
+}
+
+.account-delete-page__action--danger:hover:not(:disabled) {
+  border-color: var(--danger-dark);
+  background: var(--danger-dark);
+}
+
+.account-delete-page__action:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.account-delete-page__mutation-error {
+  margin: 0;
+}
+
+.account-delete-dialog {
+  inline-size: min(calc(100% - 2rem), 38rem);
+  max-inline-size: 100%;
+  max-block-size: calc(100dvh - 2rem);
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 1.25rem;
+  color: var(--text-default);
+  background: var(--surface);
+  box-shadow: 0 1.5rem 4rem rgba(16, 24, 39, 0.28);
+}
+
+.account-delete-dialog::backdrop {
+  background: rgba(16, 24, 39, 0.62);
+}
+
+.account-delete-dialog__content {
+  max-block-size: calc(100dvh - 2rem);
+  overflow: auto;
+  padding: clamp(1.25rem, 4vw, 2rem);
+}
+
+.account-delete-dialog__header {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.account-delete-dialog__header h2 {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: clamp(1.25rem, 1rem + 1vw, 1.7rem);
+  line-height: 1.2;
+}
+
+.account-delete-dialog__header p:last-child {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.account-delete-dialog__error,
+.account-delete-dialog__status {
+  margin: 1rem 0 0;
+  padding: 0.85rem 1rem;
+  border-radius: 0.85rem;
+}
+
+.account-delete-dialog__error {
+  border: 1px solid var(--danger-border);
+  border-inline-start: 0.3rem solid var(--danger);
+  color: var(--danger-dark);
+  background: var(--danger-background);
+}
+
+.account-delete-dialog__status {
+  color: var(--text-muted);
+  background: var(--surface-muted);
+}
+
+.account-delete-dialog__actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+  margin-block-start: 1.25rem;
+}
+
+.account-delete-dialog__button {
+  min-block-size: 3.25rem;
+}
+
+.account-delete-dialog__button--danger {
+  border-color: var(--danger);
+  color: #ffffff;
+  background: var(--danger);
+}
+
+.account-delete-dialog__button--danger:hover:not(:disabled) {
+  border-color: var(--danger-dark);
+  background: var(--danger-dark);
+}
+
+.account-delete-dialog__button:disabled {
+  opacity: 0.7;
+}
+
+.account-delete-page__action:focus-visible,
+.account-delete-dialog__button:focus-visible,
+.account-delete-dialog__error:focus-visible,
+.account-delete-page__back:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+
+@media (max-width: 767px) {
+  .account-delete-page {
+    inline-size: 100%;
+  }
+
+  .account-delete-page__action-list,
+  .account-delete-dialog__actions {
+    grid-template-columns: 1fr;
+  }
+
+  .account-delete-summary > div {
+    grid-template-columns: 1fr;
+    gap: 0.25rem;
+  }
+
+  .account-delete-dialog {
+    inline-size: min(calc(100% - 1rem), 38rem);
+    max-block-size: calc(100dvh - 1rem);
+  }
+
+  .account-delete-dialog__content {
+    max-block-size: calc(100dvh - 1rem);
+  }
+}
+
+@media (pointer: coarse) {
+  .account-delete-page__action,
+  .account-delete-dialog__button,
+  .account-delete-page__back {
+    min-block-size: 3.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .account-delete-page__action,
+  .account-delete-dialog__button {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .account-delete-page__summary,
+  .account-delete-page__actions,
+  .account-delete-page__unavailable,
+  .account-delete-dialog,
+  .account-delete-page__action,
+  .account-delete-dialog__button {
+    border-color: CanvasText;
+    color: CanvasText;
+    background: Canvas;
+    box-shadow: none;
+  }
+
+  .account-delete-page__action--danger,
+  .account-delete-dialog__button--danger {
+    border-color: ButtonText;
+    color: ButtonText;
+    background: ButtonFace;
+  }
+
+  .account-delete-dialog::backdrop {
+    background: CanvasText;
+    opacity: 0.5;
+  }
+}
