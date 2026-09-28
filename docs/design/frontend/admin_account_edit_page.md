@@ -1540,7 +1540,7 @@ Manual
 | `FE-ACCOUNT-EDIT-IMPL-002` | Route renders inside the Admin Shell.                                                                                 | 🟢 Implemented |        |
 | `FE-ACCOUNT-EDIT-IMPL-003` | Unauthenticated access follows shared authentication behavior.                                                        | 🟢 Implemented |        |
 | `FE-ACCOUNT-EDIT-IMPL-004` | `PAGE-ADM-010` remains the authoritative sitemap identifier.                                                          | 🟢 Implemented |        |
-| `FE-ACCOUNT-EDIT-IMPL-005` | `return_to` is validated as same-origin `/admin/accounts` and preserves only supported Account List query parameters. | 🟡 Defined     |        |
+| `FE-ACCOUNT-EDIT-IMPL-005` | `return_to` is validated as same-origin `/admin/accounts` and preserves only supported Account List query parameters. | 🟢 Implemented |        |
 
 ## 18.2 Account Loading
 
@@ -1563,38 +1563,38 @@ Manual
 
 ## 18.4 Change Email
 
-| ID                         | Criteria                                                           | Status     | Reason |
-| -------------------------- | ------------------------------------------------------------------ | ---------- | ------ |
-| `FE-ACCOUNT-EDIT-IMPL-015` | Change Email form is present.                                      | 🟡 Defined |        |
-| `FE-ACCOUNT-EDIT-IMPL-016` | Email change uses `PATCH /admin/accounts/{id}/email`.              | 🟡 Defined |        |
-| `FE-ACCOUNT-EDIT-IMPL-017` | Email change requires `account:change_email` server authorization. | 🟡 Defined |        |
-| `FE-ACCOUNT-EDIT-IMPL-018` | `EMAIL_ALREADY_IN_USE` is handled explicitly.                      | 🟡 Defined |        |
-| `FE-ACCOUNT-EDIT-IMPL-019` | Successful email change uses the returned Account response.        | 🟡 Defined |        |
+| ID                         | Criteria                                                           | Status         | Reason |
+| -------------------------- | ------------------------------------------------------------------ | -------------- | ------ |
+| `FE-ACCOUNT-EDIT-IMPL-015` | Change Email form is present.                                      | 🟢 Implemented |        |
+| `FE-ACCOUNT-EDIT-IMPL-016` | Email change uses `PATCH /admin/accounts/{id}/email`.              | 🟢 Implemented |        |
+| `FE-ACCOUNT-EDIT-IMPL-017` | Email change requires `account:change_email` server authorization. | 🟢 Implemented |        |
+| `FE-ACCOUNT-EDIT-IMPL-018` | `EMAIL_ALREADY_IN_USE` is handled explicitly.                      | 🟢 Implemented |        |
+| `FE-ACCOUNT-EDIT-IMPL-019` | Successful email change uses the returned Account response.        | 🟢 Implemented |        |
 
 ## 18.5 Change Password
 
-| ID                         | Criteria                                                                 | Status     | Reason |
-| -------------------------- | ------------------------------------------------------------------------ | ---------- | ------ |
-| `FE-ACCOUNT-EDIT-IMPL-020` | Change Password form is present.                                         | 🟡 Defined |        |
-| `FE-ACCOUNT-EDIT-IMPL-021` | Password uses `type="password"`.                                         | 🟡 Defined |        |
-| `FE-ACCOUNT-EDIT-IMPL-022` | Password uses `autocomplete="new-password"`.                             | 🟡 Defined |        |
-| `FE-ACCOUNT-EDIT-IMPL-023` | Client minimum is 15 characters.                                         | 🟡 Defined |        |
-| `FE-ACCOUNT-EDIT-IMPL-024` | Password change uses `PATCH /admin/accounts/{id}/password`.              | 🟡 Defined |        |
-| `FE-ACCOUNT-EDIT-IMPL-025` | Password change requires `account:change_password` server authorization. | 🟡 Defined |        |
-| `FE-ACCOUNT-EDIT-IMPL-026` | `204 No Content` is handled as successful password change.               | 🟡 Defined |        |
-| `FE-ACCOUNT-EDIT-IMPL-027` | Password input is cleared after successful change.                       | 🟡 Defined |        |
+| ID                         | Criteria                                                                 | Status         | Reason |
+| -------------------------- | ------------------------------------------------------------------------ | -------------- | ------ |
+| `FE-ACCOUNT-EDIT-IMPL-020` | Change Password form is present.                                         | 🟢 Implemented |        |
+| `FE-ACCOUNT-EDIT-IMPL-021` | Password uses `type="password"`.                                         | 🟢 Implemented |        |
+| `FE-ACCOUNT-EDIT-IMPL-022` | Password uses `autocomplete="new-password"`.                             | 🟢 Implemented |        |
+| `FE-ACCOUNT-EDIT-IMPL-023` | Client minimum is 15 characters.                                         | 🟢 Implemented |        |
+| `FE-ACCOUNT-EDIT-IMPL-024` | Password change uses `PATCH /admin/accounts/{id}/password`.              | 🟢 Implemented |        |
+| `FE-ACCOUNT-EDIT-IMPL-025` | Password change requires `account:change_password` server authorization. | 🟢 Implemented |        |
+| `FE-ACCOUNT-EDIT-IMPL-026` | `204 No Content` is handled as successful password change.               | 🟢 Implemented |        |
+| `FE-ACCOUNT-EDIT-IMPL-027` | Password input is cleared after successful change.                       | 🟢 Implemented |        |
 
 ## 18.6 Action Boundary
 
-| ID                         | Criteria                                     | Status                              | Reason |
-| -------------------------- | -------------------------------------------- | ----------------------------------- | ------ |
-| `FE-ACCOUNT-EDIT-IMPL-028` | Deactivate is absent from Account Edit.      | 🔴 Current implementation conflicts |        |
-| `FE-ACCOUNT-EDIT-IMPL-029` | Activate is absent from Account Edit.        | 🔴 Current implementation conflicts |        |
-| `FE-ACCOUNT-EDIT-IMPL-030` | Restore is absent from Account Edit.         | 🔴 Current implementation conflicts |        |
-| `FE-ACCOUNT-EDIT-IMPL-031` | Delete is absent from Account Edit.          | 🟢 Implemented                      |        |
-| `FE-ACCOUNT-EDIT-IMPL-032` | Purge is absent from Account Edit.           | 🟢 Implemented                      |        |
-| `FE-ACCOUNT-EDIT-IMPL-033` | Role assignment is absent from Account Edit. | 🟢 Implemented                      |        |
-| `FE-ACCOUNT-EDIT-IMPL-034` | Role revocation is absent from Account Edit. | 🟢 Implemented                      |        |
+| ID                         | Criteria                                     | Status         | Reason |
+| -------------------------- | -------------------------------------------- | -------------- | ------ |
+| `FE-ACCOUNT-EDIT-IMPL-028` | Deactivate is absent from Account Edit.      | 🟢 Implemented |        |
+| `FE-ACCOUNT-EDIT-IMPL-029` | Activate is absent from Account Edit.        | 🟢 Implemented |        |
+| `FE-ACCOUNT-EDIT-IMPL-030` | Restore is absent from Account Edit.         | 🟢 Implemented |        |
+| `FE-ACCOUNT-EDIT-IMPL-031` | Delete is absent from Account Edit.          | 🟢 Implemented |        |
+| `FE-ACCOUNT-EDIT-IMPL-032` | Purge is absent from Account Edit.           | 🟢 Implemented |        |
+| `FE-ACCOUNT-EDIT-IMPL-033` | Role assignment is absent from Account Edit. | 🟢 Implemented |        |
+| `FE-ACCOUNT-EDIT-IMPL-034` | Role revocation is absent from Account Edit. | 🟢 Implemented |        |
 
 ## 18.7 Security
 
@@ -1615,10 +1615,10 @@ Manual
 | `FE-ACCOUNT-EDIT-IMPL-042` | Semantic page structure is used.                                        | 🟢 Implemented |        |
 | `FE-ACCOUNT-EDIT-IMPL-043` | Editable fields have visible labels.                                    | 🟢 Implemented |        |
 | `FE-ACCOUNT-EDIT-IMPL-044` | Async status is accessible.                                             | 🟢 Implemented |        |
-| `FE-ACCOUNT-EDIT-IMPL-045` | Validation errors are associated with fields.                           | 🟡 Defined     |        |
+| `FE-ACCOUNT-EDIT-IMPL-045` | Validation errors are associated with fields.                           | 🟢 Implemented |        |
 | `FE-ACCOUNT-EDIT-IMPL-046` | Focus is visible and not obscured.                                      | 🟢 Implemented |        |
-| `FE-ACCOUNT-EDIT-IMPL-047` | Password input uses native password semantics and correct autocomplete. | 🟡 Defined     |        |
-| `FE-ACCOUNT-EDIT-IMPL-048` | Target size satisfies applicable WCAG 2.2 requirements.                 | 🟡 Defined     |        |
+| `FE-ACCOUNT-EDIT-IMPL-047` | Password input uses native password semantics and correct autocomplete. | 🟢 Implemented |        |
+| `FE-ACCOUNT-EDIT-IMPL-048` | Target size satisfies applicable WCAG 2.2 requirements.                 | 🟢 Implemented |        |
 
 ---
 
@@ -1798,8 +1798,20 @@ The Account Edit page must:
 
 ## Implementation Status Boundary
 
-The current frontend contains an Account Edit route and an existing display-name editing flow, but the current implementation also exposes lifecycle controls and does not yet provide the dedicated Change Email and Change Password flows required by this document.
+The current frontend contains the Account Edit route and the complete Edit-page implementation required by this document.
 
-The current return-navigation helper validates same-origin and `/admin/accounts` path, but the documented query-parameter allowlist is not yet fully enforced. That difference is tracked as implementation status.
+The implementation provides:
+
+- server-authoritative Account loading through `GET /admin/accounts/{id}`;
+- editable `display_name` through `PATCH /admin/accounts/{id}`;
+- dedicated Change Email through `PATCH /admin/accounts/{id}/email`;
+- dedicated Change Password through `PATCH /admin/accounts/{id}/password`;
+- explicit `EMAIL_ALREADY_IN_USE` handling;
+- explicit `PASSWORD_POLICY_VIOLATION` handling;
+- successful email updates using the returned Account representation;
+- successful password changes with a cleared password field;
+- validated same-origin `return_to` handling with an allowlist of supported Account List query parameters;
+- lifecycle, delete, purge, and role-management operations excluded from Account Edit;
+- accessible field labels, error associations, status messaging, native password semantics, and target sizing.
 
 This document remains the frontend Account Edit source of truth.
