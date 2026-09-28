@@ -161,7 +161,7 @@ describe("AccountEditPage", () => {
     render(<AccountEditPage />);
 
     await screen.findByRole("heading", {
-      name: "Change Email",
+      name: "Administrator email address",
     });
 
     const input = screen.getByLabelText("New email");
@@ -194,6 +194,7 @@ describe("AccountEditPage", () => {
 
   it("handles EMAIL_ALREADY_IN_USE as a field error", async () => {
     const user = userEvent.setup();
+    const errorMessage = "That email address is already in use.";
 
     mockedChangeEmail.mockRejectedValueOnce(
       new AccountsError("CONFLICT", 409, "EMAIL_ALREADY_IN_USE"),
@@ -210,24 +211,16 @@ describe("AccountEditPage", () => {
       }),
     );
 
-    const error = await screen.findByText(
-      "That email address is already in use.",
-    );
-
     expect(input).toHaveAttribute("aria-invalid", "true");
 
-    const describedBy = input
-      .getAttribute("aria-describedby")
-      ?.split(" ")
-      .map((id) => document.getElementById(id)?.textContent ?? "");
+    const describedByIds =
+      input.getAttribute("aria-describedby")?.split(/\s+/) ?? [];
 
-    expect(
-      describedBy?.some((value) =>
-        value.includes("That email address is already in use."),
-      ),
-    ).toBe(true);
+    const associatedError = describedByIds
+      .map((id) => document.getElementById(id))
+      .find((element) => element?.textContent === errorMessage);
 
-    expect(error).toBeInTheDocument();
+    expect(associatedError).not.toBeNull();
   });
 
   it("enforces the 15-character password minimum without adding composition rules", async () => {
@@ -268,6 +261,7 @@ describe("AccountEditPage", () => {
 
   it("handles PASSWORD_POLICY_VIOLATION without exposing password policy internals", async () => {
     const user = userEvent.setup();
+    const errorMessage = "The new password does not meet the password policy.";
 
     mockedChangePassword.mockRejectedValueOnce(
       new AccountsError("VALIDATION", 422, "PASSWORD_POLICY_VIOLATION"),
@@ -284,13 +278,16 @@ describe("AccountEditPage", () => {
       }),
     );
 
-    expect(
-      await screen.findByText(
-        "The new password does not meet the password policy.",
-      ),
-    ).toBeInTheDocument();
-
     expect(input).toHaveAttribute("aria-invalid", "true");
+
+    const describedByIds =
+      input.getAttribute("aria-describedby")?.split(/\s+/) ?? [];
+
+    const associatedError = describedByIds
+      .map((id) => document.getElementById(id))
+      .find((element) => element?.textContent === errorMessage);
+
+    expect(associatedError).not.toBeNull();
   });
 
   it("treats a soft-deleted Account response as unavailable", async () => {

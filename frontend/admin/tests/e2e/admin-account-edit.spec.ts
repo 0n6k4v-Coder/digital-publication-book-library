@@ -348,13 +348,9 @@ test.describe("admin account edit", () => {
     await expect(password).toHaveAttribute("autocomplete", "new-password");
 
     const email = page.getByLabel("New email");
+    const emailForm = email.locator("xpath=ancestor::form");
 
     await expect(email).toHaveAttribute("type", "email");
-
-    const formNoValidate = await email.evaluate(
-      (element) => element.form?.noValidate ?? false,
-    );
-
-    expect(formNoValidate).toBe(true);
+    await expect(emailForm).toHaveAttribute("novalidate", "");
   });
 });
