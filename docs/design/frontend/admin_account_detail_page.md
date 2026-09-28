@@ -1210,7 +1210,7 @@ Manual
 | `FE-ACCOUNT-DETAIL-IMPL-010` | Password credentials are never expected or rendered. | 🟢 Implemented |
 | `FE-ACCOUNT-DETAIL-IMPL-011` | Account data is not stored in browser persistence.   | 🟢 Implemented |
 | `FE-ACCOUNT-DETAIL-IMPL-012` | Account response cache policy remains `no-store`.    | 🟢 Implemented |
-| `FE-ACCOUNT-DETAIL-IMPL-013` | Account fields render as read-only values.           | 🟡 Defined     |
+| `FE-ACCOUNT-DETAIL-IMPL-013` | Account fields render as read-only values.           | 🟢 Implemented |
 
 ---
 
@@ -1218,23 +1218,23 @@ Manual
 
 | ID                           | Criteria                                                        | Status         |
 | ---------------------------- | --------------------------------------------------------------- | -------------- |
-| `FE-ACCOUNT-DETAIL-IMPL-014` | No editable Account fields are rendered on the Detail page.     | 🟡 Defined     |
-| `FE-ACCOUNT-DETAIL-IMPL-015` | No Save or Save Changes control is rendered on the Detail page. | 🟡 Defined     |
-| `FE-ACCOUNT-DETAIL-IMPL-016` | The Detail page does not submit `PATCH /admin/accounts/{id}`.   | 🟡 Defined     |
+| `FE-ACCOUNT-DETAIL-IMPL-014` | No editable Account fields are rendered on the Detail page.     | 🟢 Implemented |
+| `FE-ACCOUNT-DETAIL-IMPL-015` | No Save or Save Changes control is rendered on the Detail page. | 🟢 Implemented |
+| `FE-ACCOUNT-DETAIL-IMPL-016` | The Detail page does not submit `PATCH /admin/accounts/{id}`.   | 🟢 Implemented |
 | `FE-ACCOUNT-DETAIL-IMPL-017` | Edit navigation is provided from the Detail page.               | 🟢 Implemented |
 
 ---
 
 ## 16.4 Delete Navigation Boundary
 
-| ID                           | Criteria                                                                  | Status     |
-| ---------------------------- | ------------------------------------------------------------------------- | ---------- |
-| `FE-ACCOUNT-DETAIL-IMPL-018` | Delete Account navigation is provided from the Detail page.               | 🟡 Defined |
-| `FE-ACCOUNT-DETAIL-IMPL-019` | Delete Account navigation targets `/admin/accounts/:id/delete`.           | 🟡 Defined |
-| `FE-ACCOUNT-DETAIL-IMPL-020` | Delete Account navigation preserves originating Account List query state. | 🟡 Defined |
-| `FE-ACCOUNT-DETAIL-IMPL-021` | Detail page does not execute `DELETE /admin/accounts/{id}`.               | 🟡 Defined |
-| `FE-ACCOUNT-DETAIL-IMPL-022` | Detail page does not execute `DELETE /admin/accounts/{id}/purge`.         | 🟡 Defined |
-| `FE-ACCOUNT-DETAIL-IMPL-023` | Delete confirmation is owned by the dedicated Account Delete page.        | 🟡 Defined |
+| ID                           | Criteria                                                                  | Status         |
+| ---------------------------- | ------------------------------------------------------------------------- | -------------- |
+| `FE-ACCOUNT-DETAIL-IMPL-018` | Delete Account navigation is provided from the Detail page.               | 🟡 Defined     |
+| `FE-ACCOUNT-DETAIL-IMPL-019` | Delete Account navigation targets `/admin/accounts/:id/delete`.           | 🟡 Defined     |
+| `FE-ACCOUNT-DETAIL-IMPL-020` | Delete Account navigation preserves originating Account List query state. | 🟡 Defined     |
+| `FE-ACCOUNT-DETAIL-IMPL-021` | Detail page does not execute `DELETE /admin/accounts/{id}`.               | 🟢 Implemented |
+| `FE-ACCOUNT-DETAIL-IMPL-022` | Detail page does not execute `DELETE /admin/accounts/{id}/purge`.         | 🟢 Implemented |
+| `FE-ACCOUNT-DETAIL-IMPL-023` | Delete confirmation is owned by the dedicated Account Delete page.        | 🟢 Implemented |
 
 ---
 
@@ -1242,12 +1242,12 @@ Manual
 
 | ID                           | Criteria                                                   | Status         |
 | ---------------------------- | ---------------------------------------------------------- | -------------- |
-| `FE-ACCOUNT-DETAIL-IMPL-024` | Deactivate is not exposed on the Detail page.              | 🟡 Defined     |
-| `FE-ACCOUNT-DETAIL-IMPL-025` | Activate is not exposed on the Detail page.                | 🟡 Defined     |
-| `FE-ACCOUNT-DETAIL-IMPL-026` | Restore is not exposed on the Detail page.                 | 🟡 Defined     |
-| `FE-ACCOUNT-DETAIL-IMPL-027` | Soft-delete mutation is not exposed on the Detail page.    | 🟡 Defined     |
+| `FE-ACCOUNT-DETAIL-IMPL-024` | Deactivate is not exposed on the Detail page.              | 🟢 Implemented |
+| `FE-ACCOUNT-DETAIL-IMPL-025` | Activate is not exposed on the Detail page.                | 🟢 Implemented |
+| `FE-ACCOUNT-DETAIL-IMPL-026` | Restore is not exposed on the Detail page.                 | 🟢 Implemented |
+| `FE-ACCOUNT-DETAIL-IMPL-027` | Soft-delete mutation is not exposed on the Detail page.    | 🟢 Implemented |
 | `FE-ACCOUNT-DETAIL-IMPL-028` | Hard-delete mutation is not exposed on the Detail page.    | 🟢 Implemented |
-| `FE-ACCOUNT-DETAIL-IMPL-029` | Lifecycle mutation APIs are not called by the Detail page. | 🟡 Defined     |
+| `FE-ACCOUNT-DETAIL-IMPL-029` | Lifecycle mutation APIs are not called by the Detail page. | 🟢 Implemented |
 
 ---
 
