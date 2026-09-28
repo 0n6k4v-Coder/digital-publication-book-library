@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AccountDeletePage } from "../../src/pages/accounts/AccountDeletePage";
 import { AccountsError, accountsService } from "../../src/services/accounts";
@@ -42,7 +48,11 @@ describe("AccountDeletePage", () => {
       }),
     ).toBeInTheDocument();
 
-    expect(screen.getByText("Library Administrator")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", {
+        name: "Library Administrator",
+      }),
+    ).toBeInTheDocument();
 
     expect(screen.getByText("admin@example.com")).toBeInTheDocument();
 
@@ -223,7 +233,9 @@ describe("AccountDeletePage", () => {
       }),
     );
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(
+    const dialog = screen.getByRole("alertdialog");
+
+    expect(await within(dialog).findByRole("alert")).toHaveTextContent(
       "The last active administrator cannot be deleted.",
     );
 
@@ -249,7 +261,9 @@ describe("AccountDeletePage", () => {
       }),
     );
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(
+    const dialog = screen.getByRole("alertdialog");
+
+    expect(await within(dialog).findByRole("alert")).toHaveTextContent(
       "You do not have permission to soft-delete this administrator account.",
     );
 

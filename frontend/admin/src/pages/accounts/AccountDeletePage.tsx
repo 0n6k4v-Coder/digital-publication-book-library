@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
-import type { MouseEvent, RefObject, SyntheticEvent } from "react";
+import type { MouseEvent, SyntheticEvent } from "react";
 import { createPortal } from "react-dom";
 import { AccountsError, accountsService } from "../../services/accounts";
 import { navigateTo, usePathname } from "../../services/navigation";
@@ -28,7 +28,6 @@ interface AccountDeleteConfirmationDialogProps {
   accountId: string;
   isPending: boolean;
   errorMessage: string | null;
-  returnFocusRef: RefObject<HTMLElement | null>;
   onCancel: () => void;
   onConfirm: () => void;
 }
@@ -177,7 +176,6 @@ function AccountDeleteConfirmationDialog({
   accountId,
   isPending,
   errorMessage,
-  returnFocusRef,
   onCancel,
   onConfirm,
 }: AccountDeleteConfirmationDialogProps) {
@@ -196,18 +194,7 @@ function AccountDeleteConfirmationDialog({
   useEffect(() => {
     const dialog = dialogRef.current;
 
-    if (dialog === null) {
-      return;
-    }
-
-    if (!open) {
-      if (dialog.open && typeof dialog.close === "function") {
-        dialog.close();
-      } else {
-        dialog.removeAttribute("open");
-      }
-
-      returnFocusRef.current?.focus();
+    if (dialog === null || !open) {
       return;
     }
 
@@ -239,10 +226,6 @@ function AccountDeleteConfirmationDialog({
         return;
       }
 
-      if (dialog === null) {
-        return;
-      }
-
       const focusable = getFocusableElements(dialog);
 
       if (focusable.length === 0) {
@@ -268,8 +251,14 @@ function AccountDeleteConfirmationDialog({
     return () => {
       dialog.removeEventListener("keydown", handleKeyDown);
       fallbackCleanup?.();
+
+      if (dialog.open && typeof dialog.close === "function") {
+        dialog.close();
+      } else {
+        dialog.removeAttribute("open");
+      }
     };
-  }, [open, returnFocusRef]);
+  }, [open]);
 
   useEffect(() => {
     if (errorMessage !== null) {
@@ -397,6 +386,7 @@ export function AccountDeletePage() {
   const softDeleteTriggerRef = useRef<HTMLButtonElement>(null);
   const hardDeleteTriggerRef = useRef<HTMLButtonElement>(null);
   const activeTriggerRef = useRef<HTMLElement | null>(null);
+  const previousDialogOpenRef = useRef(false);
   const mutationInFlightRef = useRef(false);
   const loadErrorRef = useRef<HTMLDivElement>(null);
 
@@ -477,6 +467,16 @@ export function AccountDeletePage() {
 
     navigateTo(returnTo, { replace: true });
   }, [returnTo, successMessage]);
+
+  useEffect(() => {
+    const isDialogOpen = dialogAction !== null;
+
+    if (previousDialogOpenRef.current && !isDialogOpen) {
+      activeTriggerRef.current?.focus();
+    }
+
+    previousDialogOpenRef.current = isDialogOpen;
+  }, [dialogAction]);
 
   function openConfirmation(
     action: DeleteAction,
@@ -762,18 +762,6 @@ export function AccountDeletePage() {
         </p>
       ) : null}
 
-      {mutationError !== null ? (
-        <div
-          className="form-alert account-delete-page__mutation-error"
-          role="alert"
-        >
-          <span className="form-alert__icon" aria-hidden="true">
-            !
-          </span>
-          <p className="form-alert__message">{mutationError.message}</p>
-        </div>
-      ) : null}
-
       {loadState.kind === "ready" || loadState.kind === "not-found" ? (
         <section
           className="account-delete-page__actions"
@@ -819,7 +807,6 @@ export function AccountDeletePage() {
         accountId={accountId ?? "unknown"}
         isPending={pendingAction !== null}
         errorMessage={mutationError?.message ?? null}
-        returnFocusRef={activeTriggerRef}
         onCancel={cancelConfirmation}
         onConfirm={() => void confirmDeletion()}
       />
