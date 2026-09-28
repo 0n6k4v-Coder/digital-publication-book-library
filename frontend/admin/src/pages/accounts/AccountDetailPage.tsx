@@ -3,7 +3,11 @@ import type { MouseEvent } from "react";
 import { AccountsError, accountsService } from "../../services/accounts";
 import { navigateTo, usePathname } from "../../services/navigation";
 import type { AdministratorAccount } from "../../types/account";
-import { buildEditAccountHref } from "./accountRoutes";
+import {
+  buildDeleteAccountHref,
+  buildEditAccountHref,
+  resolveAccountReturnTo,
+} from "./accountRoutes";
 import "./account-detail.css";
 
 function getAccountId(pathname: string): string | null {
@@ -71,6 +75,7 @@ function getLoadErrorMessage(error: AccountsError): string {
 export function AccountDetailPage() {
   const pathname = usePathname();
   const accountId = getAccountId(pathname);
+  const returnTo = resolveAccountReturnTo(window.location.search);
 
   const [account, setAccount] = useState<AdministratorAccount | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -142,7 +147,7 @@ export function AccountDetailPage() {
     }
 
     event.preventDefault();
-    navigateTo("/admin/accounts");
+    navigateTo(returnTo);
   }
 
   function handleEdit(event: MouseEvent<HTMLAnchorElement>): void {
@@ -159,7 +164,25 @@ export function AccountDetailPage() {
     }
 
     event.preventDefault();
-    navigateTo(buildEditAccountHref(account.id, "/admin/accounts"));
+    navigateTo(buildEditAccountHref(account.id, returnTo));
+  }
+
+  function handleDelete(event: MouseEvent<HTMLAnchorElement>): void {
+    if (
+      event.defaultPrevented ||
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey ||
+      account === null ||
+      account.deletedAt !== null
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    navigateTo(buildDeleteAccountHref(account.id, returnTo));
   }
 
   function renderStatus(accountValue: AdministratorAccount) {
@@ -183,7 +206,7 @@ export function AccountDetailPage() {
     >
       <a
         className="secondary-button account-detail-page__back"
-        href="/admin/accounts"
+        href={returnTo}
         onClick={handleBack}
       >
         Back to Administrator Accounts
@@ -210,11 +233,21 @@ export function AccountDetailPage() {
           <div className="account-detail-page__header-actions">
             <a
               className="primary-button account-detail-page__edit"
-              href={buildEditAccountHref(account.id, "/admin/accounts")}
+              href={buildEditAccountHref(account.id, returnTo)}
               onClick={handleEdit}
             >
               Edit
             </a>
+
+            {account.deletedAt === null ? (
+              <a
+                className="secondary-button account-detail-page__delete"
+                href={buildDeleteAccountHref(account.id, returnTo)}
+                onClick={handleDelete}
+              >
+                Delete Account
+              </a>
+            ) : null}
           </div>
         ) : null}
       </header>

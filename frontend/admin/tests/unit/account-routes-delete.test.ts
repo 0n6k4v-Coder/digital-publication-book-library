@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildAccountDetailHref,
   buildDeleteAccountHref,
   resolveAccountReturnTo,
 } from "../../src/pages/accounts/accountRoutes";
@@ -61,5 +62,25 @@ describe("account delete navigation", () => {
       const search = new URLSearchParams({ return_to: value }).toString();
       expect(resolveAccountReturnTo(`?${search}`)).toBe("/admin/accounts");
     }
+  });
+
+  it("keeps the default Account Detail route clean", () => {
+    expect(
+      buildAccountDetailHref(
+        "01900000-0000-7000-8000-000000000001",
+        "/admin/accounts",
+      ),
+    ).toBe("/admin/accounts/01900000-0000-7000-8000-000000000001");
+  });
+
+  it("preserves filtered Account List state for Account Detail", () => {
+    expect(
+      buildAccountDetailHref(
+        "01900000-0000-7000-8000-000000000001",
+        "/admin/accounts?page=2&page_size=50&status=inactive&include_deleted=true",
+      ),
+    ).toBe(
+      "/admin/accounts/01900000-0000-7000-8000-000000000001?return_to=%2Fadmin%2Faccounts%3Fpage%3D2%26page_size%3D50%26status%3Dinactive%26include_deleted%3Dtrue",
+    );
   });
 });
