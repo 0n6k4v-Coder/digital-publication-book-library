@@ -304,15 +304,18 @@ test.describe("admin account edit", () => {
       })
       .click();
 
-    const emailRegion = page.getByRole("region", {
+    const emailHeading = page.getByRole("heading", {
       name: "Administrator email address",
     });
+    const emailSection = emailHeading.locator("xpath=ancestor::section[1]");
+    const currentEmailLabel = emailSection.getByText("Current email", {
+      exact: true,
+    });
+    const currentEmailValue = currentEmailLabel.locator(
+      "xpath=following-sibling::dd[1]",
+    );
 
-    await expect(
-      emailRegion.getByRole("definition", {
-        name: "new-admin@example.com",
-      }),
-    ).toBeVisible();
+    await expect(currentEmailValue).toHaveText("new-admin@example.com");
 
     await expect(page.getByLabel("New email")).toHaveValue("");
 
