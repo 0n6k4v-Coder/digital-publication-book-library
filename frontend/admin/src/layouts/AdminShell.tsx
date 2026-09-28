@@ -15,6 +15,10 @@ function isAccountEditRoute(pathname: string): boolean {
   return /^\/admin\/accounts\/[^/]+\/edit$/.test(pathname);
 }
 
+function isAccountDeleteRoute(pathname: string): boolean {
+  return /^\/admin\/accounts\/[^/]+\/delete$/.test(pathname);
+}
+
 export function AdminShell({ onLogout, children }: AdminShellProps) {
   const pathname = usePathname();
 
@@ -31,7 +35,8 @@ export function AdminShell({ onLogout, children }: AdminShellProps) {
     pathname === "/admin/accounts" ||
     pathname === "/admin/accounts/create" ||
     isAccountDetailRoute(pathname) ||
-    isAccountEditRoute(pathname);
+    isAccountEditRoute(pathname) ||
+    isAccountDeleteRoute(pathname);
 
   const isAdminHomeActive = pathname === "/admin";
 

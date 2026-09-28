@@ -72,8 +72,18 @@ export function buildCreateAccountHref(returnTo: string): string {
   return `${CREATE_ACCOUNT_PATH}?${params.toString()}`;
 }
 
-export function buildAccountDetailHref(accountId: string): string {
-  return `${ACCOUNT_LIST_PATH}/${encodeURIComponent(accountId)}`;
+export function buildAccountDetailHref(
+  accountId: string,
+  returnTo: string = ACCOUNT_LIST_PATH,
+): string {
+  const path = `${ACCOUNT_LIST_PATH}/${encodeURIComponent(accountId)}`;
+
+  if (returnTo === ACCOUNT_LIST_PATH) {
+    return path;
+  }
+
+  const params = new URLSearchParams({ return_to: returnTo });
+  return `${path}?${params.toString()}`;
 }
 
 export function buildEditAccountHref(

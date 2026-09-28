@@ -382,7 +382,7 @@ export function AccountsPage() {
       );
     }
 
-    const viewHref = buildAccountDetailHref(account.id);
+    const viewHref = buildAccountDetailHref(account.id, listHref);
     const editHref = buildEditAccountHref(account.id, listHref);
 
     const viewLink = (
