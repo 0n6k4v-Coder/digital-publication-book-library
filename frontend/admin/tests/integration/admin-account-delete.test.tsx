@@ -139,17 +139,17 @@ describe("Admin Account Delete integration", () => {
       }),
     ).toBeInTheDocument();
 
-    screen
-      .getByRole("button", {
+    (
+      await screen.findByRole("button", {
         name: "Soft-delete account",
       })
-      .click();
+    ).click();
 
-    screen
-      .getByRole("button", {
+    (
+      await screen.findByRole("button", {
         name: "Delete Account",
       })
-      .click();
+    ).click();
 
     await waitFor(() => {
       expect(window.location.pathname).toBe("/admin/accounts");
@@ -189,17 +189,17 @@ describe("Admin Account Delete integration", () => {
       }),
     ).toBeInTheDocument();
 
-    screen
-      .getByRole("button", {
+    (
+      await screen.findByRole("button", {
         name: "Permanently delete account",
       })
-      .click();
+    ).click();
 
-    screen
-      .getByRole("button", {
+    (
+      await screen.findByRole("button", {
         name: "Permanently Delete",
       })
-      .click();
+    ).click();
 
     await waitFor(() => {
       expect(window.location.pathname).toBe("/admin/accounts");
@@ -227,17 +227,17 @@ describe("Admin Account Delete integration", () => {
     await signIn();
     render(<App />);
 
-    screen
-      .getByRole("button", {
+    (
+      await screen.findByRole("button", {
         name: "Soft-delete account",
       })
-      .click();
+    ).click();
 
-    screen
-      .getByRole("button", {
+    (
+      await screen.findByRole("button", {
         name: "Delete Account",
       })
-      .click();
+    ).click();
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "You do not have permission to soft-delete this administrator account.",
@@ -259,17 +259,17 @@ describe("Admin Account Delete integration", () => {
     await signIn();
     render(<App />);
 
-    screen
-      .getByRole("button", {
+    (
+      await screen.findByRole("button", {
         name: "Soft-delete account",
       })
-      .click();
+    ).click();
 
-    screen
-      .getByRole("button", {
+    (
+      await screen.findByRole("button", {
         name: "Delete Account",
       })
-      .click();
+    ).click();
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "has already been soft-deleted",
@@ -285,17 +285,17 @@ describe("Admin Account Delete integration", () => {
     await signIn();
     render(<App />);
 
-    screen
-      .getByRole("button", {
+    (
+      await screen.findByRole("button", {
         name: "Permanently delete account",
       })
-      .click();
+    ).click();
 
-    screen
-      .getByRole("button", {
+    (
+      await screen.findByRole("button", {
         name: "Permanently Delete",
       })
-      .click();
+    ).click();
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "The last active administrator cannot be deleted.",
@@ -320,17 +320,17 @@ describe("Admin Account Delete integration", () => {
     await signIn();
     render(<App />);
 
-    screen
-      .getByRole("button", {
+    (
+      await screen.findByRole("button", {
         name: "Soft-delete account",
       })
-      .click();
+    ).click();
 
-    screen
-      .getByRole("button", {
+    (
+      await screen.findByRole("button", {
         name: "Delete Account",
       })
-      .click();
+    ).click();
 
     await waitFor(() => {
       expect(window.location.pathname).toBe("/admin/accounts");

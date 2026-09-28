@@ -226,7 +226,13 @@ function AccountDeleteConfirmationDialog({
         return;
       }
 
-      const focusable = getFocusableElements(dialog);
+      const currentDialog = dialogRef.current;
+
+      if (currentDialog === null) {
+        return;
+      }
+
+      const focusable = getFocusableElements(currentDialog);
 
       if (focusable.length === 0) {
         event.preventDefault();
