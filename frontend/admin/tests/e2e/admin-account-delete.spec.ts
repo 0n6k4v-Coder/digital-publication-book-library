@@ -63,6 +63,29 @@ async function authenticate(
       name: "Sign In",
     })
     .click();
+
+  await expect(page).toHaveURL(/\/admin$/);
+}
+
+async function navigateToDeletePage(
+  page: import("@playwright/test").Page,
+  returnTo?: string,
+): Promise<void> {
+  const destination =
+    returnTo === undefined
+      ? `/admin/accounts/${accountId}/delete`
+      : `/admin/accounts/${accountId}/delete?return_to=${encodeURIComponent(
+          returnTo,
+        )}`;
+
+  const expectedUrl = new URL(destination, page.url()).toString();
+
+  await page.evaluate((path) => {
+    window.history.pushState({}, "", path);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  }, destination);
+
+  await expect(page).toHaveURL(expectedUrl);
 }
 
 async function stubAccountGet(
@@ -100,9 +123,7 @@ test.describe("Admin Account Delete", () => {
     await authenticate(page);
     await stubAccountGet(page, accountJson(), 200);
 
-    await page.goto(
-      `/admin/accounts/${accountId}/delete?return_to=%2Fadmin%2Faccounts`,
-    );
+    await navigateToDeletePage(page, "/admin/accounts");
 
     await expect(
       page.getByRole("heading", {
@@ -170,9 +191,7 @@ test.describe("Admin Account Delete", () => {
       await route.fallback();
     });
 
-    await page.goto(
-      `/admin/accounts/${accountId}/delete?return_to=%2Fadmin%2Faccounts`,
-    );
+    await navigateToDeletePage(page, "/admin/accounts");
 
     await page
       .getByRole("button", {
@@ -209,7 +228,7 @@ test.describe("Admin Account Delete", () => {
       });
     });
 
-    await page.goto(`/admin/accounts/${accountId}/delete`);
+    await navigateToDeletePage(page);
 
     await expect(
       page.getByRole("heading", {
@@ -262,7 +281,7 @@ test.describe("Admin Account Delete", () => {
       });
     });
 
-    await page.goto(`/admin/accounts/${accountId}/delete`);
+    await navigateToDeletePage(page);
 
     await page
       .getByRole("button", {
@@ -293,7 +312,7 @@ test.describe("Admin Account Delete", () => {
     await authenticate(page);
     await stubAccountGet(page, accountJson(), 200);
 
-    await page.goto(`/admin/accounts/${accountId}/delete`);
+    await navigateToDeletePage(page);
 
     const trigger = page.getByRole("button", {
       name: "Soft-delete account",
@@ -332,10 +351,9 @@ test.describe("Admin Account Delete", () => {
       });
     });
 
-    await page.goto(
-      `/admin/accounts/${accountId}/delete?return_to=${encodeURIComponent(
-        "https://evil.example/admin/accounts",
-      )}`,
+    await navigateToDeletePage(
+      page,
+      "https://evil.example/admin/accounts",
     );
 
     await page
@@ -362,7 +380,7 @@ test.describe("Admin Account Delete", () => {
     await authenticate(page);
     await stubAccountGet(page, accountJson(), 200);
 
-    await page.goto(`/admin/accounts/${accountId}/delete`);
+    await navigateToDeletePage(page);
 
     await expect(
       page.getByRole("button", {

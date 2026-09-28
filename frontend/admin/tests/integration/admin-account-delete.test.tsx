@@ -311,6 +311,8 @@ describe("Admin Account Delete integration", () => {
       )}`,
     );
 
+    const originalOrigin = window.location.origin;
+
     vi.mocked(fetch)
       .mockResolvedValueOnce(loginResponse())
       .mockResolvedValueOnce(accountResponse())
@@ -336,6 +338,6 @@ describe("Admin Account Delete integration", () => {
       expect(window.location.pathname).toBe("/admin/accounts");
     });
 
-    expect(window.location.origin).toBe("http://localhost:5173");
+    expect(window.location.origin).toBe(originalOrigin);
   });
 });
