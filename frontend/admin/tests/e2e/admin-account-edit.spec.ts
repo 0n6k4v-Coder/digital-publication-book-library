@@ -49,6 +49,20 @@ async function authenticate(page: Page): Promise<void> {
   await page.getByRole("button", { name: "Sign In" }).click();
 
   await expect(page).toHaveURL(/\/admin$/);
+
+  await page.route("**/auth/refresh", async (route) => {
+    expect(route.request().method()).toBe("POST");
+    expect(route.request().postData()).toBeNull();
+
+    await route.fulfill({
+      status: 200,
+      headers: {
+        "Cache-Control": "no-store",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(loginResponse),
+    });
+  });
 }
 
 async function stubAccountEditApi(page: Page): Promise<void> {
