@@ -30,6 +30,7 @@
 * Provide the exact file path for every changed file.
 * Provide the complete final code block for every changed file.
 * Provide a clear sequential order.
+* Please provide the commit command, along with a simple, clear, direct, explicit, and concise commit message and an extended description.
 * Do not provide partial code, diffs, or unnecessary changes.
 * Do not commit or push unless explicitly requested.
 ```
