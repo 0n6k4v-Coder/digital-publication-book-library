@@ -1122,7 +1122,7 @@ The Account Detail and Account Delete routes are implemented in the frontend. Th
 | `FE-ACCOUNT-REQ-019` | Inline lifecycle mutation refresh implemented.             | 🟢 Implemented |
 | `FE-ACCOUNT-REQ-020` | Duplicate inline mutation prevention implemented.          | 🟢 Implemented |
 | `FE-ACCOUNT-REQ-021` | List context preserved across Edit.                        | 🟢 Implemented |
-| `FE-ACCOUNT-REQ-030` | Delete navigation targets the dedicated Delete page.       | 🟡 Defined     |
+| `FE-ACCOUNT-REQ-030` | Delete navigation targets the dedicated Delete page.       | 🟢 Implemented |
 | `FE-ACCOUNT-REQ-031` | Delete mutations are not executed from Account Management. | 🟢 Implemented |
 
 ---
@@ -1159,12 +1159,12 @@ The Account Detail and Account Delete routes are implemented in the frontend. Th
 | `FE-ACCOUNT-ACTION-012` | Activate implemented.                                               | 🟢 Implemented |
 | `FE-ACCOUNT-ACTION-016` | Restore implemented.                                                | 🟢 Implemented |
 | `FE-ACCOUNT-ACTION-020` | Restored Account renders as inactive.                               | 🟢 Implemented |
-| `FE-ACCOUNT-ACTION-021` | Delete navigation is defined for non-deleted Accounts.              | 🟡 Defined     |
-| `FE-ACCOUNT-ACTION-022` | Delete navigation targets `/admin/accounts/:id/delete`.             | 🟡 Defined     |
-| `FE-ACCOUNT-ACTION-023` | Permanently Delete navigation is defined for soft-deleted Accounts. | 🟡 Defined     |
+| `FE-ACCOUNT-ACTION-021` | Delete navigation is defined for non-deleted Accounts.              | 🟢 Implemented |
+| `FE-ACCOUNT-ACTION-022` | Delete navigation targets `/admin/accounts/:id/delete`.             | 🟢 Implemented |
+| `FE-ACCOUNT-ACTION-023` | Permanently Delete navigation is defined for soft-deleted Accounts. | 🟢 Implemented |
 | `FE-ACCOUNT-ACTION-024` | Delete mutations are not executed from Account Management.          | 🟢 Implemented |
-| `FE-ACCOUNT-ACTION-025` | Delete navigation preserves Account List query state.               | 🟡 Defined     |
-| `FE-ACCOUNT-ACTION-026` | Purge navigation uses the dedicated Delete page.                    | 🟡 Defined     |
+| `FE-ACCOUNT-ACTION-025` | Delete navigation preserves Account List query state.               | 🟢 Implemented |
+| `FE-ACCOUNT-ACTION-026` | Purge navigation uses the dedicated Delete page.                    | 🟢 Implemented |
 | `FE-ACCOUNT-ACTION-027` | Duplicate inline mutation submissions are prevented.                | 🟢 Implemented |
 | `FE-ACCOUNT-ACTION-028` | Optimistic lifecycle updates are not used.                          | 🟢 Implemented |
 | `FE-ACCOUNT-ACTION-029` | Successful inline lifecycle mutation refreshes the list.            | 🟢 Implemented |
@@ -1235,7 +1235,7 @@ The Account Detail and Account Delete routes are implemented in the frontend. Th
 | `FE-ACCOUNT-A11Y-015` | Keyboard order is predictable.                                     | 🟢 Implemented |
 | `FE-ACCOUNT-A11Y-016` | Delete confirmation focus is managed by the dedicated Delete page. | 🟢 Implemented |
 | `FE-ACCOUNT-A11Y-017` | Responsive accessibility is preserved.                             | 🟢 Implemented |
-| `FE-ACCOUNT-A11Y-018` | Delete and Permanently Delete navigation use accessible links.     | 🟡 Defined     |
+| `FE-ACCOUNT-A11Y-018` | Delete and Permanently Delete navigation use accessible links.     | 🟢 Implemented |
 | `FE-ACCOUNT-A11Y-019` | Destructive confirmation remains on the dedicated Delete page.     | 🟢 Implemented |
 
 ---
