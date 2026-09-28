@@ -1089,11 +1089,11 @@ Color may supplement the label but must not carry the meaning alone.
 | `FE-ACCOUNT-ROUTE-001` | `/admin/accounts` renders inside Admin Shell. | 🟢 Implemented |
 | `FE-ACCOUNT-ROUTE-002` | Unauthenticated access redirects to `/login`. | 🟢 Implemented |
 | `FE-ACCOUNT-ROUTE-003` | Create Account route exists.                  | 🟢 Implemented |
-| `FE-ACCOUNT-ROUTE-004` | Account Detail route is defined.              | 🟡 Defined     |
+| `FE-ACCOUNT-ROUTE-004` | Account Detail route is implemented.          | 🟢 Implemented |
 | `FE-ACCOUNT-ROUTE-005` | Edit Account route is defined separately.     | 🟢 Implemented |
-| `FE-ACCOUNT-ROUTE-006` | Delete Account route is defined separately.   | 🟡 Defined     |
+| `FE-ACCOUNT-ROUTE-006` | Delete Account route is implemented.          | 🟢 Implemented |
 
-The Account Detail and Account Delete routes are design dependencies and must be added to the sitemap before they are considered repository-complete.
+The Account Detail and Account Delete routes are implemented in the frontend. They still require sitemap alignment before they are considered repository-complete.
 
 ---
 
@@ -1123,7 +1123,7 @@ The Account Detail and Account Delete routes are design dependencies and must be
 | `FE-ACCOUNT-REQ-020` | Duplicate inline mutation prevention implemented.          | 🟢 Implemented |
 | `FE-ACCOUNT-REQ-021` | List context preserved across Edit.                        | 🟢 Implemented |
 | `FE-ACCOUNT-REQ-030` | Delete navigation targets the dedicated Delete page.       | 🟡 Defined     |
-| `FE-ACCOUNT-REQ-031` | Delete mutations are not executed from Account Management. | 🟡 Defined     |
+| `FE-ACCOUNT-REQ-031` | Delete mutations are not executed from Account Management. | 🟢 Implemented |
 
 ---
 
@@ -1162,7 +1162,7 @@ The Account Detail and Account Delete routes are design dependencies and must be
 | `FE-ACCOUNT-ACTION-021` | Delete navigation is defined for non-deleted Accounts.              | 🟡 Defined     |
 | `FE-ACCOUNT-ACTION-022` | Delete navigation targets `/admin/accounts/:id/delete`.             | 🟡 Defined     |
 | `FE-ACCOUNT-ACTION-023` | Permanently Delete navigation is defined for soft-deleted Accounts. | 🟡 Defined     |
-| `FE-ACCOUNT-ACTION-024` | Delete mutations are not executed from Account Management.          | 🟡 Defined     |
+| `FE-ACCOUNT-ACTION-024` | Delete mutations are not executed from Account Management.          | 🟢 Implemented |
 | `FE-ACCOUNT-ACTION-025` | Delete navigation preserves Account List query state.               | 🟡 Defined     |
 | `FE-ACCOUNT-ACTION-026` | Purge navigation uses the dedicated Delete page.                    | 🟡 Defined     |
 | `FE-ACCOUNT-ACTION-027` | Duplicate inline mutation submissions are prevented.                | 🟢 Implemented |
@@ -1170,7 +1170,7 @@ The Account Detail and Account Delete routes are design dependencies and must be
 | `FE-ACCOUNT-ACTION-029` | Successful inline lifecycle mutation refreshes the list.            | 🟢 Implemented |
 | `FE-ACCOUNT-ACTION-030` | Stale-state `404` or relevant `409` responses trigger refresh.      | 🟢 Implemented |
 | `FE-ACCOUNT-ACTION-031` | Client-side state does not fabricate success.                       | 🟢 Implemented |
-| `FE-ACCOUNT-ACTION-032` | Deletion mutations are not executed from Account Management.        | 🟡 Defined     |
+| `FE-ACCOUNT-ACTION-032` | Deletion mutations are not executed from Account Management.        | 🟢 Implemented |
 
 ---
 
@@ -1188,7 +1188,7 @@ The Account Detail and Account Delete routes are design dependencies and must be
 | `FE-ACCOUNT-STATE-008` | General error state implemented.                               | 🟢 Implemented |
 | `FE-ACCOUNT-STATE-009` | Authorization error implemented.                               | 🟢 Implemented |
 | `FE-ACCOUNT-STATE-010` | Authentication expiry handled.                                 | 🟢 Implemented |
-| `FE-ACCOUNT-STATE-019` | Delete return path re-fetches authoritative Account List data. | 🟡 Defined     |
+| `FE-ACCOUNT-STATE-019` | Delete return path re-fetches authoritative Account List data. | 🟢 Implemented |
 
 ---
 
@@ -1210,7 +1210,7 @@ The Account Detail and Account Delete routes are design dependencies and must be
 | `FE-ACCOUNT-SEC-012` | Account data is not persisted client-side.          | 🟢 Implemented |
 | `FE-ACCOUNT-SEC-013` | Internal errors are not exposed.                    | 🟢 Implemented |
 | `FE-ACCOUNT-SEC-014` | Cached data is not used as authorization evidence.  | 🟢 Implemented |
-| `FE-ACCOUNT-SEC-015` | Delete visibility is not an authorization boundary. | 🟡 Defined     |
+| `FE-ACCOUNT-SEC-015` | Delete visibility is not an authorization boundary. | 🟢 Implemented |
 
 ---
 
@@ -1233,10 +1233,10 @@ The Account Detail and Account Delete routes are design dependencies and must be
 | `FE-ACCOUNT-A11Y-013` | Async status is accessible.                                        | 🟢 Implemented |
 | `FE-ACCOUNT-A11Y-014` | Pagination is keyboard accessible.                                 | 🟢 Implemented |
 | `FE-ACCOUNT-A11Y-015` | Keyboard order is predictable.                                     | 🟢 Implemented |
-| `FE-ACCOUNT-A11Y-016` | Delete confirmation focus is managed by the dedicated Delete page. | 🟡 Defined     |
+| `FE-ACCOUNT-A11Y-016` | Delete confirmation focus is managed by the dedicated Delete page. | 🟢 Implemented |
 | `FE-ACCOUNT-A11Y-017` | Responsive accessibility is preserved.                             | 🟢 Implemented |
 | `FE-ACCOUNT-A11Y-018` | Delete and Permanently Delete navigation use accessible links.     | 🟡 Defined     |
-| `FE-ACCOUNT-A11Y-019` | Destructive confirmation remains on the dedicated Delete page.     | 🟡 Defined     |
+| `FE-ACCOUNT-A11Y-019` | Destructive confirmation remains on the dedicated Delete page.     | 🟢 Implemented |
 
 ---
 
