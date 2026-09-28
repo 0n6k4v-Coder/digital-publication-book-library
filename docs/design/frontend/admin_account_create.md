@@ -820,8 +820,8 @@ The current implementation is in place. Criteria are marked according to the imp
 | Account Create implementation | 🟢 Implemented | The page, service integration, authentication handling, authorization handling, validation, security boundaries, and navigation are implemented. |
 | Unit coverage | 🟢 Implemented | Account Create unit coverage exists for form contract, validation, duplicate submission, conflicts, errors, authorization, and success navigation. |
 | Integration coverage | 🟢 Implemented | Account Create integration coverage exists for authenticated rendering, API submission, authorization failure, and security boundaries. |
-| E2E coverage | 🟡 In Progress | The latest E2E run has three remaining test-only locator/assertion failures for `422`, `403`, and Back/Cancel; the failures do not indicate a production Account Create runtime failure. |
-| Production Account Create behavior | 🟢 Implemented | The latest E2E run successfully passed the main route, API contract, native validation, conflict, authentication-expiry, duplicate-submission, and Admin Shell scenarios. |
+| E2E coverage | 🟢 Implemented | The latest E2E run passes the Account Create scenarios for route rendering, API contract, native validation, conflict handling, validation errors, authorization errors, authentication expiry, duplicate submission, and navigation. |
+| Production Account Create behavior | 🟢 Implemented | The latest E2E run confirms the implemented Account Create user flows and documented error states. |
 
 ---
 
