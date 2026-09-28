@@ -176,6 +176,44 @@ test.describe("admin accounts routes", () => {
     await expect(page.getByRole("textbox")).toHaveCount(0);
   });
 
+  test("Delete opens the dedicated Delete Account route and preserves list context", async ({
+    page,
+  }) => {
+    await authenticate(page);
+    await stubAccountsApi(page);
+
+    await getAccountsNavigation(page).click();
+    await expect(page).toHaveURL(/\/admin\/accounts$/);
+
+    const returnTo =
+      "/admin/accounts?page=2&page_size=50&status=inactive&include_deleted=true";
+
+    await page.evaluate((href) => {
+      window.history.pushState({}, "", href);
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    }, returnTo);
+
+    await expect(page).toHaveURL(
+      /\/admin\/accounts\?page=2&page_size=50&status=inactive&include_deleted=true$/,
+    );
+
+    await page
+      .getByRole("link", {
+        name: "Delete account: Library Administrator",
+      })
+      .click();
+
+    await expect(page).toHaveURL(
+      `/admin/accounts/${accountId}/delete?return_to=${encodeURIComponent(returnTo)}`,
+    );
+
+    await expect(
+      page.getByRole("heading", {
+        name: "Delete Administrator Account",
+      }),
+    ).toBeVisible();
+  });
+
   test("Edit opens the separate Edit Account route and preserves list context", async ({
     page,
   }) => {

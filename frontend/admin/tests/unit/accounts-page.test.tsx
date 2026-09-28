@@ -82,9 +82,11 @@ describe("AccountsPage", () => {
     ).toBeInTheDocument();
 
     expect(screen.getByRole("table")).toBeInTheDocument();
+
     expect(
       screen.getByRole("columnheader", { name: "Email" }),
     ).toBeInTheDocument();
+
     expect(
       screen.getByRole("cell", { name: "admin@example.com" }),
     ).toBeInTheDocument();
@@ -105,13 +107,52 @@ describe("AccountsPage", () => {
     );
 
     expect(
+      screen.getByRole("link", {
+        name: "Delete account: Library Administrator",
+      }),
+    ).toHaveAttribute(
+      "href",
+      `/admin/accounts/${activeAccount.id}/delete?return_to=%2Fadmin%2Faccounts`,
+    );
+
+    expect(
       screen.getByRole("button", {
         name: "Deactivate account: Library Administrator",
       }),
     ).toBeInTheDocument();
   });
 
-  it("renders Restore only for soft-deleted accounts", async () => {
+  it("preserves filtered Account List state in Delete navigation", async () => {
+    window.history.replaceState(
+      {},
+      "",
+      "/admin/accounts?page=2&page_size=50&status=inactive&include_deleted=true",
+    );
+
+    mockedList.mockResolvedValue({
+      items: [activeAccount],
+      page: 2,
+      pageSize: 50,
+      total: 51,
+    });
+
+    render(<AccountsPage />);
+
+    await screen.findByRole("heading", {
+      name: "Administrator Accounts",
+    });
+
+    expect(
+      screen.getByRole("link", {
+        name: "Delete account: Library Administrator",
+      }),
+    ).toHaveAttribute(
+      "href",
+      `/admin/accounts/${activeAccount.id}/delete?return_to=%2Fadmin%2Faccounts%3Fpage%3D2%26page_size%3D50%26status%3Dinactive%26include_deleted%3Dtrue`,
+    );
+  });
+
+  it("renders Restore and Permanently Delete only for soft-deleted accounts", async () => {
     window.history.replaceState({}, "", "/admin/accounts?include_deleted=true");
 
     mockedList.mockResolvedValue({
@@ -132,6 +173,15 @@ describe("AccountsPage", () => {
         name: "Restore account: Library Administrator",
       }),
     ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole("link", {
+        name: "Permanently delete account: Library Administrator",
+      }),
+    ).toHaveAttribute(
+      "href",
+      `/admin/accounts/${deletedAccount.id}/delete?return_to=%2Fadmin%2Faccounts%3Finclude_deleted%3Dtrue`,
+    );
 
     expect(
       screen.queryByRole("link", {

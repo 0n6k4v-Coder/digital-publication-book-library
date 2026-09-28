@@ -27,6 +27,7 @@ import {
   buildAccountDetailHref,
   buildAccountListHref,
   buildCreateAccountHref,
+  buildDeleteAccountHref,
   buildEditAccountHref,
 } from "./accountRoutes";
 import "./accounts.css";
@@ -367,23 +368,37 @@ export function AccountsPage() {
     const isMutationPending = pendingMutation !== null;
 
     if (account.deletedAt !== null) {
+      const permanentDeleteHref = buildDeleteAccountHref(account.id, listHref);
+
       return (
-        <button
-          className="secondary-button account-row-action"
-          type="button"
-          disabled={isMutationPending}
-          aria-label={`Restore account: ${label}`}
-          onClick={() => void executeMutation("restore", account)}
-        >
-          {pendingMutation === `restore:${account.id}`
-            ? "Restoring…"
-            : "Restore"}
-        </button>
+        <>
+          <button
+            className="secondary-button account-row-action"
+            type="button"
+            disabled={isMutationPending}
+            aria-label={`Restore account: ${label}`}
+            onClick={() => void executeMutation("restore", account)}
+          >
+            {pendingMutation === `restore:${account.id}`
+              ? "Restoring…"
+              : "Restore"}
+          </button>
+
+          <a
+            className="secondary-button account-row-action"
+            href={permanentDeleteHref}
+            aria-label={`Permanently delete account: ${label}`}
+            onClick={(event) => handleInternalLink(event, permanentDeleteHref)}
+          >
+            Permanently Delete
+          </a>
+        </>
       );
     }
 
     const viewHref = buildAccountDetailHref(account.id, listHref);
     const editHref = buildEditAccountHref(account.id, listHref);
+    const deleteHref = buildDeleteAccountHref(account.id, listHref);
 
     const viewLink = (
       <a
@@ -407,11 +422,23 @@ export function AccountsPage() {
       </a>
     );
 
+    const deleteLink = (
+      <a
+        className="secondary-button account-row-action"
+        href={deleteHref}
+        aria-label={`Delete account: ${label}`}
+        onClick={(event) => handleInternalLink(event, deleteHref)}
+      >
+        Delete
+      </a>
+    );
+
     if (account.status === "active") {
       return (
         <>
           {viewLink}
           {editLink}
+          {deleteLink}
           <button
             className="secondary-button account-row-action"
             type="button"
@@ -431,6 +458,7 @@ export function AccountsPage() {
       <>
         {viewLink}
         {editLink}
+        {deleteLink}
         <button
           className="secondary-button account-row-action"
           type="button"
