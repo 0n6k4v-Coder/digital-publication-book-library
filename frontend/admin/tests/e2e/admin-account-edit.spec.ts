@@ -271,7 +271,9 @@ test.describe("admin account edit", () => {
 
     await page.goto(`/admin/accounts/${accountId}/edit`);
 
-    await page.getByLabel("New email").fill("taken@example.com");
+    const email = page.getByLabel("New email");
+
+    await email.fill("taken@example.com");
 
     await page
       .getByRole("button", {
@@ -280,13 +282,13 @@ test.describe("admin account edit", () => {
       .click();
 
     await expect(
-      page.getByText("That email address is already in use."),
+      page.getByRole("textbox", {
+        name: "New email",
+        description: /That email address is already in use\./,
+      }),
     ).toBeVisible();
 
-    await expect(page.getByLabel("New email")).toHaveAttribute(
-      "aria-invalid",
-      "true",
-    );
+    await expect(email).toHaveAttribute("aria-invalid", "true");
   });
 
   test("changes email and uses the returned Account representation", async ({
@@ -305,11 +307,17 @@ test.describe("admin account edit", () => {
       })
       .click();
 
+    const emailSection = page.locator("section").filter({
+      has: page.getByRole("heading", {
+        name: "Administrator email address",
+      }),
+    });
+
     await expect(
-      page.getByText("new-admin@example.com", {
+      emailSection.getByText("new-admin@example.com", {
         exact: true,
       }),
-    ).toHaveCount(2);
+    ).toBeVisible();
 
     await expect(page.getByLabel("New email")).toHaveValue("");
 
