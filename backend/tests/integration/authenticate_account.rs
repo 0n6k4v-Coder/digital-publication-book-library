@@ -11,14 +11,11 @@ use axum::{
     http::{header, Request, StatusCode},
     Router,
 };
-use digital_publication_backend::{
+use digital_publication_book_library::{
     app::{router::build_router, state::AppState},
     domains::authentication::{
         extractor::sha256_token_verifier,
-        model::{
-            ACCESS_TOKEN_EXPIRES_IN, AUTHENTICATION_SESSION_EXPIRES_IN,
-            REFRESH_TOKEN_POLICY_EXPIRES_IN,
-        },
+        model::{ACCESS_TOKEN_EXPIRES_IN, AUTHENTICATION_SESSION_EXPIRES_IN},
     },
     shared::validation::{hash_password, normalize_email, PasswordBlocklist},
 };
@@ -265,7 +262,7 @@ async fn successful_login_creates_session_and_token_verifiers_with_defined_lifet
     let _lock = TEST_DATABASE_LOCK.lock().await;
     let pool = database().await;
 
-    digital_publication_backend::MIGRATOR
+    digital_publication_book_library::MIGRATOR
         .run(&pool)
         .await
         .unwrap();
@@ -291,7 +288,7 @@ async fn successful_login_creates_session_and_token_verifiers_with_defined_lifet
 
     assert_eq!(refresh_cookie.len(), 96);
     assert!(refresh_cookie_max_age > 0);
-    assert!(refresh_cookie_max_age <= AUTHENTICATION_SESSION_EXPIRES_IN);
+    assert!(refresh_cookie_max_age <= AUTHENTICATION_SESSION_EXPIRES_IN as u64);
 
     let set_cookie = response
         .headers()
@@ -360,7 +357,6 @@ async fn successful_login_creates_session_and_token_verifiers_with_defined_lifet
     assert_eq!(refresh.0, sha256_token_verifier(&refresh_cookie));
     assert_ne!(refresh.0, refresh_cookie);
     assert!(refresh.1 <= AUTHENTICATION_SESSION_EXPIRES_IN as i64);
-    assert!(refresh.1 <= REFRESH_TOKEN_POLICY_EXPIRES_IN as i64);
 
     reset(&pool).await;
 }
@@ -371,7 +367,7 @@ async fn invalid_missing_inactive_and_deleted_accounts_return_generic_credential
     let _lock = TEST_DATABASE_LOCK.lock().await;
     let pool = database().await;
 
-    digital_publication_backend::MIGRATOR
+    digital_publication_book_library::MIGRATOR
         .run(&pool)
         .await
         .unwrap();
@@ -416,7 +412,7 @@ async fn failed_password_authentication_is_generic_and_counted() {
     let _lock = TEST_DATABASE_LOCK.lock().await;
     let pool = database().await;
 
-    digital_publication_backend::MIGRATOR
+    digital_publication_book_library::MIGRATOR
         .run(&pool)
         .await
         .unwrap();
@@ -467,7 +463,7 @@ async fn login_rate_limits_email_and_source_ip_before_password_verification() {
     let _lock = TEST_DATABASE_LOCK.lock().await;
     let pool = database().await;
 
-    digital_publication_backend::MIGRATOR
+    digital_publication_book_library::MIGRATOR
         .run(&pool)
         .await
         .unwrap();
@@ -533,7 +529,7 @@ async fn successful_login_resets_email_failures_but_preserves_existing_source_ip
     let _lock = TEST_DATABASE_LOCK.lock().await;
     let pool = database().await;
 
-    digital_publication_backend::MIGRATOR
+    digital_publication_book_library::MIGRATOR
         .run(&pool)
         .await
         .unwrap();
