@@ -164,36 +164,57 @@ The database stores only the verifier.
 
 ### 2.2.3 Refresh Tokens
 
-| ID                      | Decision        | Definition                                                                                                              |
-| ----------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `AU_SEC_DEC_REFRESH_01` | Purpose         | Obtain new access credentials for an existing authentication session.                                                   |
-| `AU_SEC_DEC_REFRESH_02` | Type            | Opaque token.                                                                                                           |
-| `AU_SEC_DEC_REFRESH_03` | Storage         | Persist only a SHA-256 verifier of the exact refresh-token string on the server.                                        |
-| `AU_SEC_DEC_REFRESH_04` | Rotation        | Successful refresh invalidates the presented refresh token and issues a replacement.                                    |
-| `AU_SEC_DEC_REFRESH_05` | Replay          | A previously used refresh token must be rejected.                                                                       |
-| `AU_SEC_DEC_REFRESH_06` | Session Binding | Each refresh token belongs to exactly one authentication session.                                                       |
-| `AU_SEC_DEC_REFRESH_07` | Revocation      | Session revocation invalidates its refresh tokens immediately.                                                          |
-| `AU_SEC_DEC_REFRESH_08` | Expiration      | The refresh token must not outlive its bound authentication session.                                                    |
-| `AU_SEC_DEC_REFRESH_09` | Lifetime        | For `AU_UC_01`, the initial refresh token expires no later than `authentication_session.expires_at`.                    |
-| `AU_SEC_DEC_REFRESH_10` | Rotation Lifetime | A replacement refresh token must not receive an expiration later than the original refresh-token expiration or the bound session expiration. |
-| `AU_SEC_DEC_REFRESH_11` | Browser Storage | Browser clients receive the raw refresh credential only through the designated `HttpOnly; Secure` cookie.               |
-| `AU_SEC_DEC_REFRESH_12` | JavaScript Access | Browser JavaScript must never read, copy, render, or otherwise access the raw refresh credential.                     |
+| ID                      | Decision           | Definition |
+| ----------------------- | ------------------ | ---------- |
+| `AU_SEC_DEC_REFRESH_01` | Purpose            | Obtain new access credentials for an existing authentication session. |
+| `AU_SEC_DEC_REFRESH_02` | Type               | Opaque token. |
+| `AU_SEC_DEC_REFRESH_03` | Storage            | Persist only a SHA-256 verifier of the exact refresh-token string on the server. |
+| `AU_SEC_DEC_REFRESH_04` | Rotation           | Successful refresh invalidates the presented refresh token and issues a replacement. |
+| `AU_SEC_DEC_REFRESH_05` | Replay             | A previously used refresh token must be rejected. |
+| `AU_SEC_DEC_REFRESH_06` | Session Binding    | Each refresh token belongs to exactly one authentication session. |
+| `AU_SEC_DEC_REFRESH_07` | Revocation         | Session revocation invalidates its refresh tokens immediately. |
+| `AU_SEC_DEC_REFRESH_08` | Expiration         | A refresh token must expire no later than its bound authentication session. |
+| `AU_SEC_DEC_REFRESH_09` | Initial Lifetime   | The initial refresh token expiration is set to the bound authentication session expiration and must never exceed `authentication_session.expires_at`. |
+| `AU_SEC_DEC_REFRESH_10` | Rotation Lifetime  | A replacement refresh token expiration is the earlier of the presented refresh token expiration and the bound authentication session expiration. Rotation must never extend either boundary. |
+| `AU_SEC_DEC_REFRESH_11` | Browser Storage    | Browser clients receive the raw refresh credential only through the designated `HttpOnly; Secure` cookie. |
+| `AU_SEC_DEC_REFRESH_12` | JavaScript Access  | Browser JavaScript must never read, copy, render, or otherwise access the raw refresh credential. |
 
 For browser authentication sessions:
 
 ```text
 authentication_session.expires_at
         ↓
-refresh token expiration boundary
+refresh-token expiration boundary
         ↓
 browser refresh-cookie Max-Age boundary
 ```
 
-Refresh does not extend the authentication session.
+The authentication session is the absolute lifetime boundary.
 
-A successful refresh must therefore never create a new 24-hour session window.
+Refresh never extends `authentication_session.expires_at`.
 
-The refresh token remains opaque to the frontend application.
+A successful refresh may rotate the refresh credential, but it must not create a new authentication session or move the session expiration forward.
+
+The replacement refresh-token expiration is calculated as:
+
+```text
+MIN(
+    presented_refresh_token.expires_at,
+    authentication_session.expires_at
+)
+```
+
+The server is authoritative for all expiration decisions.
+
+Browser time, client-provided expiration values, and refresh-request parameters must never extend the lifetime of an authentication session or refresh credential.
+
+Existing refresh-token records created under a legacy lifetime policy must be migrated so that:
+
+```text
+authentication_refresh_token.expires_at
+    <=
+authentication_session.expires_at
+```
 
 ### 2.2.4 Authentication Failures
 
