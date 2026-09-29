@@ -13,10 +13,7 @@ use crate::shared::{
 
 use super::{
     extractor::sha256_token_verifier,
-    model::{
-        AuthenticateAccountRequest, AuthenticatedPrincipal, AuthenticationTokens,
-        RefreshAuthenticationRequest,
-    },
+    model::{AuthenticateAccountRequest, AuthenticationTokens},
     repository::AuthenticationRepository,
 };
 
@@ -111,14 +108,15 @@ impl AuthenticationService {
 
     pub async fn refresh_authentication(
         &self,
-        request: RefreshAuthenticationRequest,
+        refresh_token: SecretString,
     ) -> Result<AuthenticationTokens, AppError> {
         let access_token = generate_opaque_token();
-        let refresh_token = generate_opaque_token();
+        let replacement_refresh_token = generate_opaque_token();
 
-        let refresh_token_hash = sha256_token_verifier(request.refresh_token.expose_secret());
+        let refresh_token_hash = sha256_token_verifier(refresh_token.expose_secret());
         let access_token_hash = sha256_token_verifier(access_token.expose_secret());
-        let replacement_refresh_token_hash = sha256_token_verifier(refresh_token.expose_secret());
+        let replacement_refresh_token_hash =
+            sha256_token_verifier(replacement_refresh_token.expose_secret());
 
         let refresh_expires_at = self
             .repository
@@ -133,24 +131,25 @@ impl AuthenticationService {
 
         Ok(AuthenticationTokens {
             access_token,
-            refresh_token,
+            refresh_token: replacement_refresh_token,
             refresh_expires_at,
         })
     }
 
-    pub async fn revoke_authentication(
+    pub async fn logout_authentication(
         &self,
-        principal: AuthenticatedPrincipal,
+        refresh_token: Option<SecretString>,
     ) -> Result<(), AppError> {
-        let revoked = self
-            .repository
-            .revoke_session(principal.account_id, principal.session_id)
+        let Some(refresh_token) = refresh_token else {
+            return Ok(());
+        };
+
+        let refresh_token_hash = sha256_token_verifier(refresh_token.expose_secret());
+
+        self.repository
+            .revoke_session_by_refresh_token(&refresh_token_hash)
             .await
             .map_err(crate::shared::error::internal_error)?;
-
-        if !revoked {
-            return Err(AppError::Unauthorized);
-        }
 
         Ok(())
     }
