@@ -24,7 +24,22 @@ use sqlx::PgPool;
 use tower::ServiceExt;
 use uuid::Uuid;
 
-use super::TEST_DATABASE_LOCK;
+const AUTHENTICATION_TEST_LOCK_KEY: i64 = 8_477_317_022_026_051_337;
+
+async fn authentication_database_lock(pool: &PgPool) -> sqlx::Transaction<'_, sqlx::Postgres> {
+    let mut transaction = pool
+        .begin()
+        .await
+        .expect("begin authentication test lock transaction");
+
+    sqlx::query("SELECT pg_advisory_xact_lock($1)")
+        .bind(AUTHENTICATION_TEST_LOCK_KEY)
+        .execute(&mut *transaction)
+        .await
+        .expect("acquire authentication test database lock");
+
+    transaction
+}
 
 const TEST_PASSWORD: &str = "an extremely secure password";
 const REFRESH_COOKIE_NAME: &str = "__Host-refresh_token";
@@ -215,8 +230,8 @@ async fn logout_without_refresh_cookie_is_idempotent() {
 #[tokio::test]
 #[ignore = "requires PostgreSQL 18 configured through TEST_DATABASE_URL and applied migrations"]
 async fn logout_revokes_only_the_current_session_and_invalidates_its_access_token() {
-    let _lock = TEST_DATABASE_LOCK.lock().await;
     let pool = database().await;
+    let _lock = authentication_database_lock(&pool).await;
 
     digital_publication_backend::MIGRATOR
         .run(&pool)

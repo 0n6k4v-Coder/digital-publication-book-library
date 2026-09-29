@@ -40,7 +40,22 @@ use sqlx::PgPool;
 use tower::ServiceExt;
 use uuid::Uuid;
 
-static TEST_DATABASE_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+const AUTHENTICATION_TEST_LOCK_KEY: i64 = 8_477_317_022_026_051_337;
+
+async fn authentication_database_lock(pool: &PgPool) -> sqlx::Transaction<'_, sqlx::Postgres> {
+    let mut transaction = pool
+        .begin()
+        .await
+        .expect("begin authentication test lock transaction");
+
+    sqlx::query("SELECT pg_advisory_xact_lock($1)")
+        .bind(AUTHENTICATION_TEST_LOCK_KEY)
+        .execute(&mut *transaction)
+        .await
+        .expect("acquire authentication test database lock");
+
+    transaction
+}
 
 const ALLOWED_ORIGIN: &str = "https://admin.example.com";
 const DISALLOWED_ORIGIN: &str = "https://attacker.example.com";
@@ -391,8 +406,8 @@ async fn real_auth_router_accepts_the_browser_login_preflight_contract() {
 #[tokio::test]
 #[ignore = "requires PostgreSQL 18 configured through TEST_DATABASE_URL and applied migrations"]
 async fn login_cookie_contract_is_confidential_and_browser_managed() {
-    let _lock = TEST_DATABASE_LOCK.lock().await;
     let pool = database().await;
+    let _lock = authentication_database_lock(&pool).await;
 
     digital_publication_backend::MIGRATOR
         .run(&pool)
@@ -439,8 +454,8 @@ async fn login_cookie_contract_is_confidential_and_browser_managed() {
 #[tokio::test]
 #[ignore = "requires PostgreSQL 18 configured through TEST_DATABASE_URL and applied migrations"]
 async fn refresh_cookie_contract_rotates_and_rejects_replay() {
-    let _lock = TEST_DATABASE_LOCK.lock().await;
     let pool = database().await;
+    let _lock = authentication_database_lock(&pool).await;
 
     digital_publication_backend::MIGRATOR
         .run(&pool)
@@ -504,8 +519,8 @@ async fn refresh_cookie_contract_rotates_and_rejects_replay() {
 #[tokio::test]
 #[ignore = "requires PostgreSQL 18 configured through TEST_DATABASE_URL and applied migrations"]
 async fn logout_cookie_contract_revokes_the_session_and_clears_the_cookie() {
-    let _lock = TEST_DATABASE_LOCK.lock().await;
     let pool = database().await;
+    let _lock = authentication_database_lock(&pool).await;
 
     digital_publication_backend::MIGRATOR
         .run(&pool)

@@ -23,7 +23,22 @@ use time::OffsetDateTime;
 use tower::ServiceExt;
 use uuid::Uuid;
 
-use super::TEST_DATABASE_LOCK;
+const AUTHENTICATION_TEST_LOCK_KEY: i64 = 8_477_317_022_026_051_337;
+
+async fn authentication_database_lock(pool: &PgPool) -> sqlx::Transaction<'_, sqlx::Postgres> {
+    let mut transaction = pool
+        .begin()
+        .await
+        .expect("begin authentication test lock transaction");
+
+    sqlx::query("SELECT pg_advisory_xact_lock($1)")
+        .bind(AUTHENTICATION_TEST_LOCK_KEY)
+        .execute(&mut *transaction)
+        .await
+        .expect("acquire authentication test database lock");
+
+    transaction
+}
 
 const TEST_PASSWORD: &str = "an extremely secure password";
 const REFRESH_COOKIE_NAME: &str = "__Host-refresh_token";
@@ -242,9 +257,8 @@ async fn json_only_refresh_credentials_are_rejected_without_database_access() {
 #[tokio::test]
 #[ignore = "requires PostgreSQL 18 configured through TEST_DATABASE_URL and applied migrations"]
 async fn refresh_rotates_tokens_and_preserves_absolute_session_state() {
-    let _lock = TEST_DATABASE_LOCK.lock().await;
-
     let pool = database().await;
+    let _lock = authentication_database_lock(&pool).await;
 
     digital_publication_backend::MIGRATOR
         .run(&pool)
@@ -387,9 +401,8 @@ async fn refresh_rotates_tokens_and_preserves_absolute_session_state() {
 #[tokio::test]
 #[ignore = "requires PostgreSQL 18 configured through TEST_DATABASE_URL and applied migrations"]
 async fn refresh_replacement_never_outlives_the_session() {
-    let _lock = TEST_DATABASE_LOCK.lock().await;
-
     let pool = database().await;
+    let _lock = authentication_database_lock(&pool).await;
 
     digital_publication_backend::MIGRATOR
         .run(&pool)
@@ -479,9 +492,7 @@ async fn refresh_replacement_never_outlives_the_session() {
     .unwrap();
 
     assert!(replacement_expires_at <= session_expires_at);
-
     assert!(replacement_expires_at <= presented_expires_at);
-
     assert_eq!(replacement_expires_at, session_expires_at);
 
     reset(&pool).await;
@@ -490,9 +501,8 @@ async fn refresh_replacement_never_outlives_the_session() {
 #[tokio::test]
 #[ignore = "requires PostgreSQL 18 configured through TEST_DATABASE_URL and applied migrations"]
 async fn replayed_refresh_token_is_rejected_without_issuing_more_credentials() {
-    let _lock = TEST_DATABASE_LOCK.lock().await;
-
     let pool = database().await;
+    let _lock = authentication_database_lock(&pool).await;
 
     digital_publication_backend::MIGRATOR
         .run(&pool)
@@ -529,11 +539,8 @@ async fn replayed_refresh_token_is_rejected_without_issuing_more_credentials() {
         .unwrap();
 
     assert_eq!(replay.status(), StatusCode::UNAUTHORIZED);
-
     assert_eq!(replay.headers()[header::CACHE_CONTROL], "no-store");
-
     assert!(replay.headers().get(header::WWW_AUTHENTICATE).is_none());
-
     assert_eq!(json_body(replay).await["code"], "INVALID_REFRESH_TOKEN");
 
     let token_count_after = sqlx::query_scalar::<_, i64>(
@@ -552,9 +559,8 @@ async fn replayed_refresh_token_is_rejected_without_issuing_more_credentials() {
 #[tokio::test]
 #[ignore = "requires PostgreSQL 18 configured through TEST_DATABASE_URL and applied migrations"]
 async fn expired_revoked_or_account_invalid_refresh_tokens_are_rejected() {
-    let _lock = TEST_DATABASE_LOCK.lock().await;
-
     let pool = database().await;
+    let _lock = authentication_database_lock(&pool).await;
 
     digital_publication_backend::MIGRATOR
         .run(&pool)

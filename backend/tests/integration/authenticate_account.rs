@@ -26,7 +26,22 @@ use time::OffsetDateTime;
 use tower::ServiceExt;
 use uuid::Uuid;
 
-use super::TEST_DATABASE_LOCK;
+const AUTHENTICATION_TEST_LOCK_KEY: i64 = 8_477_317_022_026_051_337;
+
+async fn authentication_database_lock(pool: &PgPool) -> sqlx::Transaction<'_, sqlx::Postgres> {
+    let mut transaction = pool
+        .begin()
+        .await
+        .expect("begin authentication test lock transaction");
+
+    sqlx::query("SELECT pg_advisory_xact_lock($1)")
+        .bind(AUTHENTICATION_TEST_LOCK_KEY)
+        .execute(&mut *transaction)
+        .await
+        .expect("acquire authentication test database lock");
+
+    transaction
+}
 
 const TEST_PASSWORD: &str = "an extremely secure password";
 const REFRESH_COOKIE_NAME: &str = "__Host-refresh_token";
@@ -259,8 +274,8 @@ async fn invalid_email_is_rejected_as_an_invalid_request_without_database_access
 #[tokio::test]
 #[ignore = "requires PostgreSQL 18 configured through TEST_DATABASE_URL and applied migrations"]
 async fn successful_login_creates_session_and_token_verifiers_with_defined_lifetimes() {
-    let _lock = TEST_DATABASE_LOCK.lock().await;
     let pool = database().await;
+    let _lock = authentication_database_lock(&pool).await;
 
     digital_publication_backend::MIGRATOR
         .run(&pool)
@@ -364,8 +379,8 @@ async fn successful_login_creates_session_and_token_verifiers_with_defined_lifet
 #[tokio::test]
 #[ignore = "requires PostgreSQL 18 configured through TEST_DATABASE_URL and applied migrations"]
 async fn invalid_missing_inactive_and_deleted_accounts_return_generic_credentials_error() {
-    let _lock = TEST_DATABASE_LOCK.lock().await;
     let pool = database().await;
+    let _lock = authentication_database_lock(&pool).await;
 
     digital_publication_backend::MIGRATOR
         .run(&pool)
@@ -409,8 +424,8 @@ async fn invalid_missing_inactive_and_deleted_accounts_return_generic_credential
 #[tokio::test]
 #[ignore = "requires PostgreSQL 18 configured through TEST_DATABASE_URL and applied migrations"]
 async fn failed_password_authentication_is_generic_and_counted() {
-    let _lock = TEST_DATABASE_LOCK.lock().await;
     let pool = database().await;
+    let _lock = authentication_database_lock(&pool).await;
 
     digital_publication_backend::MIGRATOR
         .run(&pool)
@@ -460,8 +475,8 @@ async fn failed_password_authentication_is_generic_and_counted() {
 #[tokio::test]
 #[ignore = "requires PostgreSQL 18 configured through TEST_DATABASE_URL and applied migrations"]
 async fn login_rate_limits_email_and_source_ip_before_password_verification() {
-    let _lock = TEST_DATABASE_LOCK.lock().await;
     let pool = database().await;
+    let _lock = authentication_database_lock(&pool).await;
 
     digital_publication_backend::MIGRATOR
         .run(&pool)
@@ -526,8 +541,8 @@ async fn login_rate_limits_email_and_source_ip_before_password_verification() {
 #[tokio::test]
 #[ignore = "requires PostgreSQL 18 configured through TEST_DATABASE_URL and applied migrations"]
 async fn successful_login_resets_email_failures_but_preserves_existing_source_ip_failures() {
-    let _lock = TEST_DATABASE_LOCK.lock().await;
     let pool = database().await;
+    let _lock = authentication_database_lock(&pool).await;
 
     digital_publication_backend::MIGRATOR
         .run(&pool)
