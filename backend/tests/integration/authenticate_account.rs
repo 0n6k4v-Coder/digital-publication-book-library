@@ -325,7 +325,7 @@ async fn successful_login_creates_session_and_token_verifiers_with_defined_lifet
     .await
     .unwrap();
 
-    assert_eq!(session.1, AUTHENTICATION_SESSION_EXPIRES_IN as i64);
+    assert_eq!(session.1, AUTHENTICATION_SESSION_EXPIRES_IN);
     assert!(session.2 <= OffsetDateTime::now_utc());
 
     let access = sqlx::query_as::<_, (String, i64)>(
@@ -356,7 +356,7 @@ async fn successful_login_creates_session_and_token_verifiers_with_defined_lifet
 
     assert_eq!(refresh.0, sha256_token_verifier(&refresh_cookie));
     assert_ne!(refresh.0, refresh_cookie);
-    assert!(refresh.1 <= AUTHENTICATION_SESSION_EXPIRES_IN as i64);
+    assert!(refresh.1 <= AUTHENTICATION_SESSION_EXPIRES_IN);
 
     reset(&pool).await;
 }
