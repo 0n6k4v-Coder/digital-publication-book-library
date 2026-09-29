@@ -24,8 +24,8 @@ use tower::ServiceExt;
 use uuid::Uuid;
 
 static TEST_DATABASE_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+
 const TEST_PASSWORD: &str = "an extremely secure password";
-const REFRESH_COOKIE_NAME: &str = "__Host-refresh_token";
 
 fn test_router(pool: PgPool) -> Router {
     let blocklist = PasswordBlocklist::from_hashes("test", Vec::<[u8; 20]>::new());
@@ -48,14 +48,17 @@ async fn reset(pool: &PgPool) {
         .execute(pool)
         .await
         .expect("clear login attempts");
+
     sqlx::query("DELETE FROM authorization_account_role")
         .execute(pool)
         .await
         .expect("clear role assignments");
+
     sqlx::query("DELETE FROM authentication_session")
         .execute(pool)
         .await
         .expect("clear sessions");
+
     sqlx::query("DELETE FROM account")
         .execute(pool)
         .await
@@ -117,7 +120,11 @@ fn login_request(email: &str, password: &str, source_ip: IpAddr) -> Request<Body
         .uri("/auth/login")
         .header(header::CONTENT_TYPE, "application/json")
         .body(Body::from(
-            json!({"email": email, "password": password}).to_string(),
+            json!({
+                "email": email,
+                "password": password
+            })
+            .to_string(),
         ))
         .unwrap();
 
@@ -132,39 +139,23 @@ fn refresh_request(refresh_token: &str) -> Request<Body> {
     Request::builder()
         .method("POST")
         .uri("/auth/refresh")
-        .header(
-            header::COOKIE,
-            format!("{REFRESH_COOKIE_NAME}={refresh_token}"),
-        )
-        .body(Body::empty())
+        .header(header::CONTENT_TYPE, "application/json")
+        .body(Body::from(
+            json!({
+                "refresh_token": refresh_token
+            })
+            .to_string(),
+        ))
         .unwrap()
-}
-
-fn refresh_cookie_value(response: &axum::response::Response) -> String {
-    let header = response
-        .headers()
-        .get(header::SET_COOKIE)
-        .expect("response must set the refresh cookie")
-        .to_str()
-        .expect("refresh cookie must be valid ASCII");
-
-    let prefix = format!("{REFRESH_COOKIE_NAME}=");
-
-    header
-        .strip_prefix(&prefix)
-        .expect("refresh cookie must use the required __Host- name")
-        .split(';')
-        .next()
-        .expect("refresh cookie must contain a value")
-        .to_owned()
 }
 
 async fn json_body(response: axum::response::Response) -> Value {
     let body = to_bytes(response.into_body(), 64 * 1024).await.unwrap();
+
     serde_json::from_slice(&body).unwrap()
 }
 
-async fn login(pool: PgPool, email: &str, source_ip: IpAddr) -> (Value, String) {
+async fn login(pool: PgPool, email: &str, source_ip: IpAddr) -> Value {
     let response = test_router(pool)
         .oneshot(login_request(email, TEST_PASSWORD, source_ip))
         .await
@@ -172,62 +163,85 @@ async fn login(pool: PgPool, email: &str, source_ip: IpAddr) -> (Value, String) 
 
     assert_eq!(response.status(), StatusCode::OK);
 
-    let refresh_token = refresh_cookie_value(&response);
-    let body = json_body(response).await;
-
-    (body, refresh_token)
+    json_body(response).await
 }
 
 #[tokio::test]
-async fn refresh_requires_the_browser_managed_cookie_without_database_access() {
+async fn malformed_refresh_json_is_rejected_without_database_access() {
     let pool = sqlx::PgPool::connect_lazy("postgres://invalid").unwrap();
 
     let request = Request::builder()
         .method("POST")
         .uri("/auth/refresh")
-        .body(Body::empty())
+        .header(header::CONTENT_TYPE, "application/json")
+        .body(Body::from("{"))
         .unwrap();
 
     let response = test_router(pool).oneshot(request).await.unwrap();
 
-    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+
     assert_eq!(
         response.headers()[header::CONTENT_TYPE],
         "application/problem+json"
     );
-    assert_eq!(response.headers()[header::CACHE_CONTROL], "no-store");
-    assert!(response.headers().get(header::WWW_AUTHENTICATE).is_none());
 
-    assert_eq!(json_body(response).await["code"], "INVALID_REFRESH_TOKEN");
+    assert_eq!(response.headers()[header::CACHE_CONTROL], "no-store");
 }
 
 #[tokio::test]
 #[ignore = "requires PostgreSQL 18 configured through TEST_DATABASE_URL and applied migrations"]
 async fn refresh_rotates_tokens_and_preserves_absolute_session_state() {
     let _lock = TEST_DATABASE_LOCK.lock().await;
+
     let pool = database().await;
+
     digital_publication_backend::MIGRATOR
         .run(&pool)
         .await
         .unwrap();
+
     reset(&pool).await;
 
     let email = format!("refresh-{}@example.com", Uuid::new_v4());
+
     let account_id = seed_account(&pool, &email, TEST_PASSWORD).await;
+
     let source_ip: IpAddr = "192.0.2.30".parse().unwrap();
-    let (login_body, old_refresh) = login(pool.clone(), &email, source_ip).await;
+
+    let login_body = login(pool.clone(), &email, source_ip).await;
+
+    let old_refresh = login_body["refresh_token"].as_str().unwrap().to_owned();
+
     let old_refresh_hash = sha256_token_verifier(&old_refresh);
 
     let session_before = sqlx::query_as::<_, (Uuid, OffsetDateTime, OffsetDateTime)>(
-        "SELECT id, expires_at, last_authenticated_at FROM authentication_session WHERE account_id = $1",
+        "SELECT id, expires_at, last_authenticated_at \
+             FROM authentication_session \
+             WHERE account_id = $1",
     )
     .bind(account_id)
     .fetch_one(&pool)
     .await
     .unwrap();
 
+    let refresh_before = sqlx::query_scalar::<_, OffsetDateTime>(
+        "SELECT expires_at \
+             FROM authentication_refresh_token \
+             WHERE token_hash = $1",
+    )
+    .bind(&old_refresh_hash)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+
+    assert!(refresh_before <= session_before.1);
+    assert_eq!(refresh_before, session_before.1);
+
     let email_key = sha256_token_verifier(&normalize_email(&email).unwrap().normalized);
+
     let source_ip_key = sha256_token_verifier(&source_ip.to_string());
+
     seed_failed_attempts(&pool, &email_key, &source_ip_key, 10).await;
 
     let response = test_router(pool.clone())
@@ -238,18 +252,20 @@ async fn refresh_rotates_tokens_and_preserves_absolute_session_state() {
     assert_eq!(response.status(), StatusCode::OK);
     assert_eq!(response.headers()[header::CACHE_CONTROL], "no-store");
 
-    let new_refresh = refresh_cookie_value(&response);
     let body = json_body(response).await;
+
     let new_access = body["access_token"].as_str().unwrap();
 
+    let new_refresh = body["refresh_token"].as_str().unwrap();
+
     assert_ne!(new_access, login_body["access_token"].as_str().unwrap());
+
     assert_ne!(new_refresh, old_refresh);
-    assert_eq!(body["token_type"], "Bearer");
-    assert!(body.get("refresh_token").is_none());
-    assert!(body.get("refresh_expires_in").is_none());
 
     let session_after = sqlx::query_as::<_, (OffsetDateTime, OffsetDateTime)>(
-        "SELECT expires_at, last_authenticated_at FROM authentication_session WHERE id = $1",
+        "SELECT expires_at, last_authenticated_at \
+             FROM authentication_session \
+             WHERE id = $1",
     )
     .bind(session_before.0)
     .fetch_one(&pool)
@@ -257,10 +273,13 @@ async fn refresh_rotates_tokens_and_preserves_absolute_session_state() {
     .unwrap();
 
     assert_eq!(session_after.0, session_before.1);
+
     assert_eq!(session_after.1, session_before.2);
 
     let old_refresh_row = sqlx::query_scalar::<_, Option<OffsetDateTime>>(
-        "SELECT used_at FROM authentication_refresh_token WHERE token_hash = $1",
+        "SELECT used_at \
+             FROM authentication_refresh_token \
+             WHERE token_hash = $1",
     )
     .bind(&old_refresh_hash)
     .fetch_one(&pool)
@@ -269,11 +288,15 @@ async fn refresh_rotates_tokens_and_preserves_absolute_session_state() {
 
     assert!(old_refresh_row.is_some());
 
-    let new_refresh_hash = sha256_token_verifier(&new_refresh);
+    let new_refresh_hash = sha256_token_verifier(new_refresh);
+
     let replacement_count = sqlx::query_scalar::<_, i64>(
-        "SELECT COUNT(*) FROM authentication_refresh_token WHERE token_hash = $1 AND session_id = $2",
+        "SELECT COUNT(*) \
+             FROM authentication_refresh_token \
+             WHERE token_hash = $1 \
+               AND session_id = $2",
     )
-    .bind(new_refresh_hash)
+    .bind(&new_refresh_hash)
     .bind(session_before.0)
     .fetch_one(&pool)
     .await
@@ -281,8 +304,24 @@ async fn refresh_rotates_tokens_and_preserves_absolute_session_state() {
 
     assert_eq!(replacement_count, 1);
 
+    let replacement_expires_at = sqlx::query_scalar::<_, OffsetDateTime>(
+        "SELECT expires_at \
+             FROM authentication_refresh_token \
+             WHERE token_hash = $1",
+    )
+    .bind(&new_refresh_hash)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+
+    assert!(replacement_expires_at <= session_before.1);
+    assert_eq!(replacement_expires_at, session_before.1);
+
     let email_failure_count = sqlx::query_scalar::<_, i64>(
-        "SELECT COUNT(*) FROM authentication_login_attempt WHERE email_key = $1 AND email_counted = TRUE",
+        "SELECT COUNT(*) \
+             FROM authentication_login_attempt \
+             WHERE email_key = $1 \
+               AND email_counted = TRUE",
     )
     .bind(email_key)
     .fetch_one(&pool)
@@ -296,20 +335,131 @@ async fn refresh_rotates_tokens_and_preserves_absolute_session_state() {
 
 #[tokio::test]
 #[ignore = "requires PostgreSQL 18 configured through TEST_DATABASE_URL and applied migrations"]
-async fn replayed_refresh_token_is_rejected_without_issuing_more_credentials() {
+async fn refresh_replacement_never_outlives_the_session() {
     let _lock = TEST_DATABASE_LOCK.lock().await;
+
     let pool = database().await;
+
     digital_publication_backend::MIGRATOR
         .run(&pool)
         .await
         .unwrap();
+
+    reset(&pool).await;
+
+    let email = format!("refresh-boundary-{}@example.com", Uuid::new_v4());
+
+    let account_id = seed_account(&pool, &email, TEST_PASSWORD).await;
+
+    let login_body = login(pool.clone(), &email, "192.0.2.40".parse().unwrap()).await;
+
+    let presented_refresh_token = login_body["refresh_token"].as_str().unwrap().to_owned();
+
+    let presented_refresh_hash = sha256_token_verifier(&presented_refresh_token);
+
+    let session_id = sqlx::query_scalar::<_, Uuid>(
+        "SELECT id \
+             FROM authentication_session \
+             WHERE account_id = $1",
+    )
+    .bind(account_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+
+    sqlx::query(
+        "UPDATE authentication_session \
+         SET expires_at = CURRENT_TIMESTAMP + INTERVAL '15 minutes' \
+         WHERE id = $1",
+    )
+    .bind(session_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    sqlx::query(
+        "UPDATE authentication_refresh_token \
+         SET expires_at = CURRENT_TIMESTAMP + INTERVAL '30 minutes' \
+         WHERE token_hash = $1",
+    )
+    .bind(&presented_refresh_hash)
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    let response = test_router(pool.clone())
+        .oneshot(refresh_request(&presented_refresh_token))
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = json_body(response).await;
+
+    let replacement_refresh_token = body["refresh_token"].as_str().unwrap().to_owned();
+
+    let replacement_refresh_hash = sha256_token_verifier(&replacement_refresh_token);
+
+    let session_expires_at = sqlx::query_scalar::<_, OffsetDateTime>(
+        "SELECT expires_at \
+             FROM authentication_session \
+             WHERE id = $1",
+    )
+    .bind(session_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+
+    let presented_expires_at = sqlx::query_scalar::<_, OffsetDateTime>(
+        "SELECT expires_at \
+             FROM authentication_refresh_token \
+             WHERE token_hash = $1",
+    )
+    .bind(&presented_refresh_hash)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+
+    let replacement_expires_at = sqlx::query_scalar::<_, OffsetDateTime>(
+        "SELECT expires_at \
+             FROM authentication_refresh_token \
+             WHERE token_hash = $1",
+    )
+    .bind(&replacement_refresh_hash)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+
+    assert!(replacement_expires_at <= session_expires_at);
+
+    assert!(replacement_expires_at <= presented_expires_at);
+
+    assert_eq!(replacement_expires_at, session_expires_at);
+
+    reset(&pool).await;
+}
+
+#[tokio::test]
+#[ignore = "requires PostgreSQL 18 configured through TEST_DATABASE_URL and applied migrations"]
+async fn replayed_refresh_token_is_rejected_without_issuing_more_credentials() {
+    let _lock = TEST_DATABASE_LOCK.lock().await;
+
+    let pool = database().await;
+
+    digital_publication_backend::MIGRATOR
+        .run(&pool)
+        .await
+        .unwrap();
+
     reset(&pool).await;
 
     let email = format!("replay-{}@example.com", Uuid::new_v4());
+
     seed_account(&pool, &email, TEST_PASSWORD).await;
 
-    let (_login_body, refresh_token) =
-        login(pool.clone(), &email, "192.0.2.31".parse().unwrap()).await;
+    let login_body = login(pool.clone(), &email, "192.0.2.31".parse().unwrap()).await;
+
+    let refresh_token = login_body["refresh_token"].as_str().unwrap().to_owned();
 
     let first = test_router(pool.clone())
         .oneshot(refresh_request(&refresh_token))
@@ -318,11 +468,13 @@ async fn replayed_refresh_token_is_rejected_without_issuing_more_credentials() {
 
     assert_eq!(first.status(), StatusCode::OK);
 
-    let token_count_before =
-        sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM authentication_access_token")
-            .fetch_one(&pool)
-            .await
-            .unwrap();
+    let token_count_before = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) \
+             FROM authentication_access_token",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
 
     let replay = test_router(pool.clone())
         .oneshot(refresh_request(&refresh_token))
@@ -330,15 +482,20 @@ async fn replayed_refresh_token_is_rejected_without_issuing_more_credentials() {
         .unwrap();
 
     assert_eq!(replay.status(), StatusCode::UNAUTHORIZED);
+
     assert_eq!(replay.headers()[header::CACHE_CONTROL], "no-store");
+
     assert!(replay.headers().get(header::WWW_AUTHENTICATE).is_none());
+
     assert_eq!(json_body(replay).await["code"], "INVALID_REFRESH_TOKEN");
 
-    let token_count_after =
-        sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM authentication_access_token")
-            .fetch_one(&pool)
-            .await
-            .unwrap();
+    let token_count_after = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) \
+             FROM authentication_access_token",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
 
     assert_eq!(token_count_after, token_count_before);
 
@@ -349,11 +506,14 @@ async fn replayed_refresh_token_is_rejected_without_issuing_more_credentials() {
 #[ignore = "requires PostgreSQL 18 configured through TEST_DATABASE_URL and applied migrations"]
 async fn expired_revoked_or_account_invalid_refresh_tokens_are_rejected() {
     let _lock = TEST_DATABASE_LOCK.lock().await;
+
     let pool = database().await;
+
     digital_publication_backend::MIGRATOR
         .run(&pool)
         .await
         .unwrap();
+
     reset(&pool).await;
 
     for case in [
@@ -365,13 +525,17 @@ async fn expired_revoked_or_account_invalid_refresh_tokens_are_rejected() {
         "deleted_account",
     ] {
         let email = format!("{case}-{}@example.com", Uuid::new_v4());
+
         let account_id = seed_account(&pool, &email, TEST_PASSWORD).await;
 
-        let (_login_body, refresh_token) =
-            login(pool.clone(), &email, "192.0.2.32".parse().unwrap()).await;
+        let login_body = login(pool.clone(), &email, "192.0.2.32".parse().unwrap()).await;
+
+        let refresh_token = login_body["refresh_token"].as_str().unwrap().to_owned();
 
         let session_id = sqlx::query_scalar::<_, Uuid>(
-            "SELECT id FROM authentication_session WHERE account_id = $1",
+            "SELECT id \
+                 FROM authentication_session \
+                 WHERE account_id = $1",
         )
         .bind(account_id)
         .fetch_one(&pool)
@@ -379,7 +543,10 @@ async fn expired_revoked_or_account_invalid_refresh_tokens_are_rejected() {
         .unwrap();
 
         let refresh_hash = sqlx::query_scalar::<_, String>(
-            "SELECT token_hash FROM authentication_refresh_token WHERE session_id = $1 AND used_at IS NULL",
+            "SELECT token_hash \
+                 FROM authentication_refresh_token \
+                 WHERE session_id = $1 \
+                   AND used_at IS NULL",
         )
         .bind(session_id)
         .fetch_one(&pool)
@@ -389,56 +556,77 @@ async fn expired_revoked_or_account_invalid_refresh_tokens_are_rejected() {
         match case {
             "expired" => {
                 sqlx::query(
-                    "UPDATE authentication_refresh_token SET expires_at = CURRENT_TIMESTAMP - INTERVAL '1 second' WHERE token_hash = $1",
+                    "UPDATE authentication_refresh_token \
+                     SET expires_at = CURRENT_TIMESTAMP - INTERVAL '1 second' \
+                     WHERE token_hash = $1",
                 )
                 .bind(&refresh_hash)
                 .execute(&pool)
                 .await
                 .unwrap();
             }
+
             "revoked" => {
                 sqlx::query(
-                    "UPDATE authentication_refresh_token SET revoked_at = CURRENT_TIMESTAMP WHERE token_hash = $1",
+                    "UPDATE authentication_refresh_token \
+                     SET revoked_at = CURRENT_TIMESTAMP \
+                     WHERE token_hash = $1",
                 )
                 .bind(&refresh_hash)
                 .execute(&pool)
                 .await
                 .unwrap();
             }
+
             "expired_session" => {
                 sqlx::query(
-                    "UPDATE authentication_session SET expires_at = CURRENT_TIMESTAMP - INTERVAL '1 second' WHERE id = $1",
+                    "UPDATE authentication_session \
+                     SET expires_at = CURRENT_TIMESTAMP - INTERVAL '1 second' \
+                     WHERE id = $1",
                 )
                 .bind(session_id)
                 .execute(&pool)
                 .await
                 .unwrap();
             }
+
             "revoked_session" => {
                 sqlx::query(
-                    "UPDATE authentication_session SET revoked_at = CURRENT_TIMESTAMP WHERE id = $1",
+                    "UPDATE authentication_session \
+                     SET revoked_at = CURRENT_TIMESTAMP \
+                     WHERE id = $1",
                 )
                 .bind(session_id)
                 .execute(&pool)
                 .await
                 .unwrap();
             }
+
             "inactive_account" => {
-                sqlx::query("UPDATE account SET status = 'inactive' WHERE id = $1")
-                    .bind(account_id)
-                    .execute(&pool)
-                    .await
-                    .unwrap();
-            }
-            "deleted_account" => {
                 sqlx::query(
-                    "UPDATE account SET status = 'inactive', deleted_at = CURRENT_TIMESTAMP WHERE id = $1",
+                    "UPDATE account \
+                     SET status = 'inactive' \
+                     WHERE id = $1",
                 )
                 .bind(account_id)
                 .execute(&pool)
                 .await
                 .unwrap();
             }
+
+            "deleted_account" => {
+                sqlx::query(
+                    "UPDATE account \
+                     SET status = 'inactive', \
+                         deleted_at = CURRENT_TIMESTAMP \
+                     WHERE id = $1",
+                )
+                .bind(account_id)
+                .execute(&pool)
+                .await
+                .unwrap();
+            }
+
             _ => unreachable!(),
         }
 

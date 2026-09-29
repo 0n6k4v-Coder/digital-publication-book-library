@@ -6,7 +6,6 @@ use digital_publication_backend::{
     domains::authentication::model::{
         ACCESS_TOKEN_EXPIRES_IN,
         AUTHENTICATION_SESSION_EXPIRES_IN,
-        REFRESH_TOKEN_POLICY_EXPIRES_IN,
     },
     shared::error::AppError,
 };
@@ -15,7 +14,6 @@ use digital_publication_backend::{
 fn token_lifetimes_match_the_authentication_contract() {
     assert_eq!(ACCESS_TOKEN_EXPIRES_IN, 3_600);
     assert_eq!(AUTHENTICATION_SESSION_EXPIRES_IN, 86_400);
-    assert_eq!(REFRESH_TOKEN_POLICY_EXPIRES_IN, 2_592_000);
 }
 
 #[test]
@@ -27,8 +25,16 @@ fn invalid_refresh_token_has_no_bearer_challenge() {
         response.headers()[header::CONTENT_TYPE],
         "application/problem+json"
     );
-    assert_eq!(response.headers()[header::CACHE_CONTROL], "no-store");
-    assert!(response.headers().get(header::WWW_AUTHENTICATE).is_none());
+    assert_eq!(
+        response.headers()[header::CACHE_CONTROL],
+        "no-store"
+    );
+    assert!(
+        response
+            .headers()
+            .get(header::WWW_AUTHENTICATE)
+            .is_none()
+    );
 }
 
 #[test]

@@ -3,9 +3,7 @@ use sqlx::{PgPool, Postgres, Transaction};
 use time::OffsetDateTime;
 use uuid::Uuid;
 
-use super::model::{
-    AuthenticatedPrincipal, AUTHENTICATION_SESSION_EXPIRES_IN, REFRESH_TOKEN_POLICY_EXPIRES_IN,
-};
+use super::model::{AuthenticatedPrincipal, AUTHENTICATION_SESSION_EXPIRES_IN};
 
 const LOGIN_EMAIL_FAILURE_LIMIT: i64 = 10;
 const LOGIN_SOURCE_IP_FAILURE_LIMIT: i64 = 50;
@@ -49,6 +47,7 @@ impl AuthenticationRepository {
         let mut tx = self.pool.begin().await?;
 
         let mut lock_keys = [format!("email:{email_key}"), format!("ip:{source_ip_key}")];
+
         lock_keys.sort_unstable();
 
         for lock_key in lock_keys {
@@ -190,7 +189,7 @@ impl AuthenticationRepository {
             .execute(&mut *tx)
             .await?;
 
-        let session = sqlx::query_as::<_, AuthenticationSessionRow>(
+        let session = sqlx::query_as::<_, SessionLifetimeRow>(
             r#"
             INSERT INTO authentication_session (
                 account_id,
@@ -200,14 +199,17 @@ impl AuthenticationRepository {
             VALUES (
                 $1,
                 CURRENT_TIMESTAMP
-                    + make_interval(secs => $2::double precision),
+                    + (
+                        $2::double precision
+                        * INTERVAL '1 second'
+                    ),
                 CURRENT_TIMESTAMP
             )
             RETURNING id, expires_at
             "#,
         )
         .bind(account_id)
-        .bind(AUTHENTICATION_SESSION_EXPIRES_IN as f64)
+        .bind(AUTHENTICATION_SESSION_EXPIRES_IN)
         .fetch_one(&mut *tx)
         .await?;
 
@@ -221,16 +223,20 @@ impl AuthenticationRepository {
             VALUES (
                 $1,
                 $2,
-                CURRENT_TIMESTAMP + INTERVAL '1 hour'
+                LEAST(
+                    CURRENT_TIMESTAMP + INTERVAL '1 hour',
+                    $3
+                )
             )
             "#,
         )
         .bind(session.id)
         .bind(access_token_hash)
+        .bind(session.expires_at)
         .execute(&mut *tx)
         .await?;
 
-        let refresh_expires_at = sqlx::query_scalar::<_, OffsetDateTime>(
+        sqlx::query(
             r#"
             INSERT INTO authentication_refresh_token (
                 session_id,
@@ -240,25 +246,19 @@ impl AuthenticationRepository {
             VALUES (
                 $1,
                 $2,
-                LEAST(
-                    $3,
-                    CURRENT_TIMESTAMP
-                        + make_interval(secs => $4::double precision)
-                )
+                $3
             )
-            RETURNING expires_at
             "#,
         )
         .bind(session.id)
         .bind(refresh_token_hash)
         .bind(session.expires_at)
-        .bind(REFRESH_TOKEN_POLICY_EXPIRES_IN as f64)
-        .fetch_one(&mut *tx)
+        .execute(&mut *tx)
         .await?;
 
         tx.commit().await?;
 
-        Ok(Some(refresh_expires_at))
+        Ok(Some(session.expires_at))
     }
 
     pub async fn refresh_tokens(
@@ -269,44 +269,47 @@ impl AuthenticationRepository {
     ) -> Result<Option<OffsetDateTime>, sqlx::Error> {
         let mut tx = self.pool.begin().await?;
 
-        let session_id = sqlx::query_scalar::<_, Uuid>(
+        let refresh_context = sqlx::query_as::<_, RefreshTokenContext>(
             r#"
-            UPDATE authentication_refresh_token AS r
-            SET used_at = CURRENT_TIMESTAMP
-            FROM authentication_session AS s
-            INNER JOIN account AS a
-                ON a.id = s.account_id
-            WHERE r.token_hash = $1
-              AND r.session_id = s.id
-              AND r.used_at IS NULL
-              AND r.revoked_at IS NULL
-              AND r.expires_at > CURRENT_TIMESTAMP
-              AND s.revoked_at IS NULL
-              AND s.expires_at > CURRENT_TIMESTAMP
-              AND a.status = 'active'
-              AND a.deleted_at IS NULL
-            RETURNING r.session_id
+            WITH claimed AS (
+                UPDATE authentication_refresh_token AS r
+                SET used_at = CURRENT_TIMESTAMP
+                FROM authentication_session AS s
+                INNER JOIN account AS a
+                    ON a.id = s.account_id
+                WHERE r.token_hash = $1
+                  AND r.session_id = s.id
+                  AND r.used_at IS NULL
+                  AND r.revoked_at IS NULL
+                  AND r.expires_at > CURRENT_TIMESTAMP
+                  AND s.revoked_at IS NULL
+                  AND s.expires_at > CURRENT_TIMESTAMP
+                  AND a.status = 'active'
+                  AND a.deleted_at IS NULL
+                RETURNING
+                    r.session_id,
+                    r.expires_at
+            )
+            SELECT
+                claimed.session_id,
+                LEAST(
+                    claimed.expires_at,
+                    s.expires_at
+                ) AS refresh_expires_at,
+                s.expires_at AS session_expires_at
+            FROM claimed
+            INNER JOIN authentication_session AS s
+                ON s.id = claimed.session_id
             "#,
         )
         .bind(presented_refresh_token_hash)
         .fetch_optional(&mut *tx)
         .await?;
 
-        let Some(session_id) = session_id else {
+        let Some(refresh_context) = refresh_context else {
             tx.rollback().await?;
             return Ok(None);
         };
-
-        let session_expires_at = sqlx::query_scalar::<_, OffsetDateTime>(
-            r#"
-            SELECT expires_at
-            FROM authentication_session
-            WHERE id = $1
-            "#,
-        )
-        .bind(session_id)
-        .fetch_one(&mut *tx)
-        .await?;
 
         sqlx::query(
             r#"
@@ -318,16 +321,20 @@ impl AuthenticationRepository {
             VALUES (
                 $1,
                 $2,
-                CURRENT_TIMESTAMP + INTERVAL '1 hour'
+                LEAST(
+                    CURRENT_TIMESTAMP + INTERVAL '1 hour',
+                    $3
+                )
             )
             "#,
         )
-        .bind(session_id)
+        .bind(refresh_context.session_id)
         .bind(access_token_hash)
+        .bind(refresh_context.session_expires_at)
         .execute(&mut *tx)
         .await?;
 
-        let replacement_refresh_expires_at = sqlx::query_scalar::<_, OffsetDateTime>(
+        sqlx::query(
             r#"
             INSERT INTO authentication_refresh_token (
                 session_id,
@@ -337,57 +344,19 @@ impl AuthenticationRepository {
             VALUES (
                 $1,
                 $2,
-                LEAST(
-                    $3,
-                    CURRENT_TIMESTAMP
-                        + make_interval(secs => $4::double precision)
-                )
+                $3
             )
-            RETURNING expires_at
             "#,
         )
-        .bind(session_id)
+        .bind(refresh_context.session_id)
         .bind(replacement_refresh_token_hash)
-        .bind(session_expires_at)
-        .bind(REFRESH_TOKEN_POLICY_EXPIRES_IN as f64)
-        .fetch_one(&mut *tx)
-        .await?;
-
-        tx.commit().await?;
-
-        Ok(Some(replacement_refresh_expires_at))
-    }
-
-    pub async fn revoke_session_by_refresh_token(
-        &self,
-        refresh_token_hash: &str,
-    ) -> Result<(), sqlx::Error> {
-        let mut tx = self.pool.begin().await?;
-
-        sqlx::query(
-            r#"
-            UPDATE authentication_session AS s
-            SET
-                revoked_at = COALESCE(
-                    s.revoked_at,
-                    CURRENT_TIMESTAMP
-                ),
-                revocation_reason = COALESCE(
-                    s.revocation_reason,
-                    'logout'
-                )
-            FROM authentication_refresh_token AS r
-            WHERE r.session_id = s.id
-              AND r.token_hash = $1
-            "#,
-        )
-        .bind(refresh_token_hash)
+        .bind(refresh_context.refresh_expires_at)
         .execute(&mut *tx)
         .await?;
 
         tx.commit().await?;
 
-        Ok(())
+        Ok(Some(refresh_context.refresh_expires_at))
     }
 
     pub async fn revoke_session(
@@ -490,15 +459,22 @@ struct AccountState {
 }
 
 #[derive(Debug, sqlx::FromRow)]
-struct AuthenticationSessionRow {
+struct LoginRateCounts {
+    email_count: i64,
+    source_ip_count: i64,
+}
+
+#[derive(Debug, sqlx::FromRow)]
+struct SessionLifetimeRow {
     id: Uuid,
     expires_at: OffsetDateTime,
 }
 
 #[derive(Debug, sqlx::FromRow)]
-struct LoginRateCounts {
-    email_count: i64,
-    source_ip_count: i64,
+struct RefreshTokenContext {
+    session_id: Uuid,
+    refresh_expires_at: OffsetDateTime,
+    session_expires_at: OffsetDateTime,
 }
 
 #[derive(Debug, sqlx::FromRow)]

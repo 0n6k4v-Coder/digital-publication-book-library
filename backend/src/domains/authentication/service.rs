@@ -13,7 +13,10 @@ use crate::shared::{
 
 use super::{
     extractor::sha256_token_verifier,
-    model::{AuthenticateAccountRequest, AuthenticationTokens},
+    model::{
+        AuthenticateAccountRequest, AuthenticatedPrincipal, AuthenticationTokens,
+        RefreshAuthenticationRequest,
+    },
     repository::AuthenticationRepository,
 };
 
@@ -75,12 +78,14 @@ impl AuthenticationService {
                 .mark_login_attempt_failed(attempt_id)
                 .await
                 .map_err(crate::shared::error::internal_error)?;
+
             return Err(AppError::InvalidCredentials);
         }
 
         let account_id = account_id.ok_or(AppError::InvalidCredentials)?;
         let access_token = generate_opaque_token();
         let refresh_token = generate_opaque_token();
+
         let access_token_hash = sha256_token_verifier(access_token.expose_secret());
         let refresh_token_hash = sha256_token_verifier(refresh_token.expose_secret());
 
@@ -106,14 +111,14 @@ impl AuthenticationService {
 
     pub async fn refresh_authentication(
         &self,
-        refresh_token: SecretString,
+        request: RefreshAuthenticationRequest,
     ) -> Result<AuthenticationTokens, AppError> {
         let access_token = generate_opaque_token();
-        let replacement_refresh_token = generate_opaque_token();
-        let refresh_token_hash = sha256_token_verifier(refresh_token.expose_secret());
+        let refresh_token = generate_opaque_token();
+
+        let refresh_token_hash = sha256_token_verifier(request.refresh_token.expose_secret());
         let access_token_hash = sha256_token_verifier(access_token.expose_secret());
-        let replacement_refresh_token_hash =
-            sha256_token_verifier(replacement_refresh_token.expose_secret());
+        let replacement_refresh_token_hash = sha256_token_verifier(refresh_token.expose_secret());
 
         let refresh_expires_at = self
             .repository
@@ -128,25 +133,24 @@ impl AuthenticationService {
 
         Ok(AuthenticationTokens {
             access_token,
-            refresh_token: replacement_refresh_token,
+            refresh_token,
             refresh_expires_at,
         })
     }
 
-    pub async fn logout_authentication(
+    pub async fn revoke_authentication(
         &self,
-        refresh_token: Option<SecretString>,
+        principal: AuthenticatedPrincipal,
     ) -> Result<(), AppError> {
-        let Some(refresh_token) = refresh_token else {
-            return Ok(());
-        };
-
-        let refresh_token_hash = sha256_token_verifier(refresh_token.expose_secret());
-
-        self.repository
-            .revoke_session_by_refresh_token(&refresh_token_hash)
+        let revoked = self
+            .repository
+            .revoke_session(principal.account_id, principal.session_id)
             .await
             .map_err(crate::shared::error::internal_error)?;
+
+        if !revoked {
+            return Err(AppError::Unauthorized);
+        }
 
         Ok(())
     }
