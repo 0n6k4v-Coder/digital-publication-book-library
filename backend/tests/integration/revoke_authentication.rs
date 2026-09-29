@@ -24,7 +24,7 @@ use sqlx::PgPool;
 use tower::ServiceExt;
 use uuid::Uuid;
 
-static TEST_DATABASE_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+use super::TEST_DATABASE_LOCK;
 
 const TEST_PASSWORD: &str = "an extremely secure password";
 const REFRESH_COOKIE_NAME: &str = "__Host-refresh_token";
