@@ -11,7 +11,7 @@ use axum::{
     http::{header, Request, StatusCode},
     Router,
 };
-use digital_publication_book_library::{
+use digital_publication_backend::{
     app::{router::build_router, state::AppState},
     domains::authentication::{
         extractor::sha256_token_verifier,
@@ -262,7 +262,7 @@ async fn successful_login_creates_session_and_token_verifiers_with_defined_lifet
     let _lock = TEST_DATABASE_LOCK.lock().await;
     let pool = database().await;
 
-    digital_publication_book_library::MIGRATOR
+    digital_publication_backend::MIGRATOR
         .run(&pool)
         .await
         .unwrap();
@@ -367,7 +367,7 @@ async fn invalid_missing_inactive_and_deleted_accounts_return_generic_credential
     let _lock = TEST_DATABASE_LOCK.lock().await;
     let pool = database().await;
 
-    digital_publication_book_library::MIGRATOR
+    digital_publication_backend::MIGRATOR
         .run(&pool)
         .await
         .unwrap();
@@ -412,7 +412,7 @@ async fn failed_password_authentication_is_generic_and_counted() {
     let _lock = TEST_DATABASE_LOCK.lock().await;
     let pool = database().await;
 
-    digital_publication_book_library::MIGRATOR
+    digital_publication_backend::MIGRATOR
         .run(&pool)
         .await
         .unwrap();
@@ -463,7 +463,7 @@ async fn login_rate_limits_email_and_source_ip_before_password_verification() {
     let _lock = TEST_DATABASE_LOCK.lock().await;
     let pool = database().await;
 
-    digital_publication_book_library::MIGRATOR
+    digital_publication_backend::MIGRATOR
         .run(&pool)
         .await
         .unwrap();
@@ -529,7 +529,7 @@ async fn successful_login_resets_email_failures_but_preserves_existing_source_ip
     let _lock = TEST_DATABASE_LOCK.lock().await;
     let pool = database().await;
 
-    digital_publication_book_library::MIGRATOR
+    digital_publication_backend::MIGRATOR
         .run(&pool)
         .await
         .unwrap();
